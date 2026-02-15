@@ -1,0 +1,136 @@
+/* Atasan Dashboard - Welcome Card Overrides */
+
+.atasan-welcome-card {
+    background: linear-gradient(135deg, #425d87 0%, #314464 100%);
+    border-radius: 2rem;
+    padding: 2.5rem 2rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 12px 32px rgba(66, 93, 135, 0.3);
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+}
+
+.atasan-welcome-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.atasan-welcome-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.atasan-welcome-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    font-size: 2rem;
+    flex-shrink: 0;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.atasan-avatar-initial {
+    display: block;
+}
+
+.atasan-welcome-text {
+    flex: 1;
+}
+
+.atasan-welcome-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+}
+
+.atasan-welcome-subtitle {
+    font-size: 0.95rem;
+    color: #ffffff;
+    margin: 0 0 0.5rem 0;
+    font-weight: 500;
+}
+
+.atasan-welcome-desc {
+    font-size: 0.85rem;
+    color: #ffffff;
+    margin: 0;
+}
+
+.atasan-welcome-stats {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.atasan-welcome-stat-item {
+    text-align: center;
+}
+
+.atasan-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #ffffff;
+}
+
+.atasan-stat-value.large {
+    font-size: 1.5rem;
+    color: #ffffff;
+}
+
+.atasan-stat-label {
+    font-size: 0.8rem;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.atasan-stat-divider {
+    width: 1px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+    .atasan-welcome-card {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 2rem;
+    }
+
+    .atasan-welcome-content {
+        width: 100%;
+    }
+
+    .atasan-welcome-stats {
+        width: 100%;
+        justify-content: space-around;
+    }
+}

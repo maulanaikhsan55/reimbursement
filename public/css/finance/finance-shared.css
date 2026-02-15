@@ -1,0 +1,109 @@
+/* Master Data Common Styles */
+.filter-form-finance {
+    display: grid;
+    grid-template-columns: 1fr 220px auto;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.data-table th {
+    padding: 0.75rem 1rem !important;
+    white-space: nowrap;
+    background: #f8fafc;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: #64748b;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.data-table td {
+    padding: 0.75rem 1rem !important;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Column Widths & Alignment */
+.col-checkbox { 
+    display: none;
+    width: 40px; 
+    text-align: center !important; 
+}
+.bulk-mode .col-checkbox {
+    display: table-cell;
+}
+
+.code-badge {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    background: #f8fafc;
+    color: #475569;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.action-buttons-centered {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+/* Badge Styles */
+.badge-accurate {
+    background: rgba(14, 165, 233, 0.1) !important;
+    color: #0284c7 !important;
+    border: 1px solid rgba(14, 165, 233, 0.2) !important;
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    padding: 4px 10px !important;
+    border-radius: 50px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.badge-manual {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    padding: 4px 10px !important;
+    border-radius: 50px !important;
+    display: inline-flex;
+    align-items: center;
+}
+
+.meta-badge {
+    background: rgba(66, 93, 135, 0.08);
+    color: #425d87;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Typography */
+.amount-text {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.primary-text {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.secondary-text {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+}
