@@ -560,44 +560,6 @@
         }
     }
 
-    window.openProofModal = function(fileUrl, isPdf = false) {
-        const modal = document.getElementById('proofModal');
-        const modalBody = document.getElementById('proofModalBody');
-        
-        // Clear previous content and show loader
-        modalBody.innerHTML = '<div class="clip-loader" style="border-color: #3b82f6; border-bottom-color: transparent; margin: 2rem auto;"></div>';
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-        
-        if (isPdf) {
-            modalBody.innerHTML = `<iframe src="${fileUrl}" style="width: 100%; height: 600px; border: none; border-radius: 0.5rem;" title="Bukti Transaksi"></iframe>`;
-        } else {
-            const img = new Image();
-            img.onload = function() {
-                modalBody.innerHTML = `<img src="${fileUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 0.5rem;" alt="Bukti Transaksi">`;
-            };
-            img.onerror = function() {
-                modalBody.innerHTML = '<div style="padding: 2rem; text-align: center;"><p style="color: #dc2626;">Gagal memuat gambar bukti.</p></div>';
-            };
-            img.src = fileUrl;
-        }
-    }
-
-    window.closeProofModal = function() {
-        const modal = document.getElementById('proofModal');
-        const modalBody = document.getElementById('proofModalBody');
-        if (modal) {
-            modal.style.display = 'none';
-            modalBody.innerHTML = '';
-            document.body.style.overflow = 'auto';
-        }
-    }
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeProofModal();
-        }
-    });
     };
 
     initBukuBesar();
