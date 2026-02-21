@@ -1,4 +1,4 @@
-<?php if (! $__env->hasRenderedOnce('e16208d1-2cd2-4621-ab9d-86d7d401d21a')): $__env->markAsRenderedOnce('e16208d1-2cd2-4621-ab9d-86d7d401d21a'); ?>
+<?php if (! $__env->hasRenderedOnce('88902013-7e48-42d7-b2e5-11e93d073fd7')): $__env->markAsRenderedOnce('88902013-7e48-42d7-b2e5-11e93d073fd7'); ?>
 <style>
     .notification-bell-wrapper {
         position: relative;

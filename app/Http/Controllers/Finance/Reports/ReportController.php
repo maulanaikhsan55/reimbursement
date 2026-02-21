@@ -28,6 +28,46 @@ class ReportController extends Controller
         $this->accurateService = $accurateService;
     }
 
+    private function parseRequestDate(?string $value, bool $endOfDay = false): ?Carbon
+    {
+        if (! $value) {
+            return null;
+        }
+
+        try {
+            $date = Carbon::parse($value);
+        } catch (\Throwable $exception) {
+            return null;
+        }
+
+        return $endOfDay ? $date->endOfDay() : $date->startOfDay();
+    }
+
+    private function resolveDateRangeFromQuery($query, string $column): array
+    {
+        $startDate = $this->parseRequestDate(request('start_date'));
+        $endDate = $this->parseRequestDate(request('end_date'), true);
+
+        if (! $startDate) {
+            $minDate = (clone $query)->min($column);
+            if ($minDate) {
+                $startDate = Carbon::parse($minDate)->startOfDay();
+            }
+        }
+
+        if (! $endDate) {
+            $maxDate = (clone $query)->max($column);
+            if ($maxDate) {
+                $endDate = Carbon::parse($maxDate)->endOfDay();
+            }
+        }
+
+        $startDate ??= Carbon::now()->subMonths(1)->startOfDay();
+        $endDate ??= Carbon::now()->endOfDay();
+
+        return [$startDate, $endDate];
+    }
+
     public function budgetAudit(Request $request)
     {
         $year = (int) $request->get('year', date('Y'));
@@ -155,8 +195,10 @@ class ReportController extends Controller
      */
     public function index()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Pengajuan::query()->where('status', 'dicairkan'),
+            'tanggal_pencairan'
+        );
 
         $pengajuanQuery = Pengajuan::where('status', 'dicairkan')
             ->whereBetween('tanggal_pencairan', [$startDate, $endDate]);
@@ -228,8 +270,10 @@ class ReportController extends Controller
      */
     public function export()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Pengajuan::query()->where('status', 'dicairkan'),
+            'tanggal_pencairan'
+        );
 
         $pengajuanQuery = Pengajuan::where('status', 'dicairkan')
             ->whereBetween('tanggal_pencairan', [$startDate, $endDate]);
@@ -269,8 +313,10 @@ class ReportController extends Controller
 
     private function getJurnalUmumData()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query(),
+            'tanggal_posting'
+        );
         $coaId = request('coa_id');
         $search = request('search');
 
@@ -302,8 +348,10 @@ class ReportController extends Controller
 
     public function jurnalUmum()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query(),
+            'tanggal_posting'
+        );
         $coaId = request('coa_id');
 
         $allJournal = $this->getJurnalUmumData();
@@ -413,8 +461,10 @@ class ReportController extends Controller
     public function jurnalUmumExportPdf()
     {
         $allJournal = $this->getJurnalUmumData();
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query(),
+            'tanggal_posting'
+        );
 
         $groupedJournal = $allJournal->groupBy('nomor_ref')->map(function ($entries) {
             return [
@@ -440,8 +490,10 @@ class ReportController extends Controller
 
     private function getBukuBesarData()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query(),
+            'tanggal_posting'
+        );
 
         return Jurnal::whereBetween('tanggal_posting', [$startDate, $endDate])
             ->with('coa')
@@ -450,8 +502,10 @@ class ReportController extends Controller
 
     public function bukuBesar()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query(),
+            'tanggal_posting'
+        );
         $coaId = request('coa_id');
 
         $coaQuery = COA::where('is_active', true);
@@ -1073,8 +1127,10 @@ class ReportController extends Controller
     public function bukuBesarExportPdf()
     {
         $entries = $this->getBukuBesarData();
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query(),
+            'tanggal_posting'
+        );
 
         $ledger = $entries->groupBy('coa_id')->map(function ($items) {
             $coa = $items->first()->coa;
@@ -1107,10 +1163,11 @@ class ReportController extends Controller
 
     public function laporanArusKas()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
-
         $cashBankCoaIds = KasBank::pluck('coa_id')->toArray();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query()->whereIn('coa_id', $cashBankCoaIds),
+            'tanggal_posting'
+        );
 
         $query = Jurnal::whereBetween('tanggal_posting', [$startDate, $endDate])
             ->whereIn('coa_id', $cashBankCoaIds)
@@ -1297,10 +1354,11 @@ class ReportController extends Controller
 
     public function laporanArusKasExportCsv()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
-
         $cashBankCoaIds = KasBank::pluck('coa_id')->toArray();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query()->whereIn('coa_id', $cashBankCoaIds),
+            'tanggal_posting'
+        );
 
         $query = Jurnal::whereBetween('tanggal_posting', [$startDate, $endDate])
             ->whereIn('coa_id', $cashBankCoaIds)
@@ -1346,10 +1404,11 @@ class ReportController extends Controller
 
     public function laporanArusKasExportXlsx()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
-
         $cashBankCoaIds = KasBank::pluck('coa_id')->toArray();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query()->whereIn('coa_id', $cashBankCoaIds),
+            'tanggal_posting'
+        );
 
         $query = Jurnal::whereBetween('tanggal_posting', [$startDate, $endDate])
             ->whereIn('coa_id', $cashBankCoaIds)
@@ -1396,10 +1455,11 @@ class ReportController extends Controller
 
     public function laporanArusKasExportPdf()
     {
-        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
-        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
-
         $cashBankCoaIds = KasBank::pluck('coa_id')->toArray();
+        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
+            Jurnal::query()->whereIn('coa_id', $cashBankCoaIds),
+            'tanggal_posting'
+        );
 
         $query = Jurnal::whereBetween('tanggal_posting', [$startDate, $endDate])
             ->whereIn('coa_id', $cashBankCoaIds)

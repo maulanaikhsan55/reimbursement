@@ -234,12 +234,12 @@
                 <form id="filterForm" method="GET" action="{{ route('finance.report.buku_besar') }}" class="filter-form-finance">
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tanggal Mulai</label>
-                        <input type="date" id="start_date" name="start_date" class="filter-input-pegawai" value="{{ $startDate->format('Y-m-d') }}">
+                        <input type="date" id="start_date" name="start_date" class="filter-input-pegawai" value="{{ request('start_date') }}">
                     </div>
 
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tanggal Akhir</label>
-                        <input type="date" id="end_date" name="end_date" class="filter-input-pegawai" value="{{ $endDate->format('Y-m-d') }}">
+                        <input type="date" id="end_date" name="end_date" class="filter-input-pegawai" value="{{ request('end_date') }}">
                     </div>
 
                     <div class="filter-group-pegawai">

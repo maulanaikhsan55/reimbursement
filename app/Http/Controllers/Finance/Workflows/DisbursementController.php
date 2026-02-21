@@ -156,9 +156,6 @@ class DisbursementController extends Controller
 
     public function history(Request $request)
     {
-        $startDate = $request->start_date ? \Carbon\Carbon::parse($request->start_date) : \Carbon\Carbon::now()->subMonths(1);
-        $endDate = $request->end_date ? \Carbon\Carbon::parse($request->end_date) : \Carbon\Carbon::now();
-
         $pengajuanQuery = $this->applyHistoryFilters(
             Pengajuan::query()->with(['user', 'departemen', 'kategori']),
             $request
@@ -180,8 +177,6 @@ class DisbursementController extends Controller
 
         return view('dashboard.finance.pencairan.pencairan-history', compact(
             'pengajuan',
-            'startDate',
-            'endDate',
             'totalNominal',
             'totalCount',
             'departemen',
@@ -229,9 +224,6 @@ class DisbursementController extends Controller
 
     public function historyExportPdf(Request $request)
     {
-        $startDate = $request->start_date ? \Carbon\Carbon::parse($request->start_date) : \Carbon\Carbon::now()->subMonths(1);
-        $endDate = $request->end_date ? \Carbon\Carbon::parse($request->end_date) : \Carbon\Carbon::now();
-
         $pengajuanQuery = $this->applyHistoryFilters(
             Pengajuan::query()->with(['user', 'departemen', 'kategori']),
             $request
@@ -239,6 +231,15 @@ class DisbursementController extends Controller
 
         $pengajuan = $pengajuanQuery->get();
         $totalNominal = $pengajuan->sum('nominal');
+        $disbursedDates = $pengajuan->pluck('tanggal_pencairan')->filter();
+
+        $startDate = $request->filled('start_date')
+            ? \Carbon\Carbon::parse($request->input('start_date'))->startOfDay()
+            : ($disbursedDates->min() ? \Carbon\Carbon::parse($disbursedDates->min())->startOfDay() : \Carbon\Carbon::now()->subMonths(1)->startOfDay());
+
+        $endDate = $request->filled('end_date')
+            ? \Carbon\Carbon::parse($request->input('end_date'))->endOfDay()
+            : ($disbursedDates->max() ? \Carbon\Carbon::parse($disbursedDates->max())->endOfDay() : \Carbon\Carbon::now()->endOfDay());
 
         return $this->exportService->exportToPDF(
             'riwayat_pencairan_'.date('Y-m-d').'.pdf',

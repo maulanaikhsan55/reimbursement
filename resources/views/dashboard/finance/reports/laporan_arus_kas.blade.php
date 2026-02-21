@@ -204,12 +204,12 @@
                 <form id="filterForm" method="GET" action="{{ route('finance.report.laporan_arus_kas') }}" class="filter-form-finance">
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tanggal Mulai</label>
-                        <input type="date" id="startDateInput" name="start_date" class="filter-input-pegawai" value="{{ $startDate->format('Y-m-d') }}">
+                        <input type="date" id="startDateInput" name="start_date" class="filter-input-pegawai" value="{{ request('start_date') }}">
                     </div>
 
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tanggal Akhir</label>
-                        <input type="date" id="endDateInput" name="end_date" class="filter-input-pegawai" value="{{ $endDate->format('Y-m-d') }}">
+                        <input type="date" id="endDateInput" name="end_date" class="filter-input-pegawai" value="{{ request('end_date') }}">
                     </div>
 
                     <div class="filter-group-pegawai">

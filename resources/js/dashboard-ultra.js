@@ -11,6 +11,12 @@ let hideProgressTimer = null;
 let isProgressVisible = false;
 let progressTrickleTimer = null;
 let progressValue = 0;
+let progressVisibleSince = 0;
+
+const PROGRESS_MIN_VISIBLE_MS = 240;
+const PROGRESS_HIDE_ANIMATION_MS = 120;
+const PROGRESS_START_VALUE = 0.16;
+const PROGRESS_ACTIVE_FLOOR = 0.22;
 
 // 1. Global dismiss alert function
 window.dismissAlert = function(element) {
@@ -138,6 +144,70 @@ function startProgressTrickle() {
     }, 140);
 }
 
+function resolveInternalUrl(href) {
+    try {
+        const url = new URL(href, window.location.href);
+        if (url.origin !== window.location.origin) {
+            return null;
+        }
+        return url;
+    } catch (error) {
+        return null;
+    }
+}
+
+function isSkippableHref(href) {
+    return !href ||
+        href.startsWith('#') ||
+        href.startsWith('javascript:') ||
+        href.startsWith('mailto:') ||
+        href.startsWith('tel:');
+}
+
+function shouldShowProgressForLink(link, event = null) {
+    if (!link || link.classList.contains('no-loader') || link.dataset.noLoader) {
+        return false;
+    }
+
+    if (event?.defaultPrevented) {
+        return false;
+    }
+
+    if (event && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) {
+        return false;
+    }
+
+    if (event && typeof event.button === 'number' && event.button !== 0) {
+        return false;
+    }
+
+    const target = link.getAttribute('target');
+    if (target && target.toLowerCase() === '_blank') {
+        return false;
+    }
+
+    if (link.hasAttribute('download')) {
+        return false;
+    }
+
+    const href = link.getAttribute('href');
+    if (isSkippableHref(href)) {
+        return false;
+    }
+
+    const url = resolveInternalUrl(href);
+    if (!url) {
+        return false;
+    }
+
+    const samePathAndQuery = url.pathname === window.location.pathname && url.search === window.location.search;
+    if (samePathAndQuery && url.hash) {
+        return false;
+    }
+
+    return url.href !== window.location.href;
+}
+
 function showProgressBar() {
     if (!progressBar) {
         progressBar = document.getElementById('modernProgressBar');
@@ -151,16 +221,17 @@ function showProgressBar() {
         }
         if (!isProgressVisible) {
             isProgressVisible = true;
+            progressVisibleSince = Date.now();
             progressBar.classList.remove('progress-bar-exit');
             progressBar.classList.add('progress-bar-active');
             progressBar.style.opacity = '1';
             progressFill.style.opacity = '1';
-            setProgress(0.08);
+            setProgress(PROGRESS_START_VALUE);
             startProgressTrickle();
             return;
         }
 
-        setProgress(Math.max(progressValue, 0.12));
+        setProgress(Math.max(progressValue, PROGRESS_ACTIVE_FLOOR));
     }
 }
 
@@ -187,6 +258,9 @@ function hideProgressBar() {
             clearTimeout(hideProgressTimer);
         }
 
+        const elapsed = Date.now() - progressVisibleSince;
+        const waitBeforeHide = Math.max(PROGRESS_HIDE_ANIMATION_MS, PROGRESS_MIN_VISIBLE_MS - elapsed);
+
         hideProgressTimer = setTimeout(() => {
             if (isProgressVisible) {
                 return;
@@ -197,7 +271,7 @@ function hideProgressBar() {
             progressBar.style.opacity = '0';
             setProgress(0);
             hideProgressTimer = null;
-        }, 130);
+        }, waitBeforeHide);
     }
 }
 
@@ -286,58 +360,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Navigation interception for full-page links
+    // Start top loader as early as possible on all internal links
+    document.addEventListener('pointerdown', function(e) {
+        const link = e.target.closest('a');
+        if (!shouldShowProgressForLink(link, e)) return;
+        showProgressBar();
+    }, { capture: true, passive: true });
+
+    // Keyboard navigation fallback (Enter on focused links triggers click)
     document.addEventListener('click', function(e) {
         const link = e.target.closest('a');
-        if (link) {
-            const href = link.getAttribute('href');
-            const target = link.getAttribute('target');
-            const hasWireNavigate = link.hasAttribute('wire:navigate') || link.hasAttribute('wire:navigate.hover');
-            
-            if (href &&
-                !href.startsWith('#') &&
-                !href.startsWith('javascript:') &&
-                !href.startsWith('mailto:') &&
-                !href.startsWith('tel:') &&
-                target !== '_blank' &&
-                !link.hasAttribute('download') &&
-                !link.classList.contains('no-loader') &&
-                !link.dataset.noLoader &&
-                !hasWireNavigate &&
-                href !== window.location.href
-            ) {
-                try {
-                    const url = new URL(href, window.location.origin);
-                    if (url.origin === window.location.origin) {
-                        showProgressBar();
-                    }
-                } catch (err) {}
-            }
-        }
-    });
-
-    // Start top loader as early as possible for wire:navigate links
-    document.addEventListener('pointerdown', function(e) {
-        const link = e.target.closest('a[wire\\:navigate], a[wire\\:navigate\\.hover]');
-        if (!link) return;
-        if (e.button && e.button !== 0) return;
-        if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-        if (link.classList.contains('no-loader') || link.dataset.noLoader) return;
-
-        const href = link.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
-
-        try {
-            const url = new URL(href, window.location.origin);
-            if (url.origin !== window.location.origin) return;
-            showProgressBar();
-        } catch (err) {}
-    }, { capture: true, passive: true });
+        if (!shouldShowProgressForLink(link, e)) return;
+        showProgressBar();
+    }, true);
 
     // Form Interception
     document.addEventListener('submit', function(e) {
         const form = e.target;
-        if (form.classList.contains('no-loader')) return;
+        if (form.classList.contains('no-loader') || form.dataset.noLoader) return;
+        if (form.getAttribute('target') === '_blank') return;
 
         // Set flag for expected flash message after redirect
         sessionStorage.setItem('pending_flash', 'true');
@@ -349,6 +390,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.persisted) {
             window.hideAllLoaders();
         }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        showProgressBar();
     });
     
     window.addEventListener('load', () => {

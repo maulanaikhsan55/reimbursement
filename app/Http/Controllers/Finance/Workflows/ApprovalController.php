@@ -453,9 +453,6 @@ class ApprovalController extends Controller
 
     public function history(Request $request)
     {
-        $startDate = $request->start_date ? \Carbon\Carbon::parse($request->start_date) : \Carbon\Carbon::now()->subMonths(1);
-        $endDate = $request->end_date ? \Carbon\Carbon::parse($request->end_date) : \Carbon\Carbon::now();
-
         $query = $this->applyApprovalHistoryFilters(
             Pengajuan::query()->with([
                 'user:id,name',
@@ -483,8 +480,6 @@ class ApprovalController extends Controller
 
         return view('dashboard.finance.approval.history', compact(
             'pengajuans',
-            'startDate',
-            'endDate',
             'totalNominal',
             'totalProcessed',
             'totalApproved',
@@ -533,9 +528,6 @@ class ApprovalController extends Controller
 
     public function historyExportPdf(Request $request)
     {
-        $startDate = $request->start_date ? \Carbon\Carbon::parse($request->start_date) : \Carbon\Carbon::now()->subMonths(1);
-        $endDate = $request->end_date ? \Carbon\Carbon::parse($request->end_date) : \Carbon\Carbon::now();
-
         $query = $this->applyApprovalHistoryFilters(
             Pengajuan::query()->with('user', 'departemen', 'kategori'),
             $request
@@ -543,6 +535,15 @@ class ApprovalController extends Controller
 
         $pengajuans = $query->get();
         $totalNominal = $pengajuans->sum('nominal');
+        $processedDates = $pengajuans->map(fn ($item) => $item->tanggal_disetujui_finance ?? $item->created_at)->filter();
+
+        $startDate = $request->filled('start_date')
+            ? \Carbon\Carbon::parse($request->input('start_date'))->startOfDay()
+            : ($processedDates->min() ? \Carbon\Carbon::parse($processedDates->min())->startOfDay() : \Carbon\Carbon::now()->subMonths(1)->startOfDay());
+
+        $endDate = $request->filled('end_date')
+            ? \Carbon\Carbon::parse($request->input('end_date'))->endOfDay()
+            : ($processedDates->max() ? \Carbon\Carbon::parse($processedDates->max())->endOfDay() : \Carbon\Carbon::now()->endOfDay());
 
         return $this->exportService->exportToPDF(
             'riwayat_approval_finance_'.date('Y-m-d').'.pdf',

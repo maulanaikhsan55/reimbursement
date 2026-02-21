@@ -221,12 +221,12 @@
                 <form id="filterForm" method="GET" action="<?php echo e(route('finance.report.laporan_arus_kas')); ?>" class="filter-form-finance">
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tanggal Mulai</label>
-                        <input type="date" id="startDateInput" name="start_date" class="filter-input-pegawai" value="<?php echo e($startDate->format('Y-m-d')); ?>">
+                        <input type="date" id="startDateInput" name="start_date" class="filter-input-pegawai" value="<?php echo e(request('start_date')); ?>">
                     </div>
 
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tanggal Akhir</label>
-                        <input type="date" id="endDateInput" name="end_date" class="filter-input-pegawai" value="<?php echo e($endDate->format('Y-m-d')); ?>">
+                        <input type="date" id="endDateInput" name="end_date" class="filter-input-pegawai" value="<?php echo e(request('end_date')); ?>">
                     </div>
 
                     <div class="filter-group-pegawai">

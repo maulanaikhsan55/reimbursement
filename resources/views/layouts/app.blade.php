@@ -23,8 +23,8 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 3px;
-            background: transparent;
+            height: 4px;
+            background: rgba(66, 93, 135, 0.08);
             z-index: 9999999;
             overflow: hidden;
             pointer-events: none;
@@ -41,13 +41,13 @@
             top: 0;
             height: 100%;
             width: 100%;
-            background: linear-gradient(90deg, #425d87 0%, #6366f1 50%, #8b5cf6 100%);
+            background: linear-gradient(90deg, #32507f 0%, #3b82f6 52%, #38bdf8 100%);
             border-radius: 999px;
             transform-origin: left center;
             transform: scaleX(0);
             opacity: 1;
-            filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.35));
-            will-change: transform;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.45);
+            will-change: transform, opacity;
             transition: transform 0.14s linear, opacity 0.1s linear;
         }
 

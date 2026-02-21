@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Riwayat Pencairan Dana'); ?>
 
-@section('title', 'Riwayat Pencairan Dana')
-
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
     .filter-form-history {
         display: grid;
@@ -140,19 +138,38 @@
         }
     }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="dashboard-wrapper">
     <div class="dashboard-container">
-        <x-page-header title="Riwayat Pencairan" subtitle="Daftar pengajuan yang telah dicairkan ke karyawan" :showNotification="true" :showProfile="true" />
+        <?php if (isset($component)) { $__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.page-header','data' => ['title' => 'Riwayat Pencairan','subtitle' => 'Daftar pengajuan yang telah dicairkan ke karyawan','showNotification' => true,'showProfile' => true]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('page-header'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['title' => 'Riwayat Pencairan','subtitle' => 'Daftar pengajuan yang telah dicairkan ke karyawan','showNotification' => true,'showProfile' => true]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e)): ?>
+<?php $attributes = $__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e; ?>
+<?php unset($__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e)): ?>
+<?php $component = $__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e; ?>
+<?php unset($__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e); ?>
+<?php endif; ?>
 
         <div class="dashboard-content">
         <!-- Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">{{ $totalCount }}</div>
+                    <div class="stat-value"><?php echo e($totalCount); ?></div>
                     <div class="stat-label">Total Pengajuan</div>
                 </div>
                 <div class="stat-icon success-icon">
@@ -164,7 +181,7 @@
 
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">{{ format_rupiah($totalNominal) }}</div>
+                    <div class="stat-value"><?php echo e(format_rupiah($totalNominal)); ?></div>
                     <div class="stat-label">Total Nominal Cair</div>
                 </div>
                 <div class="stat-icon primary-icon">
@@ -183,11 +200,11 @@
             <div class="section-header">
                 <div>
                     <h2 class="section-title">Riwayat Pencairan</h2>
-                    <p class="section-subtitle">Total: {{ $pengajuan->total() }} pengajuan</p>
+                    <p class="section-subtitle">Total: <?php echo e($pengajuan->total()); ?> pengajuan</p>
                 </div>
                 <div class="header-actions">
                     <div class="export-actions">
-                        <a href="#" onclick="exportCsv(event)" data-url="{{ route('finance.disbursement.history-export-csv') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke CSV">
+                        <a href="#" onclick="exportCsv(event)" data-url="<?php echo e(route('finance.disbursement.history-export-csv')); ?>" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke CSV">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -197,7 +214,7 @@
                             </svg>
                             CSV
                         </a>
-                        <a href="#" onclick="exportXlsx(event)" data-url="{{ route('finance.disbursement.history-export-xlsx') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
+                        <a href="#" onclick="exportXlsx(event)" data-url="<?php echo e(route('finance.disbursement.history-export-xlsx')); ?>" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -208,7 +225,7 @@
                             XLSX
                         </a>
 
-                        <a href="#" onclick="exportPdf(event)" data-url="{{ route('finance.disbursement.history-export-pdf') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
+                        <a href="#" onclick="exportPdf(event)" data-url="<?php echo e(route('finance.disbursement.history-export-pdf')); ?>" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -218,7 +235,7 @@
                             PDF
                         </a>
                     </div>
-                    <a href="{{ route('finance.disbursement.index') }}" class="btn-modern btn-modern-secondary">
+                    <a href="<?php echo e(route('finance.disbursement.index')); ?>" class="btn-modern btn-modern-secondary">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 0.5rem;">
                             <path d="M19 12H5"></path>
                             <polyline points="12 19 5 12 12 5"></polyline>
@@ -229,7 +246,7 @@
             </div>
 
             <div class="filter-container">
-                <form id="filterForm" action="{{ route('finance.disbursement.history') }}" method="GET" class="filter-form-history">
+                <form id="filterForm" action="<?php echo e(route('finance.disbursement.history')); ?>" method="GET" class="filter-form-history">
                     <!-- Search -->
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Pencarian</label>
@@ -240,7 +257,7 @@
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 </svg>
                             </div>
-                            <input type="text" name="search" id="searchInput" value="{{ request('search') }}" class="filter-input-pegawai search-input" placeholder="No. pengajuan, nama staff...">
+                            <input type="text" name="search" id="searchInput" value="<?php echo e(request('search')); ?>" class="filter-input-pegawai search-input" placeholder="No. pengajuan, nama staff...">
                         </div>
                     </div>
 
@@ -249,11 +266,12 @@
                         <label class="filter-label-pegawai">Departemen</label>
                         <select name="departemen_id" id="departemenInput" class="filter-input-pegawai">
                             <option value="">Semua Departemen</option>
-                            @foreach($departemen as $dept)
-                                <option value="{{ $dept->departemen_id }}" {{ request('departemen_id') == $dept->departemen_id ? 'selected' : '' }}>
-                                    {{ $dept->nama_departemen }}
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $departemen; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($dept->departemen_id); ?>" <?php echo e(request('departemen_id') == $dept->departemen_id ? 'selected' : ''); ?>>
+                                    <?php echo e($dept->nama_departemen); ?>
+
                                 </option>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </select>
                     </div>
 
@@ -261,9 +279,9 @@
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tanggal</label>
                         <div class="date-group-pegawai">
-                            <input type="date" name="start_date" id="startDateInput" value="{{ request('start_date') }}" class="filter-input-pegawai">
+                            <input type="date" name="start_date" id="startDateInput" value="<?php echo e($startDate->format('Y-m-d')); ?>" class="filter-input-pegawai">
                             <span class="date-separator">-</span>
-                            <input type="date" name="end_date" id="endDateInput" value="{{ request('end_date') }}" class="filter-input-pegawai">
+                            <input type="date" name="end_date" id="endDateInput" value="<?php echo e($endDate->format('Y-m-d')); ?>" class="filter-input-pegawai">
                         </div>
                     </div>
 
@@ -275,7 +293,7 @@
                             </svg>
                             Filter
                         </button>
-                        <a href="{{ route('finance.disbursement.history') }}" class="btn-reset-pegawai" title="Reset Filter">
+                        <a href="<?php echo e(route('finance.disbursement.history')); ?>" class="btn-reset-pegawai" title="Reset Filter">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -300,38 +318,57 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($pengajuan as $item)
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $pengajuan; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                 <tr>
                                     <td data-label="Staff / No. Pengajuan">
                                         <div class="info-stack">
-                                            <span class="info-main text-truncate-smart" title="{{ $item->user->name }}">{{ $item->user->name }}</span>
-                                            <span class="code-badge" style="width: fit-content; margin-top: 4px;">{{ $item->nomor_pengajuan }}</span>
+                                            <span class="info-main text-truncate-smart" title="<?php echo e($item->user->name); ?>"><?php echo e($item->user->name); ?></span>
+                                            <span class="code-badge" style="width: fit-content; margin-top: 4px;"><?php echo e($item->nomor_pengajuan); ?></span>
                                         </div>
                                     </td>
                                     <td data-label="Vendor / Dept">
                                         <div class="info-stack">
-                                            <span class="info-main text-truncate-smart" title="{{ $item->nama_vendor ?? '-' }}">{{ $item->nama_vendor ?? '-' }}</span>
-                                            <span class="info-sub text-truncate-smart" title="{{ $item->departemen->nama_departemen }}">{{ $item->departemen->nama_departemen }}</span>
+                                            <span class="info-main text-truncate-smart" title="<?php echo e($item->nama_vendor ?? '-'); ?>"><?php echo e($item->nama_vendor ?? '-'); ?></span>
+                                            <span class="info-sub text-truncate-smart" title="<?php echo e($item->departemen->nama_departemen); ?>"><?php echo e($item->departemen->nama_departemen); ?></span>
                                         </div>
                                     </td>
                                     <td data-label="Rekening Bank" class="col-rekening">
                                         <div class="info-stack">
-                                            <span class="info-main text-mono" style="font-size: 0.8rem; letter-spacing: 0.02em;">{{ $item->user->nomor_rekening ?? '-' }}</span>
-                                            <span class="info-sub" style="font-size: 0.7rem;">{{ $item->user->nama_bank ?? 'Bank -' }}</span>
+                                            <span class="info-main text-mono" style="font-size: 0.8rem; letter-spacing: 0.02em;"><?php echo e($item->user->nomor_rekening ?? '-'); ?></span>
+                                            <span class="info-sub" style="font-size: 0.7rem;"><?php echo e($item->user->nama_bank ?? 'Bank -'); ?></span>
                                         </div>
                                     </td>
                                     <td data-label="Nominal" class="col-nominal">
-                                        <span class="amount-text" style="font-weight: 700; color: #0f172a;">{{ format_rupiah($item->nominal) }}</span>
+                                        <span class="amount-text" style="font-weight: 700; color: #0f172a;"><?php echo e(format_rupiah($item->nominal)); ?></span>
                                     </td>
                                     <td data-label="Status" class="col-status">
-                                        <x-status-badge :status="$item->status" :transactionId="$item->accurate_transaction_id" />
+                                        <?php if (isset($component)) { $__componentOriginal8c81617a70e11bcf247c4db924ab1b62 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal8c81617a70e11bcf247c4db924ab1b62 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.status-badge','data' => ['status' => $item->status,'transactionId' => $item->accurate_transaction_id]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('status-badge'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['status' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($item->status),'transactionId' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($item->accurate_transaction_id)]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal8c81617a70e11bcf247c4db924ab1b62)): ?>
+<?php $attributes = $__attributesOriginal8c81617a70e11bcf247c4db924ab1b62; ?>
+<?php unset($__attributesOriginal8c81617a70e11bcf247c4db924ab1b62); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal8c81617a70e11bcf247c4db924ab1b62)): ?>
+<?php $component = $__componentOriginal8c81617a70e11bcf247c4db924ab1b62; ?>
+<?php unset($__componentOriginal8c81617a70e11bcf247c4db924ab1b62); ?>
+<?php endif; ?>
                                     </td>
                                     <td data-label="Tanggal Cair" class="col-tanggal">
-                                        <span class="text-secondary" style="white-space: nowrap; font-size: 0.85rem;">{{ $item->tanggal_pencairan ? $item->tanggal_pencairan->format('d M Y') : '-' }}</span>
+                                        <span class="text-secondary" style="white-space: nowrap; font-size: 0.85rem;"><?php echo e($item->tanggal_pencairan ? $item->tanggal_pencairan->format('d M Y') : '-'); ?></span>
                                     </td>
                                     <td data-label="Aksi" class="col-aksi">
                                         <div class="action-buttons-centered">
-                                            <a href="{{ route('finance.disbursement.show', $item->pengajuan_id) }}" class="btn-action-modern btn-detail-modern" title="Lihat Detail">
+                                            <a href="<?php echo e(route('finance.disbursement.show', $item->pengajuan_id)); ?>" class="btn-action-modern btn-detail-modern" title="Lihat Detail">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                                     <circle cx="12" cy="12" r="3"></circle>
@@ -340,19 +377,39 @@
                                         </div>
                                     </td>
                                 </tr>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <tr>
                                     <td colspan="7" style="text-align: center; padding: 3rem 1rem;">
-                                        <x-empty-state title="Tidak Ada Riwayat" description="Tidak ditemukan data pencairan untuk periode ini" />
+                                        <?php if (isset($component)) { $__componentOriginal074a021b9d42f490272b5eefda63257c = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal074a021b9d42f490272b5eefda63257c = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.empty-state','data' => ['title' => 'Tidak Ada Riwayat','description' => 'Tidak ditemukan data pencairan untuk periode ini']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('empty-state'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['title' => 'Tidak Ada Riwayat','description' => 'Tidak ditemukan data pencairan untuk periode ini']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal074a021b9d42f490272b5eefda63257c)): ?>
+<?php $attributes = $__attributesOriginal074a021b9d42f490272b5eefda63257c; ?>
+<?php unset($__attributesOriginal074a021b9d42f490272b5eefda63257c); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal074a021b9d42f490272b5eefda63257c)): ?>
+<?php $component = $__componentOriginal074a021b9d42f490272b5eefda63257c; ?>
+<?php unset($__componentOriginal074a021b9d42f490272b5eefda63257c); ?>
+<?php endif; ?>
                                     </td>
                                 </tr>
-                            @endforelse
+                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </tbody>
                     </table>
                 </div>
 
                 <div class="pagination-wrapper" style="margin-top: 2rem;">
-                    {{ $pengajuan->appends(request()->query())->links('components.pagination') }}
+                    <?php echo e($pengajuan->appends(request()->query())->links('components.pagination')); ?>
+
                 </div>
             </div>
         </section>
@@ -360,8 +417,8 @@
     </div>
 </div>
 
-@push('scripts')
-<script src="{{ asset('js/finance-master.js') }}"></script>
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('js/finance-master.js')); ?>"></script>
 <script>
     // Export functions
     function getExportParams(btn) {
@@ -396,5 +453,7 @@
         window.location.href = getExportParams(e.currentTarget);
     }
 </script>
-@endpush
-@endsection
+<?php $__env->stopPush(); ?>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\reimbursement_ikhsansblm dipush\resources\views/dashboard/finance/pencairan/pencairan-history.blade.php ENDPATH**/ ?>

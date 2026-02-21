@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Jurnal Umum Report'); ?>
 
-@section('title', 'Jurnal Umum Report')
-
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
     .filter-form-finance {
         display: grid;
@@ -107,18 +105,37 @@
         }
     }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="dashboard-wrapper">
     <div class="dashboard-container">
-        <x-page-header title="Jurnal Umum" subtitle="Pencatatan detail setiap transaksi dari pengajuan yang dikirim ke Accurate" :showNotification="true" :showProfile="true" />
+        <?php if (isset($component)) { $__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.page-header','data' => ['title' => 'Jurnal Umum','subtitle' => 'Pencatatan detail setiap transaksi dari pengajuan yang dikirim ke Accurate','showNotification' => true,'showProfile' => true]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('page-header'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['title' => 'Jurnal Umum','subtitle' => 'Pencatatan detail setiap transaksi dari pengajuan yang dikirim ke Accurate','showNotification' => true,'showProfile' => true]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e)): ?>
+<?php $attributes = $__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e; ?>
+<?php unset($__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e)): ?>
+<?php $component = $__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e; ?>
+<?php unset($__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e); ?>
+<?php endif; ?>
 
         <div class="dashboard-content">
         <div class="stats-grid report-stats-grid">
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">Rp {{ number_format($totalDebit, 0, ',', '.') }}</div>
+                    <div class="stat-value">Rp <?php echo e(number_format($totalDebit, 0, ',', '.')); ?></div>
                     <div class="stat-label">Total Debit</div>
                 </div>
                 <div class="stat-icon primary-icon">
@@ -130,7 +147,7 @@
 
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">Rp {{ number_format($totalCredit, 0, ',', '.') }}</div>
+                    <div class="stat-value">Rp <?php echo e(number_format($totalCredit, 0, ',', '.')); ?></div>
                     <div class="stat-label">Total Kredit</div>
                 </div>
                 <div class="stat-icon success-icon">
@@ -142,7 +159,7 @@
 
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">Rp {{ number_format($totalDebit - $totalCredit, 0, ',', '.') }}</div>
+                    <div class="stat-value">Rp <?php echo e(number_format($totalDebit - $totalCredit, 0, ',', '.')); ?></div>
                     <div class="stat-label">Balance</div>
                 </div>
                 <div class="stat-icon warning-icon">
@@ -154,7 +171,7 @@
 
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">{{ $paginatedJournal->total() }}</div>
+                    <div class="stat-value"><?php echo e($paginatedJournal->total()); ?></div>
                     <div class="stat-label">Total Entry</div>
                 </div>
                 <div class="stat-icon info-icon">
@@ -170,11 +187,11 @@
             <div class="section-header">
                 <div>
                     <h2 class="section-title">Jurnal Entry Details</h2>
-                    <p class="section-subtitle">Menampilkan {{ $paginatedJournal->total() }} baris pencatatan jurnal</p>
+                    <p class="section-subtitle">Menampilkan <?php echo e($paginatedJournal->total()); ?> baris pencatatan jurnal</p>
                 </div>
                 <div class="header-actions">
                     <div class="export-actions">
-                        <a href="{{ route('finance.report.jurnal_umum.export_csv', request()->query()) }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke CSV">
+                        <a href="<?php echo e(route('finance.report.jurnal_umum.export_csv', request()->query())); ?>" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke CSV">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -184,7 +201,7 @@
                             </svg>
                             CSV
                         </a>
-                        <a href="{{ route('finance.report.jurnal_umum.export_xlsx', request()->query()) }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
+                        <a href="<?php echo e(route('finance.report.jurnal_umum.export_xlsx', request()->query())); ?>" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -194,7 +211,7 @@
                             </svg>
                             XLSX
                         </a>
-                        <a href="{{ route('finance.report.jurnal_umum.export_pdf', request()->query()) }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
+                        <a href="<?php echo e(route('finance.report.jurnal_umum.export_pdf', request()->query())); ?>" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -208,7 +225,7 @@
             </div>
 
             <div class="filter-container">
-                <form id="filterForm" method="GET" action="{{ route('finance.report.jurnal_umum') }}" class="filter-form-finance">
+                <form id="filterForm" method="GET" action="<?php echo e(route('finance.report.jurnal_umum')); ?>" class="filter-form-finance">
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Cari No. Ref</label>
                         <div class="search-group">
@@ -218,29 +235,30 @@
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 </svg>
                             </div>
-                            <input type="text" name="search" id="searchInput" value="{{ request('search') }}" class="filter-input-pegawai search-input" placeholder="No. Ref...">
+                            <input type="text" name="search" id="searchInput" value="<?php echo e(request('search')); ?>" class="filter-input-pegawai search-input" placeholder="No. Ref...">
                         </div>
                     </div>
 
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tanggal Mulai</label>
-                        <input type="date" id="start_date" name="start_date" class="filter-input-pegawai" value="{{ request('start_date') }}">
+                        <input type="date" id="start_date" name="start_date" class="filter-input-pegawai" value="<?php echo e(request('start_date')); ?>">
                     </div>
 
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tanggal Akhir</label>
-                        <input type="date" id="end_date" name="end_date" class="filter-input-pegawai" value="{{ request('end_date') }}">
+                        <input type="date" id="end_date" name="end_date" class="filter-input-pegawai" value="<?php echo e(request('end_date')); ?>">
                     </div>
 
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">COA</label>
                         <select id="coa_id" name="coa_id" class="filter-input-pegawai">
                             <option value="">-- Semua COA --</option>
-                            @foreach($coas as $coa)
-                                <option value="{{ $coa->coa_id }}" {{ $coaId == $coa->coa_id ? 'selected' : '' }}>
-                                    {{ $coa->kode_coa }} - {{ $coa->nama_coa }}
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $coas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $coa): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($coa->coa_id); ?>" <?php echo e($coaId == $coa->coa_id ? 'selected' : ''); ?>>
+                                    <?php echo e($coa->kode_coa); ?> - <?php echo e($coa->nama_coa); ?>
+
                                 </option>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </select>
                     </div>
 
@@ -251,7 +269,7 @@
                             </svg>
                             Filter
                         </button>
-                        <a href="{{ route('finance.report.jurnal_umum') }}" class="btn-reset-pegawai" title="Reset Filter">
+                        <a href="<?php echo e(route('finance.report.jurnal_umum')); ?>" class="btn-reset-pegawai" title="Reset Filter">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -262,7 +280,7 @@
             </div>
 
             <div id="tableContainer">
-                @if($paginatedJournal->count() > 0)
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($paginatedJournal->count() > 0): ?>
                     <div class="data-table-wrapper">
                         <table class="data-table">
                             <thead>
@@ -279,27 +297,28 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($paginatedJournal as $group)
-                                    @foreach($group['entries'] as $index => $entry)
-                                        <tr style="{{ $index === 0 ? 'border-top: 2px solid #f1f5f9; background: #f8fafc;' : '' }}">
-                                            @if($index === 0)
-                                                <td style="color: #64748b; font-size: 0.85rem;">{{ $entry->tanggal_posting->format('d/m/Y') }}</td>
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $paginatedJournal; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $group): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $group['entries']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $entry): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <tr style="<?php echo e($index === 0 ? 'border-top: 2px solid #f1f5f9; background: #f8fafc;' : ''); ?>">
+                                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($index === 0): ?>
+                                                <td style="color: #64748b; font-size: 0.85rem;"><?php echo e($entry->tanggal_posting->format('d/m/Y')); ?></td>
                                                 <td style="font-size: 0.85rem;">
                                                     <div style="display: flex; align-items: center; gap: 6px;">
-                                                        @if($entry->pengajuan && $entry->pengajuan->accurate_transaction_id)
+                                                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($entry->pengajuan && $entry->pengajuan->accurate_transaction_id): ?>
                                                             <div title="Synced to Accurate" style="width: 8px; height: 8px; border-radius: 50%; background: #059669; flex-shrink: 0;"></div>
-                                                        @else
+                                                        <?php else: ?>
                                                             <div title="Not Synced / Local Only" style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; flex-shrink: 0;"></div>
-                                                        @endif
-                                                        <div style="font-weight: 600; color: #1e293b;">{{ $entry->nomor_ref }}</div>
+                                                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                                        <div style="font-weight: 600; color: #1e293b;"><?php echo e($entry->nomor_ref); ?></div>
                                                     </div>
-                                                    @if(!$group['is_balanced'])
+                                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(!$group['is_balanced']): ?>
                                                         <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
                                                             <span class="badge-unbalanced">
                                                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                                                Selisih: Rp {{ number_format(abs($group['total_debit'] - $group['total_credit']), 0, ',', '.') }}
+                                                                Selisih: Rp <?php echo e(number_format(abs($group['total_debit'] - $group['total_credit']), 0, ',', '.')); ?>
+
                                                             </span>
-                                                            <button type="button" onclick="syncByRef('{{ $entry->nomor_ref }}', this)" class="btn-sync-mini">
+                                                            <button type="button" onclick="syncByRef('<?php echo e($entry->nomor_ref); ?>', this)" class="btn-sync-mini">
                                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 10px; height: 10px;">
                                                                     <path d="M23 4v6h-6M1 20v-6h6"></path>
                                                                     <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path>
@@ -307,54 +326,59 @@
                                                                 Sync
                                                             </button>
                                                         </div>
-                                                    @endif
+                                                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                                 </td>
                                                 <td style="font-size: 0.85rem;">
-                                                    @if($entry->pengajuan)
-                                                        <a href="{{ route('finance.approval.show', $entry->pengajuan_id) }}" style="color: #425d87; text-decoration: none; font-weight: 600;" title="Klik untuk lihat Detail Pengajuan">
-                                                            {{ $entry->pengajuan->nomor_pengajuan }}
+                                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($entry->pengajuan): ?>
+                                                        <a href="<?php echo e(route('finance.approval.show', $entry->pengajuan_id)); ?>" style="color: #425d87; text-decoration: none; font-weight: 600;" title="Klik untuk lihat Detail Pengajuan">
+                                                            <?php echo e($entry->pengajuan->nomor_pengajuan); ?>
+
                                                         </a>
-                                                    @else
+                                                    <?php else: ?>
                                                         -
-                                                    @endif
+                                                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                                 </td>
-                                            @else
+                                            <?php else: ?>
                                                 <td></td>
                                                 <td></td>
                                                 <td></td>
-                                            @endif
+                                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                             
-                                            <td style="font-family: 'Courier New', monospace; font-size: 0.8rem; {{ $entry->tipe_posting === 'credit' ? 'padding-left: 1.25rem;' : '' }}">
-                                                {{ $entry->coa->kode_coa }}
+                                            <td style="font-family: 'Courier New', monospace; font-size: 0.8rem; <?php echo e($entry->tipe_posting === 'credit' ? 'padding-left: 1.25rem;' : ''); ?>">
+                                                <?php echo e($entry->coa->kode_coa); ?>
+
                                             </td>
-                                            <td style="color: #64748b; font-size: 0.85rem; {{ $entry->tipe_posting === 'credit' ? 'padding-left: 2rem;' : '' }}">
-                                                {{ $entry->coa->nama_coa }}
+                                            <td style="color: #64748b; font-size: 0.85rem; <?php echo e($entry->tipe_posting === 'credit' ? 'padding-left: 2rem;' : ''); ?>">
+                                                <?php echo e($entry->coa->nama_coa); ?>
+
                                             </td>
                                             
-                                            @if($index === 0)
-                                                <td style="font-size: 0.85rem;">{{ Str::limit($entry->deskripsi, 30) }}</td>
-                                            @else
+                                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($index === 0): ?>
+                                                <td style="font-size: 0.85rem;"><?php echo e(Str::limit($entry->deskripsi, 30)); ?></td>
+                                            <?php else: ?>
                                                 <td></td>
-                                            @endif
+                                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
                                             <td style="text-align: right; font-weight: 600; font-size: 0.85rem; color: #059669;">
-                                                @if($entry->tipe_posting === 'debit')
-                                                    Rp {{ number_format($entry->nominal, 0, ',', '.') }}
-                                                @else
+                                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($entry->tipe_posting === 'debit'): ?>
+                                                    Rp <?php echo e(number_format($entry->nominal, 0, ',', '.')); ?>
+
+                                                <?php else: ?>
                                                     -
-                                                @endif
+                                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                             </td>
                                             <td style="text-align: right; font-weight: 600; font-size: 0.85rem; color: #dc2626;">
-                                                @if($entry->tipe_posting === 'credit')
-                                                    Rp {{ number_format($entry->nominal, 0, ',', '.') }}
-                                                @else
+                                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($entry->tipe_posting === 'credit'): ?>
+                                                    Rp <?php echo e(number_format($entry->nominal, 0, ',', '.')); ?>
+
+                                                <?php else: ?>
                                                     -
-                                                @endif
+                                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                             </td>
                                             <td style="text-align: center;">
-                                                @if($index === 0 && $entry->pengajuan && $entry->pengajuan->file_bukti)
+                                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($index === 0 && $entry->pengajuan && $entry->pengajuan->file_bukti): ?>
                                                     <button type="button" 
-                                                            onclick="openProofModal('{{ route('proof.show', $entry->pengajuan) }}', {{ str_ends_with(strtolower($entry->pengajuan->file_bukti), '.pdf') ? 'true' : 'false' }})" 
+                                                            onclick="openProofModal('<?php echo e(route('proof.show', $entry->pengajuan)); ?>', <?php echo e(str_ends_with(strtolower($entry->pengajuan->file_bukti), '.pdf') ? 'true' : 'false'); ?>)" 
                                                             class="btn-action-report" 
                                                             title="Lihat Bukti Lampiran"
                                                             style="background: none; border: none; cursor: pointer; padding: 0;">
@@ -362,20 +386,22 @@
                                                             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                                                         </svg>
                                                     </button>
-                                                @endif
+                                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                             </td>
                                         </tr>
-                                    @endforeach
-                                @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                             </tbody>
                             <tfoot>
                                 <tr style="background: #f8fafc; border-top: 2px solid #f1f5f9;">
                                     <td colspan="6" style="padding: 1rem 0.75rem; text-align: right; font-weight: 700; color: #64748b; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;">TOTAL KESELURUHAN</td>
                                     <td style="padding: 1rem 0.75rem; text-align: right; font-weight: 800; color: #059669; font-size: 0.9rem;">
-                                        Rp {{ number_format($totalDebit, 0, ',', '.') }}
+                                        Rp <?php echo e(number_format($totalDebit, 0, ',', '.')); ?>
+
                                     </td>
                                     <td style="padding: 1rem 0.75rem; text-align: right; font-weight: 800; color: #dc2626; font-size: 0.9rem;">
-                                        Rp {{ number_format($totalCredit, 0, ',', '.') }}
+                                        Rp <?php echo e(number_format($totalCredit, 0, ',', '.')); ?>
+
                                     </td>
                                     <td></td>
                                 </tr>
@@ -384,21 +410,60 @@
                     </div>
 
                     <div class="pagination-wrapper">
-                        {{ $paginatedJournal->links('components.pagination') }}
+                        <?php echo e($paginatedJournal->links('components.pagination')); ?>
+
                     </div>
-                @else
-                    <x-report-empty-state title="Tidak ada data jurnal" description="Tidak ada jurnal entry untuk periode yang dipilih" />
-                @endif
+                <?php else: ?>
+                    <?php if (isset($component)) { $__componentOriginalcdc583d437d6037be7ec2bd4c39db9f1 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalcdc583d437d6037be7ec2bd4c39db9f1 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.report-empty-state','data' => ['title' => 'Tidak ada data jurnal','description' => 'Tidak ada jurnal entry untuk periode yang dipilih']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('report-empty-state'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['title' => 'Tidak ada data jurnal','description' => 'Tidak ada jurnal entry untuk periode yang dipilih']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalcdc583d437d6037be7ec2bd4c39db9f1)): ?>
+<?php $attributes = $__attributesOriginalcdc583d437d6037be7ec2bd4c39db9f1; ?>
+<?php unset($__attributesOriginalcdc583d437d6037be7ec2bd4c39db9f1); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalcdc583d437d6037be7ec2bd4c39db9f1)): ?>
+<?php $component = $__componentOriginalcdc583d437d6037be7ec2bd4c39db9f1; ?>
+<?php unset($__componentOriginalcdc583d437d6037be7ec2bd4c39db9f1); ?>
+<?php endif; ?>
+                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
             </div>
         </section>
         </div>
     </div>
 </div>
 
-<x-proof-modal />
+<?php if (isset($component)) { $__componentOriginal76fcdb01cf34d52c9c975265300be645 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal76fcdb01cf34d52c9c975265300be645 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.proof-modal','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('proof-modal'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal76fcdb01cf34d52c9c975265300be645)): ?>
+<?php $attributes = $__attributesOriginal76fcdb01cf34d52c9c975265300be645; ?>
+<?php unset($__attributesOriginal76fcdb01cf34d52c9c975265300be645); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal76fcdb01cf34d52c9c975265300be645)): ?>
+<?php $component = $__componentOriginal76fcdb01cf34d52c9c975265300be645; ?>
+<?php unset($__componentOriginal76fcdb01cf34d52c9c975265300be645); ?>
+<?php endif; ?>
 
-@push('scripts')
-<script src="{{ asset('js/finance-master.js') }}"></script>
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('js/finance-master.js')); ?>"></script>
 <script>
 // Live Filtering
 (function() {
@@ -444,11 +509,11 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 10px; height: 10px; margin-right: 4px;"></span> Syncing...';
             
             try {
-                const response = await fetch("{{ route('finance.report.jurnal_umum.sync_by_ref') }}", {
+                const response = await fetch("<?php echo e(route('finance.report.jurnal_umum.sync_by_ref')); ?>", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                        'X-CSRF-TOKEN': "<?php echo e(csrf_token()); ?>",
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({ nomor_ref: nomorRef })
@@ -479,5 +544,7 @@
     document.addEventListener('livewire:navigated', initJurnalUmum);
 })();
 </script>
-@endpush
-@endsection
+<?php $__env->stopPush(); ?>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\reimbursement_ikhsansblm dipush\resources\views/dashboard/finance/reports/jurnal_umum.blade.php ENDPATH**/ ?>

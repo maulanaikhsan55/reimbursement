@@ -1353,12 +1353,24 @@ body.role-finance .filter-container .date-group {
 }
 
 body.role-finance .filter-actions-pegawai,
+body.role-finance .filter-actions-report,
 body.role-finance .filter-container .filter-actions {
+    display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 0.5rem !important;
 }
 
+body.role-finance .filter-actions-pegawai .btn-modern,
+body.role-finance .filter-actions-report .btn-modern,
+body.role-finance .filter-container .filter-actions .btn-filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 body.role-finance .filter-actions-pegawai .btn-modern.btn-modern-secondary,
+body.role-finance .filter-actions-report .btn-modern.btn-modern-secondary,
 body.role-finance .filter-container .btn-filter {
     border-radius: 0.88rem !important;
     border: 1px solid #d2dcec !important;
@@ -1368,6 +1380,7 @@ body.role-finance .filter-container .btn-filter {
 }
 
 body.role-finance .filter-actions-pegawai .btn-modern.btn-modern-secondary:hover,
+body.role-finance .filter-actions-report .btn-modern.btn-modern-secondary:hover,
 body.role-finance .filter-container .btn-filter:hover {
     background: #eaf1fb !important;
     border-color: #becbdf !important;
@@ -1376,10 +1389,24 @@ body.role-finance .filter-container .btn-filter:hover {
 }
 
 body.role-finance .filter-actions-pegawai .btn-reset-pegawai,
+body.role-finance .filter-actions-report .btn-reset-pegawai,
 body.role-finance .filter-container .btn-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: #ffffff !important;
     border: 1px solid #d5deeb !important;
     box-shadow: none !important;
+}
+
+body.role-finance .filter-actions-pegawai .btn-modern svg,
+body.role-finance .filter-actions-report .btn-modern svg,
+body.role-finance .filter-actions-pegawai .btn-reset-pegawai svg,
+body.role-finance .filter-actions-report .btn-reset-pegawai svg,
+body.role-finance .filter-container .filter-actions .btn-filter svg,
+body.role-finance .filter-container .filter-actions .btn-reset svg {
+    display: block;
+    flex-shrink: 0;
 }
 
 body.role-finance .data-table-wrapper {
