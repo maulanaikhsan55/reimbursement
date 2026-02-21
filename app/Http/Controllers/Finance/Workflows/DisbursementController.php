@@ -11,6 +11,7 @@ use App\Services\NotifikasiService;
 use App\Services\ReportExportService;
 use App\Traits\FiltersPengajuan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DisbursementController extends Controller
@@ -44,7 +45,9 @@ class DisbursementController extends Controller
 
     public function getCount()
     {
-        $count = Pengajuan::where('status', PengajuanStatus::TERKIRIM_ACCURATE->value)->count();
+        $count = Cache::remember('finance_disbursement_pending_count', 10, function () {
+            return Pengajuan::where('status', PengajuanStatus::TERKIRIM_ACCURATE->value)->count();
+        });
 
         return response()->json(['pending_count' => $count]);
     }
@@ -84,6 +87,26 @@ class DisbursementController extends Controller
         );
     }
 
+    public function exportXlsx(Request $request)
+    {
+        $query = $this->applyFinanceFilters(
+            Pengajuan::query()->with('user', 'departemen', 'kategori'),
+            $request,
+            PengajuanStatus::TERKIRIM_ACCURATE->value
+        );
+
+        $pengajuan = $query->get();
+        $headers = $this->getPengajuanCsvHeaders('finance');
+        $data = $this->mapPengajuanForCsv($pengajuan, 'finance');
+
+        return $this->exportService->exportToXlsx(
+            'daftar_pencairan_'.date('Y-m-d').'.xlsx',
+            $headers,
+            $data,
+            ['sheet_name' => 'Pencairan']
+        );
+    }
+
     public function exportPdf(Request $request)
     {
         $query = $this->applyFinanceFilters(
@@ -98,12 +121,15 @@ class DisbursementController extends Controller
         return $this->exportService->exportToPDF(
             'daftar_pencairan_'.date('Y-m-d').'.pdf',
             'dashboard.finance.pencairan.pdf.pencairan-index',
-            compact('pengajuan', 'totalNominal')
+            compact('pengajuan', 'totalNominal'),
+            ['orientation' => 'landscape']
         );
     }
 
     public function mark(Request $request, Pengajuan $pengajuan)
     {
+        Cache::forget('finance_disbursement_pending_count');
+
         if ($pengajuan->status !== PengajuanStatus::TERKIRIM_ACCURATE) {
             return back()->with('error', 'Pengajuan tidak dalam status terkirim accurate');
         }
@@ -182,6 +208,25 @@ class DisbursementController extends Controller
         );
     }
 
+    public function historyExportXlsx(Request $request)
+    {
+        $pengajuanQuery = $this->applyHistoryFilters(
+            Pengajuan::query()->with(['user', 'departemen', 'kategori']),
+            $request
+        );
+
+        $pengajuan = $pengajuanQuery->get();
+        $headers = $this->getPengajuanCsvHeaders('history');
+        $data = $this->mapPengajuanForCsv($pengajuan, 'history');
+
+        return $this->exportService->exportToXlsx(
+            'riwayat_pencairan_'.date('Y-m-d').'.xlsx',
+            $headers,
+            $data,
+            ['sheet_name' => 'Riwayat Pencairan']
+        );
+    }
+
     public function historyExportPdf(Request $request)
     {
         $startDate = $request->start_date ? \Carbon\Carbon::parse($request->start_date) : \Carbon\Carbon::now()->subMonths(1);
@@ -198,7 +243,8 @@ class DisbursementController extends Controller
         return $this->exportService->exportToPDF(
             'riwayat_pencairan_'.date('Y-m-d').'.pdf',
             'dashboard.finance.pencairan.pdf.pencairan-history',
-            compact('pengajuan', 'startDate', 'endDate', 'totalNominal')
+            compact('pengajuan', 'startDate', 'endDate', 'totalNominal'),
+            ['orientation' => 'landscape']
         );
     }
 }

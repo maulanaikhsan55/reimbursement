@@ -20,15 +20,21 @@ class NotifikasiPengajuan implements ShouldBroadcastNow
 
     public $title;
 
+    public $notifikasiId;
+
+    public $pengajuanId;
+
     /**
      * Create a new event instance.
      */
-    public function __construct($userId, $title, $message, $type = 'info')
+    public function __construct($userId, $title, $message, $type = 'info', $notifikasiId = null, $pengajuanId = null)
     {
         $this->userId = $userId;
         $this->title = $title;
         $this->message = $message;
         $this->type = $type;
+        $this->notifikasiId = $notifikasiId;
+        $this->pengajuanId = $pengajuanId;
     }
 
     /**
@@ -46,5 +52,17 @@ class NotifikasiPengajuan implements ShouldBroadcastNow
     public function broadcastAs()
     {
         return 'notifikasi.pengajuan';
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'user_id' => $this->userId,
+            'title' => $this->title,
+            'message' => $this->message,
+            'type' => $this->type,
+            'notifikasi_id' => $this->notifikasiId,
+            'pengajuan_id' => $this->pengajuanId,
+        ];
     }
 }

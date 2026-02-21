@@ -143,10 +143,10 @@
         </div>
 
         <section class="modern-section">
-            <div class="section-header" style="justify-content: flex-start !important; align-items: flex-start !important; gap: 2rem;">
-                <div style="text-align: left !important; flex: 1;">
-                    <h2 class="section-title" style="text-align: left !important; margin: 0;">Daftar Kategori Biaya</h2>
-                    <p class="section-subtitle" style="text-align: left !important; margin-top: 4px;">Kelola kategori pengeluaran</p>
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Daftar Kategori Biaya</h2>
+                    <p class="section-subtitle">Kelola kategori pengeluaran</p>
                 </div>
                 <div class="header-actions">
                     <a href="{{ route('finance.masterdata.kategori_biaya.create') }}" class="btn-modern btn-modern-primary">

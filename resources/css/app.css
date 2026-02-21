@@ -35,6 +35,10 @@ body.ready {
     --border-color: var(--color-chambray-200);
 }
 
+[x-cloak] {
+    display: none !important;
+}
+
 
 * {
     margin: 0;
@@ -42,14 +46,65 @@ body.ready {
     box-sizing: border-box;
 }
 
+*:focus-visible {
+    outline: 2px solid rgba(66, 93, 135, 0.45);
+    outline-offset: 2px;
+}
+
 html {
     scroll-behavior: smooth;
+}
+
+/* Ensure smooth scrolling on common internal scroll containers */
+:where(
+    .content,
+    .main-content,
+    .dashboard-content,
+    .dashboard-wrapper,
+    .sidebar-menu,
+    .finance-sidebar,
+    .pegawai-sidebar,
+    .atasan-sidebar,
+    .data-table-wrapper,
+    .notification-list
+) {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
 }
 
 body {
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #f5f7fa 0%, #eef1f8 100%);
     color: #2c394e;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    :where(
+        .content,
+        .main-content,
+        .dashboard-content,
+        .dashboard-wrapper,
+        .sidebar-menu,
+        .finance-sidebar,
+        .pegawai-sidebar,
+        .atasan-sidebar,
+        .data-table-wrapper,
+        .notification-list
+    ) {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 /* ===== ALERTS ===== */

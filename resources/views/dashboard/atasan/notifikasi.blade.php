@@ -12,8 +12,10 @@
             :showProfile="true" 
         />
 
-        <div class="dashboard-content">
-            <livewire:notification-list />
+        <div class="dashboard-content notification-page-content">
+            <div class="notification-single-shell">
+                <livewire:notification-list />
+            </div>
         </div>
     </div>
 </div>

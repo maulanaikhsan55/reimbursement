@@ -6,7 +6,7 @@
 <style>
     .filter-form-finance {
         display: grid;
-        grid-template-columns: 1.5fr 1fr 1fr 1.2fr auto;
+        grid-template-columns: 1.5fr 1fr 1.2fr auto;
         gap: 1rem;
         align-items: flex-end;
     }
@@ -68,10 +68,10 @@
 
     @media (max-width: 1400px) {
         .filter-form-finance {
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
         }
         .filter-actions-pegawai {
-            grid-column: span 3;
+            grid-column: span 2;
             justify-content: flex-end;
         }
     }
@@ -207,10 +207,10 @@
         </div>
 
         <section class="modern-section">
-            <div class="section-header" style="justify-content: flex-start !important; align-items: flex-start !important; gap: 2rem;">
-                <div style="text-align: left !important; flex: 1;">
-                    <h2 class="section-title" style="text-align: left !important; margin: 0;">Daftar Pengajuan</h2>
-                    <p class="section-subtitle" style="text-align: left !important; margin-top: 4px;">Total: {{ $pengajuans->total() }} pengajuan</p>
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Daftar Pengajuan</h2>
+                    <p class="section-subtitle">Total: {{ $pengajuans->total() }} pengajuan</p>
                 </div>
                 <div class="header-actions">
                     <div class="export-actions">
@@ -225,6 +225,17 @@
                             CSV
                         </a>
 
+                        <a href="#" onclick="exportXlsx(event)" data-url="{{ route('finance.approval.export-xlsx') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M8 13l3 4"></path>
+                                <path d="M11 13l-3 4"></path>
+                                <path d="M14 17h4"></path>
+                            </svg>
+                            XLSX
+                        </a>
+
                         <a href="#" onclick="exportPdf(event)" data-url="{{ route('finance.approval.export-pdf') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -235,6 +246,14 @@
                             PDF
                         </a>
                     </div>
+                    <a href="{{ route('finance.approval.history') }}" class="btn-modern btn-modern-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <path d="M3 3v5h5"></path>
+                            <path d="M3.05 13A9 9 0 1 0 5.35 5.35L3 8"></path>
+                            <path d="M3 3l4 4"></path>
+                        </svg>
+                        Lihat Riwayat
+                    </a>
                 </div>
             </div>
 
@@ -264,18 +283,6 @@
                                     {{ $dept->nama_departemen }}
                                 </option>
                             @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Status -->
-                    <div class="filter-group-pegawai">
-                        <label class="filter-label-pegawai">Status</label>
-                        <select name="status" id="statusInput" class="filter-input-pegawai">
-                            <option value="menunggu_finance" {{ $currentStatus === 'menunggu_finance' ? 'selected' : '' }}>Menunggu Verifikasi</option>
-                            <option value="terkirim_accurate" {{ $currentStatus === 'terkirim_accurate' ? 'selected' : '' }}>Terkirim Accurate</option>
-                            <option value="dicairkan" {{ $currentStatus === 'dicairkan' ? 'selected' : '' }}>Dicairkan</option>
-                            <option value="ditolak_finance" {{ $currentStatus === 'ditolak_finance' ? 'selected' : '' }}>Ditolak Finance</option>
-                            <option value="all" {{ in_array($currentStatus, ['all', 'menunggu_atasan', 'ditolak_atasan']) ? 'selected' : '' }}>Semua Status</option>
                         </select>
                     </div>
 
@@ -394,7 +401,6 @@
     function getExportParams(btn) {
         const search = document.getElementById('searchInput').value;
         const departemen = document.getElementById('departemenInput').value;
-        const status = document.getElementById('statusInput').value;
         const startDate = document.getElementById('startDateInput').value;
         const endDate = document.getElementById('endDateInput').value;
         
@@ -403,7 +409,6 @@
         
         if (search) params.append('search', search);
         if (departemen) params.append('departemen_id', departemen);
-        if (status && status !== 'all') params.append('status', status);
         if (startDate) params.append('start_date', startDate);
         if (endDate) params.append('end_date', endDate);
         
@@ -416,6 +421,11 @@
     }
 
     function exportPdf(e) {
+        e.preventDefault();
+        window.location.href = getExportParams(e.currentTarget);
+    }
+
+    function exportXlsx(e) {
         e.preventDefault();
         window.location.href = getExportParams(e.currentTarget);
     }

@@ -94,6 +94,52 @@
         font-weight: 600;
     }
 
+    .budget-info-banner {
+        margin: 1rem 0;
+        padding: 0.9rem 1rem;
+        border: 1px solid #dbeafe;
+        border-left: 4px solid #3b82f6;
+        border-radius: 0.85rem;
+        background: #f8fbff;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .budget-info-icon {
+        color: #3b82f6;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .budget-info-text {
+        flex: 1;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: #334155;
+    }
+
+    .budget-info-close {
+        border: 0;
+        background: #eef2ff;
+        color: #475569;
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .budget-info-close:hover {
+        background: #dbeafe;
+        color: #1e3a8a;
+    }
+
     @media (max-width: 768px) {
 </style>
 @endpush
@@ -148,10 +194,10 @@
         </div>
 
         <section class="modern-section">
-            <div class="section-header" style="justify-content: flex-start !important; align-items: flex-start !important; gap: 2rem;">
-                <div style="text-align: left !important; flex: 1;">
-                    <h2 class="section-title" style="text-align: left !important; margin: 0;">Daftar Departemen</h2>
-                    <p class="section-subtitle" style="text-align: left !important; margin-top: 4px;">Data disinkronkan secara otomatis dari Accurate</p>
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Daftar Departemen</h2>
+                    <p class="section-subtitle">Data disinkronkan secara otomatis dari Accurate</p>
                 </div>
                 <div class="header-actions">
                     <form id="syncForm" action="{{ route('finance.masterdata.departemen.sync') }}" method="POST" class="d-inline">
@@ -228,15 +274,21 @@
                 </form>
             </div>
 
-            <div class="alert alert-info mt-4 mb-4">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px; flex-shrink: 0;">
+            <div class="budget-info-banner" id="budgetInfoBanner">
+                <svg class="budget-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                 </svg>
-                <div style="font-size: 0.9rem; line-height: 1.5;">
+                <div class="budget-info-text">
                     <strong>Info:</strong> Budget limit berlaku per bulan. Realisasi dan Sisa Budget dihitung otomatis berdasarkan transaksi pada periode <strong>{{ \Carbon\Carbon::create()->month($selectedMonth)->isoFormat('MMMM') }} {{ $selectedYear }}</strong>.
                 </div>
+                <button type="button" class="budget-info-close" id="budgetInfoClose" aria-label="Tutup informasi budget" title="Tutup">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
 
             <div id="tableContainer">
@@ -411,6 +463,32 @@
         if (event.target == modal) {
             closeEditBudgetModal();
         }
+    };
+
+    function initBudgetInfoBannerClose() {
+        const infoBanner = document.getElementById('budgetInfoBanner');
+        const closeButton = document.getElementById('budgetInfoClose');
+
+        if (!infoBanner || !closeButton) {
+            return;
+        }
+
+        if (closeButton.dataset.closeBound === '1') {
+            return;
+        }
+        closeButton.dataset.closeBound = '1';
+
+        closeButton.addEventListener('click', function () {
+            infoBanner.style.display = 'none';
+        });
     }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initBudgetInfoBannerClose);
+    } else {
+        initBudgetInfoBannerClose();
+    }
+
+    document.addEventListener('livewire:navigated', initBudgetInfoBannerClose);
 </script>
 @endpush

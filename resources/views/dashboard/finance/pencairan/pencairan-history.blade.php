@@ -65,7 +65,7 @@
         letter-spacing: 0.02em;
     }
 
-    @media (max-width: 1200px) {
+    @media (max-width: 1400px) {
         .filter-form-history {
             grid-template-columns: 1fr 1fr;
         }
@@ -180,10 +180,10 @@
 
         <!-- Requests Table Section -->
         <section class="modern-section">
-            <div class="section-header" style="justify-content: flex-start !important; align-items: flex-start !important; gap: 2rem;">
-                <div style="text-align: left !important; flex: 1;">
-                    <h2 class="section-title" style="text-align: left !important; margin: 0;">Riwayat Pencairan</h2>
-                    <p class="section-subtitle" style="text-align: left !important; margin-top: 4px;">Total: {{ $pengajuan->total() }} pengajuan</p>
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Riwayat Pencairan</h2>
+                    <p class="section-subtitle">Total: {{ $pengajuan->total() }} pengajuan</p>
                 </div>
                 <div class="header-actions">
                     <div class="export-actions">
@@ -196,6 +196,16 @@
                                 <polyline points="10 9 9 9 8 9"></polyline>
                             </svg>
                             CSV
+                        </a>
+                        <a href="#" onclick="exportXlsx(event)" data-url="{{ route('finance.disbursement.history-export-xlsx') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M8 13l3 4"></path>
+                                <path d="M11 13l-3 4"></path>
+                                <path d="M14 17h4"></path>
+                            </svg>
+                            XLSX
                         </a>
 
                         <a href="#" onclick="exportPdf(event)" data-url="{{ route('finance.disbursement.history-export-pdf') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
@@ -377,6 +387,11 @@
     }
 
     function exportPdf(e) {
+        e.preventDefault();
+        window.location.href = getExportParams(e.currentTarget);
+    }
+
+    function exportXlsx(e) {
         e.preventDefault();
         window.location.href = getExportParams(e.currentTarget);
     }

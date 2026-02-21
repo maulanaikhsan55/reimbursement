@@ -160,17 +160,21 @@ trait FiltersPengajuan
 
     protected function getPengajuanCsvHeaders($mode = 'personal')
     {
-        $headers = ['Nomor Pengajuan'];
+        $headers = ['No', 'Nomor Pengajuan'];
 
         if ($mode === 'finance' || $mode === 'approval') {
             $headers[] = 'Staff';
+            $headers[] = 'Departemen';
             if ($mode === 'finance') {
                 $headers[] = 'Email';
-                $headers[] = 'Departemen';
             }
         }
 
-        $headers = array_merge($headers, ['Vendor', 'Tanggal', 'Kategori Biaya', 'Deskripsi', 'Nominal', 'Status']);
+        $headers = array_merge($headers, ['Vendor', 'Tanggal Pengajuan', 'Kategori Biaya', 'Deskripsi', 'Nominal (IDR)', 'Status']);
+
+        if ($mode === 'finance') {
+            $headers[] = 'Ref Accurate';
+        }
 
         if ($mode === 'history') {
             $headers[] = 'Tanggal Pencairan';
@@ -181,23 +185,34 @@ trait FiltersPengajuan
 
     protected function mapPengajuanForCsv($pengajuanList, $mode = 'personal')
     {
-        return $pengajuanList->map(function ($item) use ($mode) {
-            $row = [$item->nomor_pengajuan];
+        return $pengajuanList->values()->map(function ($item, $index) use ($mode) {
+            $statusLabel = (is_object($item->status) && method_exists($item->status, 'label'))
+                ? $item->status->label()
+                : (string) $item->status;
+
+            $row = [
+                $index + 1,
+                $item->nomor_pengajuan,
+            ];
 
             if ($mode === 'finance' || $mode === 'approval') {
-                $row[] = $item->user->name;
+                $row[] = $item->user->name ?? '-';
+                $row[] = $item->departemen->nama_departemen ?? '-';
                 if ($mode === 'finance') {
-                    $row[] = $item->user->email;
-                    $row[] = $item->departemen->nama_departemen ?? '';
+                    $row[] = $item->user->email ?? '-';
                 }
             }
 
-            $row[] = $item->nama_vendor;
-            $row[] = $item->tanggal_pengajuan->format('d/m/Y');
+            $row[] = $item->nama_vendor ?? '-';
+            $row[] = optional($item->tanggal_pengajuan)->format('d/m/Y') ?? '-';
             $row[] = $item->kategori ? $item->kategori->nama_kategori : '';
             $row[] = $item->deskripsi;
-            $row[] = $item->nominal;
-            $row[] = $item->status->label();
+            $row[] = 'Rp '.number_format((float) ($item->nominal ?? 0), 0, ',', '.');
+            $row[] = $statusLabel;
+
+            if ($mode === 'finance') {
+                $row[] = $item->accurate_transaction_id ? (string) $item->accurate_transaction_id : '-';
+            }
 
             if ($mode === 'history') {
                 $row[] = $item->tanggal_pencairan ? $item->tanggal_pencairan->format('d/m/Y') : '-';

@@ -6,6 +6,11 @@ import '../css/dashboard-ultra.css';
 
 let globalLoader;
 let progressBar, progressFill;
+let loaderFailSafeTimer = null;
+let hideProgressTimer = null;
+let isProgressVisible = false;
+let progressTrickleTimer = null;
+let progressValue = 0;
 
 // 1. Global dismiss alert function
 window.dismissAlert = function(element) {
@@ -16,8 +21,10 @@ window.dismissAlert = function(element) {
 };
 
 // 2. Global Modern Notification Helper
-// Accepts optional 4th parameter: duration in milliseconds (default 5000)
-window.showNotification = function(type, title, message, duration = 5000) {
+// Optional parameters:
+// - 4th: duration in ms (default 0 = close manually)
+// - 5th: options object, e.g. { url: '/target-page', onClick: () => {} }
+window.showNotification = function(type, title, message, duration = 0, options = {}) {
     // Hide progress bar when showing notification
     hideProgressBar();
     
@@ -33,13 +40,23 @@ window.showNotification = function(type, title, message, duration = 5000) {
         title = type.charAt(0).toUpperCase() + type.slice(1);
     }
 
+    const hasAutoClose = Number(duration) > 0;
+    const resolvedOptions = options && typeof options === 'object' ? options : {};
+    const clickUrl = typeof resolvedOptions.url === 'string' && resolvedOptions.url.length > 0
+        ? resolvedOptions.url
+        : null;
+    const clickHandler = typeof resolvedOptions.onClick === 'function'
+        ? resolvedOptions.onClick
+        : null;
+    const hasClickableAction = Boolean(clickUrl || clickHandler);
+
     const triggerToast = () => {
         const Toast = Swal.mixin({
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
-            timer: duration,
-            timerProgressBar: true,
+            timer: hasAutoClose ? duration : undefined,
+            timerProgressBar: hasAutoClose,
             showCloseButton: true,
             customClass: {
                 popup: 'swal2-modern-toast',
@@ -49,13 +66,33 @@ window.showNotification = function(type, title, message, duration = 5000) {
                 if (container) {
                     container.style.zIndex = '999999';
                 }
+
+                const popup = Swal.getPopup();
+                if (popup && hasClickableAction) {
+                    popup.style.cursor = 'pointer';
+                    popup.title = 'Klik untuk buka detail';
+                    popup.addEventListener('click', (evt) => {
+                        if (evt.target && evt.target.closest('.swal2-close')) {
+                            return;
+                        }
+
+                        if (clickHandler) {
+                            clickHandler();
+                            return;
+                        }
+
+                        if (clickUrl) {
+                            window.location.href = clickUrl;
+                        }
+                    });
+                }
             }
         });
 
         Toast.fire({
             icon: type === 'danger' || type === 'error' ? 'error' : (type === 'success' ? 'success' : (type === 'warning' ? 'warning' : 'info')),
             title: title,
-            html: `<div style="font-family: 'Poppins', sans-serif; font-size: 0.85rem; color: #64748b;">${message}</div>`,
+            html: `<div style="font-family: 'Poppins', sans-serif; font-size: 0.85rem; color: #64748b;">${message}${hasClickableAction ? '<div style="margin-top:4px;font-size:0.72rem;color:#3b82f6;font-weight:600;">Klik untuk buka detail</div>' : ''}</div>`,
         });
     };
 
@@ -66,13 +103,41 @@ window.showNotification = function(type, title, message, duration = 5000) {
                 triggerToast();
             }
         }, 100);
-        setTimeout(() => clearInterval(checkSwal), Math.max(duration, 5000));
+        setTimeout(() => clearInterval(checkSwal), Math.max(Number(duration) || 5000, 5000));
     } else {
         triggerToast();
     }
 };
 
 // 3. ULTRA MODERN Progress Bar Functions - SEAMLESS FLOW Ujung ke Ujung
+function setProgress(value) {
+    if (!progressFill) {
+        return;
+    }
+
+    progressValue = Math.max(0, Math.min(1, value));
+    progressFill.style.transform = `scaleX(${progressValue})`;
+}
+
+function startProgressTrickle() {
+    if (progressTrickleTimer) {
+        clearInterval(progressTrickleTimer);
+    }
+
+    progressTrickleTimer = setInterval(() => {
+        if (!isProgressVisible) {
+            return;
+        }
+
+        let step = 0.05;
+        if (progressValue >= 0.7) step = 0.02;
+        if (progressValue >= 0.85) step = 0.01;
+        if (progressValue >= 0.93) step = 0.004;
+
+        setProgress(Math.min(0.96, progressValue + step));
+    }, 140);
+}
+
 function showProgressBar() {
     if (!progressBar) {
         progressBar = document.getElementById('modernProgressBar');
@@ -80,12 +145,22 @@ function showProgressBar() {
     }
     
     if (progressBar && progressFill) {
-        // Enable smooth continuous flow immediately
-        progressBar.style.opacity = '1';
-        progressBar.classList.add('progress-bar-active');
-        progressBar.classList.remove('progress-bar-exit');
-        progressFill.style.opacity = '1';
-        progressFill.style.animation = 'smooth-flow 0.6s ease-in-out infinite';
+        if (hideProgressTimer) {
+            clearTimeout(hideProgressTimer);
+            hideProgressTimer = null;
+        }
+        if (!isProgressVisible) {
+            isProgressVisible = true;
+            progressBar.classList.remove('progress-bar-exit');
+            progressBar.classList.add('progress-bar-active');
+            progressBar.style.opacity = '1';
+            progressFill.style.opacity = '1';
+            setProgress(0.08);
+            startProgressTrickle();
+            return;
+        }
+
+        setProgress(Math.max(progressValue, 0.12));
     }
 }
 
@@ -96,14 +171,33 @@ function hideProgressBar() {
     }
     
     if (progressBar && progressFill) {
-        // Instant hide - no waiting
-        progressBar.classList.remove('progress-bar-active');
-        progressBar.classList.add('progress-bar-exit');
-        progressFill.style.animation = 'none';
-        
-        // Force reflow then fade
-        void progressBar.offsetWidth;
-        progressBar.style.opacity = '0';
+        if (!isProgressVisible && progressBar.style.opacity === '0') {
+            return;
+        }
+
+        isProgressVisible = false;
+        if (progressTrickleTimer) {
+            clearInterval(progressTrickleTimer);
+            progressTrickleTimer = null;
+        }
+
+        setProgress(1);
+
+        if (hideProgressTimer) {
+            clearTimeout(hideProgressTimer);
+        }
+
+        hideProgressTimer = setTimeout(() => {
+            if (isProgressVisible) {
+                return;
+            }
+            progressBar.classList.remove('progress-bar-active');
+            progressBar.classList.add('progress-bar-exit');
+            progressFill.style.opacity = '0';
+            progressBar.style.opacity = '0';
+            setProgress(0);
+            hideProgressTimer = null;
+        }, 130);
     }
 }
 
@@ -115,6 +209,10 @@ window.hideProgressBar = hideProgressBar;
 window.hideAllLoaders = () => {
     sessionStorage.removeItem('pending_flash');
     hideProgressBar();
+    if (loaderFailSafeTimer) {
+        clearTimeout(loaderFailSafeTimer);
+        loaderFailSafeTimer = null;
+    }
     
     const loader = globalLoader || document.getElementById('global-loader');
     if (loader) {
@@ -128,6 +226,11 @@ window.showLoaders = (type = 'nav', e = null) => {
     if (e && (e.ctrlKey || e.metaKey || e.button === 1)) return;
     if (sessionStorage.getItem('pending_flash') && type !== 'heavy') return;
 
+    if (loaderFailSafeTimer) {
+        clearTimeout(loaderFailSafeTimer);
+        loaderFailSafeTimer = null;
+    }
+
     if (type === 'heavy') {
         showProgressBar();
         const loader = globalLoader || document.getElementById('global-loader');
@@ -136,6 +239,11 @@ window.showLoaders = (type = 'nav', e = null) => {
             loader.style.pointerEvents = 'auto';
             loader.style.zIndex = '9000';
         }
+
+        // Fail-safe: never leave overlay stuck if some request path fails silently
+        loaderFailSafeTimer = setTimeout(() => {
+            window.hideAllLoaders();
+        }, 12000);
     } else {
         // For navigation, use progress bar
         showProgressBar();
@@ -147,20 +255,16 @@ document.addEventListener('DOMContentLoaded', function() {
     progressBar = document.getElementById('modernProgressBar');
 
     // Hide progress bar on initial load
-    hideProgressBar();
+    window.hideAllLoaders();
     updateMenuIndicator();
 
-    // Animate session alerts
+    // Animate session alerts (no auto dismiss)
     const sessionAlerts = document.querySelectorAll('.app-alerts .alert');
     sessionAlerts.forEach((alert, index) => {
         setTimeout(() => {
             alert.style.opacity = '1';
             alert.style.transform = 'translateX(0)';
         }, 100 * (index + 1));
-
-        setTimeout(() => {
-            window.dismissAlert(alert);
-        }, 8000 + (index * 500));
     });
 
     // INTERACTIVE SIDEBAR - Hover effects
@@ -182,12 +286,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Navigation Interception for non-wire:navigate links
+    // Navigation interception for full-page links
     document.addEventListener('click', function(e) {
         const link = e.target.closest('a');
         if (link) {
             const href = link.getAttribute('href');
             const target = link.getAttribute('target');
+            const hasWireNavigate = link.hasAttribute('wire:navigate') || link.hasAttribute('wire:navigate.hover');
             
             if (href &&
                 !href.startsWith('#') &&
@@ -198,25 +303,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 !link.hasAttribute('download') &&
                 !link.classList.contains('no-loader') &&
                 !link.dataset.noLoader &&
-                !link.hasAttribute('wire:navigate') &&
+                !hasWireNavigate &&
                 href !== window.location.href
             ) {
                 try {
                     const url = new URL(href, window.location.origin);
                     if (url.origin === window.location.origin) {
-                        // Show progress bar with seamless flow IMMEDIATELY
-                        if (progressBar && progressBar.querySelector('.progress-bar-fill')) {
-                            progressBar.style.opacity = '1';
-                            progressBar.classList.add('progress-bar-active');
-                            const fill = progressBar.querySelector('.progress-bar-fill');
-                            fill.style.opacity = '1';
-                            fill.style.animation = 'smooth-flow 0.6s ease-in-out infinite';
-                        }
+                        showProgressBar();
                     }
                 } catch (err) {}
             }
         }
     });
+
+    // Start top loader as early as possible for wire:navigate links
+    document.addEventListener('pointerdown', function(e) {
+        const link = e.target.closest('a[wire\\:navigate], a[wire\\:navigate\\.hover]');
+        if (!link) return;
+        if (e.button && e.button !== 0) return;
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        if (link.classList.contains('no-loader') || link.dataset.noLoader) return;
+
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+        try {
+            const url = new URL(href, window.location.origin);
+            if (url.origin !== window.location.origin) return;
+            showProgressBar();
+        } catch (err) {}
+    }, { capture: true, passive: true });
 
     // Form Interception
     document.addEventListener('submit', function(e) {
@@ -231,12 +347,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Lifecycle events
     window.addEventListener('pageshow', function(event) {
         if (event.persisted) {
-            hideProgressBar();
+            window.hideAllLoaders();
         }
     });
     
     window.addEventListener('load', () => {
-        hideProgressBar();
+        window.hideAllLoaders();
         updateMenuIndicator();
     });
 
@@ -263,17 +379,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Livewire navigation events
-    document.addEventListener('livewire:navigate', () => {
-        showProgressBar();
-    });
-
-    document.addEventListener('livewire:navigated', () => {
-        hideProgressBar();
-        updateMenuIndicator();
-        sessionStorage.removeItem('pending_flash');
-    });
-    
     window.addEventListener('resize', updateMenuIndicator);
 
     // Global Livewire Event Listener for Notifications

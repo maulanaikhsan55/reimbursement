@@ -52,7 +52,12 @@ Route::group([], function () {
     Route::get('/approval', [ApprovalController::class, 'index'])->name('approval.index');
     Route::get('/approval/count', [ApprovalController::class, 'getCount'])->name('approval.count');
     Route::get('/approval/export-csv', [ApprovalController::class, 'exportCsv'])->name('approval.export-csv');
+    Route::get('/approval/export-xlsx', [ApprovalController::class, 'exportXlsx'])->name('approval.export-xlsx');
     Route::get('/approval/export-pdf', [ApprovalController::class, 'exportPdf'])->name('approval.export-pdf');
+    Route::get('/approval-history', [ApprovalController::class, 'history'])->name('approval.history');
+    Route::get('/approval-history/export-csv', [ApprovalController::class, 'historyExportCsv'])->name('approval.history-export-csv');
+    Route::get('/approval-history/export-xlsx', [ApprovalController::class, 'historyExportXlsx'])->name('approval.history-export-xlsx');
+    Route::get('/approval-history/export-pdf', [ApprovalController::class, 'historyExportPdf'])->name('approval.history-export-pdf');
     Route::get('/approval/{pengajuan}', [ApprovalController::class, 'show'])->name('approval.show');
     Route::post('/approval/{pengajuan}/send-to-accurate', [ApprovalController::class, 'send'])->name('approval.send-to-accurate');
     Route::post('/approval/{pengajuan}/reject', [ApprovalController::class, 'reject'])->name('approval.reject');
@@ -61,11 +66,13 @@ Route::group([], function () {
     Route::get('/disbursement', [DisbursementController::class, 'index'])->name('disbursement.index');
     Route::get('/disbursement/count', [DisbursementController::class, 'getCount'])->name('disbursement.count');
     Route::get('/disbursement/export-csv', [DisbursementController::class, 'exportCsv'])->name('disbursement.export-csv');
+    Route::get('/disbursement/export-xlsx', [DisbursementController::class, 'exportXlsx'])->name('disbursement.export-xlsx');
     Route::get('/disbursement/export-pdf', [DisbursementController::class, 'exportPdf'])->name('disbursement.export-pdf');
     Route::get('/disbursement/{pengajuan}', [DisbursementController::class, 'show'])->name('disbursement.show');
     Route::post('/disbursement/{pengajuan}/mark', [DisbursementController::class, 'mark'])->name('disbursement.mark');
     Route::get('/disbursement-history', [DisbursementController::class, 'history'])->name('disbursement.history');
     Route::get('/disbursement-history/export-csv', [DisbursementController::class, 'historyExportCsv'])->name('disbursement.history-export-csv');
+    Route::get('/disbursement-history/export-xlsx', [DisbursementController::class, 'historyExportXlsx'])->name('disbursement.history-export-xlsx');
     Route::get('/disbursement-history/export-pdf', [DisbursementController::class, 'historyExportPdf'])->name('disbursement.history-export-pdf');
 
     Route::get('/reports', [ReportController::class, 'index'])->name('report.index');
@@ -76,6 +83,7 @@ Route::group([], function () {
     Route::get('/reports/jurnal-umum', [ReportController::class, 'jurnalUmum'])->name('report.jurnal_umum');
     Route::post('/reports/jurnal-umum/sync-by-ref', [ReportController::class, 'syncByRef'])->name('report.jurnal_umum.sync_by_ref');
     Route::get('/reports/jurnal-umum/export-csv', [ReportController::class, 'jurnalUmumExportCsv'])->name('report.jurnal_umum.export_csv');
+    Route::get('/reports/jurnal-umum/export-xlsx', [ReportController::class, 'jurnalUmumExportXlsx'])->name('report.jurnal_umum.export_xlsx');
     Route::get('/reports/jurnal-umum/export-pdf', [ReportController::class, 'jurnalUmumExportPdf'])->name('report.jurnal_umum.export_pdf');
 
     Route::get('/reports/buku-besar', [ReportController::class, 'bukuBesar'])->name('report.buku_besar');
@@ -83,9 +91,11 @@ Route::group([], function () {
     Route::get('/reports/buku-besar/reconcile', [ReportController::class, 'reconcileLedger'])->name('report.buku_besar.reconcile');
     Route::post('/reports/buku-besar/sync-missing', [ReportController::class, 'syncMissingTransaction'])->name('report.buku_besar.sync_missing');
     Route::get('/reports/buku-besar/export-csv', [ReportController::class, 'bukuBesarExportCsv'])->name('report.buku_besar.export_csv');
+    Route::get('/reports/buku-besar/export-xlsx', [ReportController::class, 'bukuBesarExportXlsx'])->name('report.buku_besar.export_xlsx');
     Route::get('/reports/buku-besar/export-pdf', [ReportController::class, 'bukuBesarExportPdf'])->name('report.buku_besar.export_pdf');
 
     Route::get('/reports/arus-kas', [ReportController::class, 'laporanArusKas'])->name('report.laporan_arus_kas');
     Route::get('/reports/arus-kas/export-csv', [ReportController::class, 'laporanArusKasExportCsv'])->name('report.laporan_arus_kas.export_csv');
+    Route::get('/reports/arus-kas/export-xlsx', [ReportController::class, 'laporanArusKasExportXlsx'])->name('report.laporan_arus_kas.export_xlsx');
     Route::get('/reports/arus-kas/export-pdf', [ReportController::class, 'laporanArusKasExportPdf'])->name('report.laporan_arus_kas.export_pdf');
 });

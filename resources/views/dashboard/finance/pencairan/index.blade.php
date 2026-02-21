@@ -4,8 +4,7 @@
 
 @push('styles')
 <style>
-    /* Custom grid for Disbursement Index (4 items: Search, Dept, Date, Actions) */
-    .filter-form-disbursement {
+    .filter-form-finance {
         display: grid;
         grid-template-columns: 1.5fr 1fr 1.2fr auto;
         gap: 1rem;
@@ -66,21 +65,13 @@
         letter-spacing: 0.02em;
     }
 
-    @media (max-width: 1200px) {
-        .filter-form-disbursement {
+    @media (max-width: 1400px) {
+        .filter-form-finance {
             grid-template-columns: 1fr 1fr;
         }
         .filter-actions-pegawai {
             grid-column: span 2;
             justify-content: flex-end;
-        }
-    }
-    @media (max-width: 768px) {
-        .filter-form-disbursement {
-            grid-template-columns: 1fr;
-        }
-        .filter-actions-pegawai {
-            grid-column: 1;
         }
     }
 
@@ -215,10 +206,10 @@
 
         <!-- Requests Table Section -->
         <section class="modern-section">
-            <div class="section-header" style="justify-content: flex-start !important; align-items: flex-start !important; gap: 2rem;">
-                <div style="text-align: left !important; flex: 1;">
-                    <h2 class="section-title" style="text-align: left !important; margin: 0;">Daftar Pengajuan</h2>
-                    <p class="section-subtitle" style="text-align: left !important; margin-top: 4px;">Total: {{ $pengajuans->total() }} pengajuan</p>
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Daftar Pengajuan</h2>
+                    <p class="section-subtitle">Total: {{ $pengajuans->total() }} pengajuan</p>
                 </div>
                 <div class="header-actions">
                     <div class="export-actions">
@@ -231,6 +222,16 @@
                                 <polyline points="10 9 9 9 8 9"></polyline>
                             </svg>
                             CSV
+                        </a>
+                        <a href="#" onclick="exportXlsx(event)" data-url="{{ route('finance.disbursement.export-xlsx') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M8 13l3 4"></path>
+                                <path d="M11 13l-3 4"></path>
+                                <path d="M14 17h4"></path>
+                            </svg>
+                            XLSX
                         </a>
 
                         <a href="#" onclick="exportPdf(event)" data-url="{{ route('finance.disbursement.export-pdf') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
@@ -255,7 +256,7 @@
             </div>
 
             <div class="filter-container">
-                <form id="filterForm" action="{{ route('finance.disbursement.index') }}" method="GET" class="filter-form-disbursement">
+                <form id="filterForm" action="{{ route('finance.disbursement.index') }}" method="GET" class="filter-form-finance">
                     <!-- Search -->
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Pencarian</label>
@@ -424,6 +425,11 @@
     }
 
     function exportPdf(e) {
+        e.preventDefault();
+        window.location.href = getExportParams(e.currentTarget);
+    }
+
+    function exportXlsx(e) {
         e.preventDefault();
         window.location.href = getExportParams(e.currentTarget);
     }

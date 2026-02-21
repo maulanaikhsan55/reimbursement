@@ -59,28 +59,52 @@ class NotificationBell extends Component
         if ($notifikasi && $notifikasi->user_id === auth()->id()) {
             $notifikasi->markAsRead();
             $this->loadNotifications();
+            return redirect()->to($this->resolveNotificationTarget($notifikasi));
+        }
+    }
 
-            // Redirect logic based on role
-            if ($notifikasi->pengajuan_id) {
-                $role = auth()->user()->role;
+    private function resolveNotificationTarget(Notifikasi $notifikasi): string
+    {
+        $role = auth()->user()->role ?? '';
 
-                if ($role === 'pegawai') {
-                    return redirect()->route('pegawai.pengajuan.show', $notifikasi->pengajuan_id);
-                } elseif ($role === 'atasan') {
-                    return redirect()->route('atasan.approval.show', $notifikasi->pengajuan_id);
-                } elseif ($role === 'finance') {
-                    return redirect()->route('finance.approval.show', $notifikasi->pengajuan_id);
-                }
+        if ($notifikasi->pengajuan_id) {
+            if ($role === 'pegawai') {
+                return route('pegawai.pengajuan.show', $notifikasi->pengajuan_id);
+            }
+
+            if ($role === 'atasan') {
+                return route('atasan.approval.show', $notifikasi->pengajuan_id);
+            }
+
+            if ($role === 'finance') {
+                return route('finance.approval.show', $notifikasi->pengajuan_id);
             }
         }
+
+        $fallbackRoute = $role.'.notifikasi';
+        if (\Illuminate\Support\Facades\Route::has($fallbackRoute)) {
+            return route($fallbackRoute);
+        }
+
+        $dashboardRoute = $role.'.dashboard';
+        if (\Illuminate\Support\Facades\Route::has($dashboardRoute)) {
+            return route($dashboardRoute);
+        }
+
+        return url('/');
     }
 
     public function markAllAsRead()
     {
+        if (! auth()->check()) {
+            return;
+        }
+
         Notifikasi::markAllAsReadForUser(auth()->id());
         $this->loadNotifications();
 
-        // Dispatch event for JS to update sidebar badges
+        // Keep all notification surfaces in sync (bell, list page, sidebar badge).
+        $this->dispatch('notifikasi-baru');
         $this->dispatch('refresh-notif-badges');
     }
 

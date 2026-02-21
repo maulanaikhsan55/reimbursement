@@ -139,7 +139,7 @@
     <div class="dashboard-container">
         <x-page-header title="Auto-Reconciliation" subtitle="Sinkronisasi saldo Kas/Bank dengan Accurate Online" :showNotification="true" :showProfile="true" />
 
-        <div class="dashboard-content">
+        <div class="dashboard-content reports-clean-content">
             <div class="filter-container" style="margin-bottom: 2rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 2rem; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 300px;">

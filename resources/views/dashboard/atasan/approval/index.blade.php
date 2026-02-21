@@ -110,6 +110,17 @@
                                 CSV
                             </a>
 
+                            <a href="#" onclick="exportXlsx(event)" data-url="{{ route('atasan.approval.export-xlsx') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <path d="M8 13l3 4"></path>
+                                    <path d="M11 13l-3 4"></path>
+                                    <path d="M14 17h4"></path>
+                                </svg>
+                                XLSX
+                            </a>
+
                             <a href="#" onclick="exportPdf(event)" data-url="{{ route('atasan.approval.export-pdf') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>

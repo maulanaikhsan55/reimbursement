@@ -22,7 +22,7 @@
 
     .notification-bell-btn:hover {
         color: #3c5379;
-        transform: scale(1.05);
+        transform: scale(1.02);
     }
 
     .notification-bell-btn:active {
@@ -132,7 +132,7 @@
         position: absolute;
         top: 100%;
         right: 0;
-        width: 380px;
+        width: 360px;
         background: white;
         border-radius: 1rem;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
@@ -162,6 +162,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 0.75rem;
     }
 
     .notification-title {
@@ -198,6 +199,33 @@
 
     .mark-all-btn:hover {
         color: #3c5379;
+    }
+
+    .notification-header-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .notif-close-btn {
+        border: 1px solid #d8e0ee;
+        background: #f8fafd;
+        color: #64748b;
+        border-radius: 0.55rem;
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .notif-close-btn:hover {
+        background: #eef3f9;
+        color: #334155;
     }
 
     .notification-list {
@@ -346,6 +374,10 @@
     }
 
     @media (max-width: 480px) {
+        .ws-status {
+            display: none;
+        }
+
         .notification-dropdown {
             width: 320px;
             right: -50px;
@@ -358,8 +390,39 @@
     open: false,
     wsConnected: false,
     wsStatusChecked: false,
-    toggleDropdown() {
-        this.open = !this.open;
+    userId: {{ (int) auth()->id() }},
+    unreadCount: {{ (int) $unreadCount }},
+    autoCloseTimer: null,
+    clearAutoCloseTimer() {
+        if (this.autoCloseTimer) {
+            clearTimeout(this.autoCloseTimer);
+            this.autoCloseTimer = null;
+        }
+    },
+    scheduleAutoClose(ms = 9000) {
+        this.clearAutoCloseTimer();
+        this.autoCloseTimer = setTimeout(() => {
+            this.open = false;
+            this.autoCloseTimer = null;
+        }, ms);
+    },
+    openTemporarily(ms = 9000) {
+        this.open = true;
+        this.scheduleAutoClose(ms);
+    },
+    showUnreadOnStartup() {
+        if (this.unreadCount <= 0) return;
+        const key = `startup-notif-dropdown-${this.userId}`;
+        if (sessionStorage.getItem(key) === '1') return;
+        sessionStorage.setItem(key, '1');
+        setTimeout(() => {
+            this.openTemporarily(9000);
+        }, 550);
+    },
+    registerAutoOpenHook() {
+        window.addEventListener('open-notification-dropdown', () => {
+            this.openTemporarily(9000);
+        });
     },
     initWsStatus() {
         const check = () => {
@@ -400,8 +463,10 @@
     },
     init() {
         this.initWsStatus();
+        this.showUnreadOnStartup();
+        this.registerAutoOpenHook();
     }
-}" x-init="init()" @click.away="open = false">
+}" x-init="init()" @click.away="open = false; clearAutoCloseTimer()">
     <!-- WebSocket Status Indicator - Hidden if Echo not available -->
     <template x-if="wsStatusChecked">
         <div class="ws-status" :class="wsConnected ? 'connected' : 'disconnected'">
@@ -411,7 +476,7 @@
     </template>
 
     <!-- Notification Bell Button -->
-    <button type="button" @click="open = !open" class="notification-bell-btn" title="Notifikasi">
+    <button type="button" @click="open = !open; if (!open) clearAutoCloseTimer();" class="notification-bell-btn" title="Notifikasi">
         <svg class="bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
@@ -426,16 +491,18 @@
 
     <!-- Dropdown Content -->
     <div x-show="open"
-         x-transition:enter="transition ease-out duration-300"
+         x-cloak
+         x-transition:enter="transition ease-out duration-300 delay-75"
          x-transition:enter-start="opacity-0 transform scale-95 translate-y-[-5px]"
          x-transition:enter-end="opacity-100 transform scale-100 translate-y-0"
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100 transform scale-100 translate-y-0"
          x-transition:leave-end="opacity-0 transform scale-95 translate-y-[-5px]"
-         x-transition:enter-delay="0.05s"
          class="notification-dropdown"
          style="display: none;"
-         @click.away="setTimeout(() => open = false, 500)">
+         @mouseenter="clearAutoCloseTimer()"
+         @mouseleave="if (open) scheduleAutoClose(5000)"
+         @click.away="setTimeout(() => { open = false; clearAutoCloseTimer(); }, 250)">
         
         <div class="notification-header">
             <div class="notification-title">
@@ -444,9 +511,21 @@
                     <span class="unread-badge">{{ $unreadCount }} Baru</span>
                 @endif
             </div>
-            @if($unreadCount > 0)
-                <button wire:click="markAllAsRead" class="mark-all-btn">Tandai Semua Dibaca</button>
-            @endif
+            <div class="notification-header-actions">
+                @if($unreadCount > 0)
+                    <button
+                        type="button"
+                        class="mark-all-btn"
+                        x-on:click.prevent.stop="$wire.markAllAsRead()"
+                        wire:loading.attr="disabled"
+                        wire:target="markAllAsRead"
+                    >
+                        <span wire:loading.remove wire:target="markAllAsRead">Tandai Semua Dibaca</span>
+                        <span wire:loading wire:target="markAllAsRead">Memproses...</span>
+                    </button>
+                @endif
+                <button type="button" class="notif-close-btn" @click="open = false; clearAutoCloseTimer();" title="Tutup">&times;</button>
+            </div>
         </div>
 
         <div class="notification-list">

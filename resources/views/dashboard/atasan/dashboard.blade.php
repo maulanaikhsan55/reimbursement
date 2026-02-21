@@ -42,6 +42,17 @@
     var categoryChartInstance = null;
 
     function initAtasanDashboard() {
+        if (typeof Chart === 'undefined') {
+            if (typeof window.ensureChartJsLoaded === 'function') {
+                window.ensureChartJsLoaded()
+                    .then(() => initAtasanDashboard())
+                    .catch((error) => console.error('[Atasan Dashboard] Chart.js failed to load:', error));
+            } else {
+                console.error('[Atasan Dashboard] Chart.js is not available.');
+            }
+            return;
+        }
+
         const statusCtx = document.getElementById('statusChart');
         if (statusCtx) {
             if (statusChartInstance) statusChartInstance.destroy();
@@ -242,14 +253,46 @@
     }
     document.addEventListener('livewire:navigated', initAtasanDashboard);
 
-    // Smart Real-time Refresh
-    window.addEventListener('refresh-approval-table', () => {
-        location.reload(); 
-    });
+    const refreshAtasanDashboardSections = async () => {
+        if (window.__atasanDashboardPartialRefreshBusy) return;
+        window.__atasanDashboardPartialRefreshBusy = true;
 
-    window.addEventListener('refresh-pengajuan-table', () => {
-        location.reload();
-    });
+        const selectors = [
+            '.welcome-card',
+            '.team-overview-card',
+            '.approval-queue-card',
+            '.recent-section',
+        ];
+
+        try {
+            const response = await fetch(window.location.href, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+
+            selectors.forEach((selector) => {
+                const currentEl = document.querySelector(selector);
+                const nextEl = doc.querySelector(selector);
+                if (currentEl && nextEl) {
+                    currentEl.outerHTML = nextEl.outerHTML;
+                }
+            });
+        } catch (error) {
+            console.error('[Atasan Dashboard] Partial refresh failed:', error);
+        } finally {
+            window.__atasanDashboardPartialRefreshBusy = false;
+        }
+    };
+
+    window.removeEventListener('refresh-approval-table', window.__atasanDashboardPartialRefreshHandler);
+    window.removeEventListener('refresh-pengajuan-table', window.__atasanDashboardPartialRefreshHandler);
+    window.__atasanDashboardPartialRefreshHandler = refreshAtasanDashboardSections;
+    window.addEventListener('refresh-approval-table', window.__atasanDashboardPartialRefreshHandler);
+    window.addEventListener('refresh-pengajuan-table', window.__atasanDashboardPartialRefreshHandler);
 
     function toggleDistChart(type) {
         const statusContainer = document.getElementById('statusChartContainer');
@@ -281,7 +324,6 @@
         }
     }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 @endpush
 
 @section('content')
@@ -513,12 +555,16 @@
 
                         <div style="width: 100%; margin-top: auto; max-height: 80px; overflow-y: auto; padding-right: 5px; display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; padding-top: 0.5rem; border-top: 1px solid #f1f5f9;">
                             @foreach($categoryDist ?? [] as $index => $cat)
+                                @php
+                                    $catName = data_get($cat, 'nama_kategori', '-');
+                                    $catTotal = (float) data_get($cat, 'total', 0);
+                                @endphp
                                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.15rem 0.25rem; border-radius: 4px; background: #f8fafc;">
                                     <div style="display: flex; align-items: center; gap: 0.35rem; min-width: 0;">
                                         <div style="width: 6px; height: 6px; border-radius: 50%; background: {{ ['#425d87', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][$index % 7] }}; flex-shrink: 0;"></div>
-                                        <span style="font-size: 0.6rem; font-weight: 600; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $cat->nama_kategori }}</span>
+                                        <span style="font-size: 0.6rem; font-weight: 600; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $catName }}</span>
                                     </div>
-                                    <span style="font-size: 0.6rem; font-weight: 700; color: #425d87; flex-shrink: 0;">{{ number_format($cat->total / 1000, 0) }}k</span>
+                                    <span style="font-size: 0.6rem; font-weight: 700; color: #425d87; flex-shrink: 0;">{{ number_format($catTotal / 1000, 0) }}k</span>
                                 </div>
                             @endforeach
                         </div>
@@ -652,56 +698,44 @@
                     @endif
                 </div>
 
-                <div class="quick-actions-minimal" style="display: flex; flex-direction: column; gap: 1rem;">
-                    <h3 style="font-size: 0.75rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.1em; margin: 0 0 0.25rem 0; display: flex; align-items: center; gap: 0.5rem; text-transform: uppercase;">
+                <div class="quick-actions-minimal">
+                    <h3 class="quick-actions-title">
                         Aksi Cepat
-                        <div style="flex: 1; height: 1px; background: #e2e8f0; opacity: 0.5;"></div>
+                        <div class="quick-actions-title-line"></div>
                     </h3>
-                    
-                    <div class="quick-actions-vertical" style="display: flex; flex-direction: column; gap: 1rem;">
-                        <a href="{{ route('atasan.pengajuan.create') }}" class="modern-action-card" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #f1f5f9; border-radius: 1rem; text-decoration: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);">
-                            <div style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 8px; background: linear-gradient(135deg, #425d87 0%, #314464 100%); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(66, 93, 135, 0.2);">
+
+                    <div class="quick-actions-vertical">
+                        <a href="{{ route('atasan.pengajuan.create') }}" class="modern-action-card quick-card quick-card-primary">
+                            <div class="quick-card-icon quick-card-icon-primary">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             </div>
-                            <div style="min-width: 0;">
-                                <div style="font-weight: 700; color: #1e293b; font-size: 0.8rem; margin-bottom: 0.05rem;">Buat pengajuan</div>
-                                <div style="font-size: 0.65rem; color: #64748b;">Pengajuan pribadi</div>
+                            <div class="quick-card-content">
+                                <div class="quick-card-title">Buat pengajuan</div>
+                                <div class="quick-card-subtitle">Pengajuan pribadi</div>
                             </div>
                         </a>
 
-                        <a href="{{ route('atasan.pengajuan.index') }}" class="modern-action-card" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #f1f5f9; border-radius: 1rem; text-decoration: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);">
-                            <div style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 8px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.2);">
+                        <a href="{{ route('atasan.pengajuan.index') }}" class="modern-action-card quick-card quick-card-warning">
+                            <div class="quick-card-icon quick-card-icon-warning">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                             </div>
-                            <div style="min-width: 0;">
-                                <div style="font-weight: 700; color: #1e293b; font-size: 0.8rem; margin-bottom: 0.05rem;">Perlu persetujuan</div>
-                                <div style="font-size: 0.65rem; color: #64748b;">Approval dari tim</div>
+                            <div class="quick-card-content">
+                                <div class="quick-card-title">Perlu persetujuan</div>
+                                <div class="quick-card-subtitle">Approval dari tim</div>
                             </div>
                         </a>
 
-                        <a href="{{ route('atasan.profile.index') }}" class="modern-action-card" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #f1f5f9; border-radius: 1rem; text-decoration: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);">
-                            <div style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(5, 150, 105, 0.2);">
+                        <a href="{{ route('atasan.profile.index') }}" class="modern-action-card quick-card quick-card-success">
+                            <div class="quick-card-icon quick-card-icon-success">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                             </div>
-                            <div style="min-width: 0;">
-                                <div style="font-weight: 700; color: #1e293b; font-size: 0.8rem; margin-bottom: 0.05rem;">Profil akun</div>
-                                <div style="font-size: 0.65rem; color: #64748b;">Pengaturan & info</div>
+                            <div class="quick-card-content">
+                                <div class="quick-card-title">Profil akun</div>
+                                <div class="quick-card-subtitle">Pengaturan & info</div>
                             </div>
                         </a>
                     </div>
                 </div>
-
-                <style>
-                    .modern-action-card:hover {
-                        transform: translateY(-4px);
-                        box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08) !important;
-                        border-color: #cbd5e1 !important;
-                    }
-                    .modern-action-card:hover .arrow-icon {
-                        transform: translateX(4px);
-                        color: #3b82f6 !important;
-                    }
-                </style>
             </div>
         </div>
     </div>

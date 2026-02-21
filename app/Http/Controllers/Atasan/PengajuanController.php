@@ -177,7 +177,8 @@ class PengajuanController extends Controller
             [
                 'pengajuanList' => $pengajuanList,
                 'user' => Auth::user()->load('departemen'),
-            ]
+            ],
+            ['orientation' => 'landscape']
         );
     }
 
@@ -191,5 +192,19 @@ class PengajuanController extends Controller
         $data = $this->mapPengajuanForCsv($pengajuanList, 'personal');
 
         return $this->exportService->exportToCSV($fileName, $headers, $data);
+    }
+
+    public function exportXlsx(Request $request)
+    {
+        $query = $this->applyPersonalPengajuanFilters(Pengajuan::query(), $request);
+        $fileName = 'pengajuan_reimbursement_'.date('Y-m-d_His').'.xlsx';
+        $headers = $this->getPengajuanCsvHeaders('personal');
+
+        $pengajuanList = $query->with(['user', 'kategori'])->get();
+        $data = $this->mapPengajuanForCsv($pengajuanList, 'personal');
+
+        return $this->exportService->exportToXlsx($fileName, $headers, $data, [
+            'sheet_name' => 'Pengajuan Pribadi',
+        ]);
     }
 }

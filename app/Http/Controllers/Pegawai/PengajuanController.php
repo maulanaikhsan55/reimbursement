@@ -252,7 +252,8 @@ class PengajuanController extends Controller
                 [
                     'pengajuanList' => $pengajuanList,
                     'user' => Auth::user()->load('departemen'),
-                ]
+                ],
+                ['orientation' => 'landscape']
             );
         } catch (\Exception $e) {
             \Log::error('PDF export error for user '.Auth::id().': '.$e->getMessage());
@@ -286,6 +287,33 @@ class PengajuanController extends Controller
         } catch (\Exception $e) {
             \Log::error('CSV export error for user '.Auth::id().': '.$e->getMessage());
             abort(500, 'Gagal mengekspor data CSV. Silakan coba lagi.');
+        }
+    }
+
+    /**
+     * Export reimbursement requests to XLSX format.
+     *
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportXlsx(Request $request)
+    {
+        try {
+            $query = $this->applyPersonalPengajuanFilters(Pengajuan::query(), $request);
+
+            $fileName = 'pengajuan_reimbursement_'.date('Y-m-d_His').'.xlsx';
+            $headers = $this->getPengajuanCsvHeaders('personal');
+
+            $pengajuanList = $query->with(['user', 'kategori'])->get();
+            $data = $this->mapPengajuanForCsv($pengajuanList, 'personal');
+
+            \Log::info('User '.Auth::id().' exporting XLSX with '.count($pengajuanList).' records');
+
+            return $this->exportService->exportToXlsx($fileName, $headers, $data, [
+                'sheet_name' => 'Pengajuan Pribadi',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('XLSX export error for user '.Auth::id().': '.$e->getMessage());
+            abort(500, 'Gagal mengekspor data XLSX. Silakan coba lagi.');
         }
     }
 }

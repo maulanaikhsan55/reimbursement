@@ -1,5 +1,6 @@
 @props(['results'])
 
+<div class="ai-validation-result">
 @if(!$results->isEmpty())
     @php
         $ocrValidasi = $results->where('jenis_validasi', 'ocr')->first();
@@ -11,13 +12,13 @@
 
     @if($ocrData)
     <!-- Professional AI Audit Summary -->
-    <div style="margin-bottom: 1.5rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-        <div style="padding: 1rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+    <div class="ai-audit-shell" style="margin-bottom: 1.5rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+        <div class="ai-audit-head" style="padding: 1rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 0.625rem;">
                 <div style="color: #4f46e5;">
                     <x-icon name="cpu" class="w-5 h-5" />
                 </div>
-                <h3 style="margin: 0; font-size: 0.9375rem; font-weight: 700; color: #1e293b; letter-spacing: -0.01em;">AI Auditor Real-time</h3>
+                <h3 class="ai-audit-title" style="margin: 0; font-size: 0.9375rem; font-weight: 700; color: #1e293b; letter-spacing: -0.01em;">AI Auditor Real-time</h3>
             </div>
             
             @php
@@ -26,7 +27,7 @@
                 $confidence = $ocrData['confidence_score'] ?? 0;
                 $category = $ocrData['suggested_category'] ?? 'Lainnya';
             @endphp
-            <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="ai-audit-metrics" style="display: flex; align-items: center; gap: 1rem;">
                 <div style="text-align: right;">
                     <div style="font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Confidence</div>
                     <div style="font-size: 0.8125rem; font-weight: 700; color: #475569;">{{ $confidence }}%</div>
@@ -42,9 +43,9 @@
             </div>
         </div>
 
-        <div style="padding: 1.25rem; display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem;">
+        <div class="ai-audit-body" style="padding: 1.25rem; display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem;">
             <!-- Simple Item Breakdown -->
-            <div>
+            <div class="ai-audit-items">
                 <div style="font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Itemized Receipt</div>
                 @if(isset($ocrData['items']) && count($ocrData['items']) > 0)
                     <div style="display: flex; flex-direction: column; gap: 0.4rem;">
@@ -61,7 +62,7 @@
             </div>
 
             <!-- Audit & Policy -->
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="ai-audit-notes" style="display: flex; flex-direction: column; gap: 1rem;">
                 <div>
                     <div style="font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Audit & Behavioral Notes</div>
                     @php
@@ -117,7 +118,7 @@
     @endif
 
     <!-- Compact Validation Grid -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem;">
+    <div class="ai-validation-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem;">
         @foreach($results as $validasi)
             @php
                 $labelMap = [
@@ -141,7 +142,7 @@
                 $badgeBg = $isPass ? '#f0fdf4' : ($isWarning ? '#fffbeb' : '#fef2f2');
             @endphp
             
-            <div style="padding: 0.875rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; flex-direction: column; gap: 0.5rem;">
+            <div class="ai-validation-card" style="padding: 0.875rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; flex-direction: column; gap: 0.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ $displayLabel }}</span>
                     <span style="padding: 0.2rem 0.5rem; background: {{ $badgeBg }}; color: {{ $badgeColor }}; border-radius: 4px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">
@@ -163,7 +164,8 @@
         @endforeach
     </div>
 @else
-    <div style="padding: 1.5rem; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 12px; text-align: center;">
+    <div class="ai-validation-empty" style="padding: 1.5rem; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 12px; text-align: center;">
         <p style="margin: 0; font-size: 0.8125rem; color: #94a3b8;">Sistem sedang memproses validasi AI...</p>
     </div>
 @endif
+</div>

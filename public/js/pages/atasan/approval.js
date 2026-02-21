@@ -85,10 +85,12 @@
             });
         }
 
-        // Real-time refresh listener
-        window.addEventListener('refresh-approval-table', function() {
+        // Real-time refresh listener (guard against duplicate bindings)
+        window.removeEventListener('refresh-approval-table', window.__atasanApprovalRefreshHandler);
+        window.__atasanApprovalRefreshHandler = function() {
             updateTable();
-        });
+        };
+        window.addEventListener('refresh-approval-table', window.__atasanApprovalRefreshHandler);
 
         const submitPostExport = function(url, params) {
             const form = document.createElement('form');
@@ -155,6 +157,25 @@
             if (tFrom) params.append('tanggal_from', tFrom);
             if (tTo) params.append('tanggal_to', tTo);
             
+            submitPostExport(url, params);
+        };
+
+        window.exportXlsx = function(e) {
+            e.preventDefault();
+            const search = document.getElementById('searchInput')?.value || '';
+            const status = document.getElementById('statusInput')?.value || '';
+            const tFrom = document.getElementById('tanggalFrom')?.value || '';
+            const tTo = document.getElementById('tanggalTo')?.value || '';
+
+            const btn = e.currentTarget;
+            let url = btn.dataset.url;
+
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (status) params.append('status', status);
+            if (tFrom) params.append('tanggal_from', tFrom);
+            if (tTo) params.append('tanggal_to', tTo);
+
             submitPostExport(url, params);
         };
     }

@@ -8,12 +8,11 @@
     <title>@yield('title', 'Humplus Reimbursement')</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    @vite(['resources/css/app.css', 'resources/css/dashboard-ultra.css', 'resources/css/dashboard/finance.css', 'resources/css/pages/pegawai/dashboard.css', 'resources/css/pages/pegawai/pengajuan.css', 'resources/css/modules/pengajuan-detail.css', 'resources/css/pages/pegawai/notifikasi.css', 'resources/css/pages/pegawai/profile.css', 'resources/css/pages/atasan/dashboard.css', 'resources/css/pages/pegawai/responsive-fixes.css', 'resources/js/app.js', 'resources/js/dashboard-ultra.js', 'resources/js/finance/finance.js'])
-
- 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @vite(['resources/css/app.css', 'resources/css/dashboard-ultra.css', 'resources/css/dashboard/finance.css', 'resources/css/pages/pegawai/dashboard.css', 'resources/css/pages/pegawai/pengajuan.css', 'resources/css/modules/pengajuan-detail.css', 'resources/css/pages/pegawai/notifikasi.css', 'resources/css/pages/pegawai/profile.css', 'resources/css/pages/atasan/dashboard.css', 'resources/css/pages/pegawai/responsive-fixes.css', 'resources/css/pages/role-unified.css', 'resources/js/app.js', 'resources/js/dashboard-ultra.js'])
     
     @livewireStyles
     @stack('styles')
@@ -33,6 +32,7 @@
             transform: translateZ(0);
             backface-visibility: hidden;
             will-change: opacity;
+            transition: opacity 0.1s linear;
         }
 
         .progress-bar-fill {
@@ -42,58 +42,69 @@
             height: 100%;
             width: 100%;
             background: linear-gradient(90deg, #425d87 0%, #6366f1 50%, #8b5cf6 100%);
-            background-size: 200% 100%;
-            border-radius: 0 2px 2px 0;
+            border-radius: 999px;
+            transform-origin: left center;
+            transform: scaleX(0);
+            opacity: 1;
+            filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.35));
             will-change: transform;
-            transform: translateX(-100%);
-            opacity: 0;
+            transition: transform 0.14s linear, opacity 0.1s linear;
         }
 
-        /* Active state - SEAMLESS continuous flow from left to right */
+        /* Active state */
         .progress-bar-active {
             opacity: 1 !important;
         }
 
         .progress-bar-active .progress-bar-fill {
-            opacity: 1;
-            animation: smooth-flow 0.6s ease-in-out infinite;
+            animation: none !important;
         }
 
-        @keyframes smooth-flow {
-            0% {
-                transform: translateX(-100%);
-            }
-            50% {
-                transform: translateX(0%);
-            }
-            51% {
-                transform: translateX(100%);
-            }
-            100% {
-                transform: translateX(100%);
-            }
-        }
-
-        /* Exit state - instant vanish */
+        /* Exit state */
         .progress-bar-exit {
             opacity: 0 !important;
-            transition: opacity 0.05s ease-out !important;
+            transition: opacity 0.12s linear !important;
         }
 
         .progress-bar-exit .progress-bar-fill {
-            transform: translateX(100%) !important;
-            transition: transform 0.05s ease-out !important;
+            transform: scaleX(1) !important;
+            opacity: 0 !important;
         }
 
-        /* PAGE TRANSITION - Ultra fast */
-        .page-content {
-            animation: quickFade 0.15s ease-out;
+        /* PAGE TRANSITION */
+        #page-content-wrapper {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.06s linear;
             will-change: opacity, transform;
         }
 
-        @keyframes quickFade {
-            from { opacity: 0.97; transform: translateY(1px); }
-            to { opacity: 1; transform: translateY(0); }
+        body.is-route-loading #page-content-wrapper {
+            opacity: 1;
+            transform: none;
+            filter: none;
+        }
+
+        .page-transition-fade {
+            animation: none;
+        }
+
+        @keyframes page-smooth-in {
+            from {
+                opacity: 0.84;
+                transform: translateY(4px) scale(0.998);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .smooth-table-ready .data-table tbody tr {
+            opacity: 1;
+            transform: none;
+            animation: none;
+            will-change: auto;
         }
 
         /* BUTTON RIPPLE EFFECT - GPU Accelerated */
@@ -288,24 +299,16 @@
            STAGGERED ENTRANCE ANIMATIONS - Lists, Tables, Cards
            ========================================================================== */
         
-        /* Table rows stagger animation */
-        .data-table tbody tr {
-            opacity: 0;
-            transform: translateY(8px);
-            animation: table-row-in 0.2s ease-out forwards;
-            will-change: opacity, transform;
-        }
-
-        .data-table tbody tr:nth-child(1) { animation-delay: 0ms; }
-        .data-table tbody tr:nth-child(2) { animation-delay: 40ms; }
-        .data-table tbody tr:nth-child(3) { animation-delay: 80ms; }
-        .data-table tbody tr:nth-child(4) { animation-delay: 120ms; }
-        .data-table tbody tr:nth-child(5) { animation-delay: 160ms; }
-        .data-table tbody tr:nth-child(6) { animation-delay: 200ms; }
-        .data-table tbody tr:nth-child(7) { animation-delay: 240ms; }
-        .data-table tbody tr:nth-child(8) { animation-delay: 280ms; }
-        .data-table tbody tr:nth-child(9) { animation-delay: 320ms; }
-        .data-table tbody tr:nth-child(10) { animation-delay: 360ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(1) { animation-delay: 0ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(2) { animation-delay: 20ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(3) { animation-delay: 40ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(4) { animation-delay: 60ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(5) { animation-delay: 80ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(6) { animation-delay: 100ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(7) { animation-delay: 120ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(8) { animation-delay: 140ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(9) { animation-delay: 160ms; }
+        .smooth-table-ready .data-table tbody tr:nth-child(10) { animation-delay: 180ms; }
 
         @keyframes table-row-in {
             to {
@@ -315,16 +318,16 @@
         }
 
         /* Stat cards stagger */
-        .stat-card {
-            opacity: 0;
-            transform: scale(0.95) translateY(10px);
-            animation: stat-card-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        .smooth-table-ready .stat-card {
+            opacity: 1;
+            transform: none;
+            animation: none;
         }
 
-        .stat-card:nth-child(1) { animation-delay: 0ms; }
-        .stat-card:nth-child(2) { animation-delay: 50ms; }
-        .stat-card:nth-child(3) { animation-delay: 100ms; }
-        .stat-card:nth-child(4) { animation-delay: 150ms; }
+        .smooth-table-ready .stat-card:nth-child(1) { animation-delay: 0ms; }
+        .smooth-table-ready .stat-card:nth-child(2) { animation-delay: 35ms; }
+        .smooth-table-ready .stat-card:nth-child(3) { animation-delay: 70ms; }
+        .smooth-table-ready .stat-card:nth-child(4) { animation-delay: 105ms; }
 
         @keyframes stat-card-in {
             to {
@@ -335,10 +338,10 @@
 
         /* Stagger item class for custom lists */
         .stagger-item {
-            opacity: 0;
-            transform: translateY(10px);
-            animation: stagger-in 0.25s ease-out forwards;
-            will-change: opacity, transform;
+            opacity: 1;
+            transform: none;
+            animation: none;
+            will-change: auto;
         }
 
         .stagger-item:nth-child(1) { animation-delay: 0ms; }
@@ -386,7 +389,14 @@
         window.hideAllLoaders = window.hideAllLoaders || function() { /* no-op until loaded */ };
     </script>
 </head>
-<body>
+@php
+    $roleBodyClass = request()->routeIs('finance.*')
+        ? 'role-finance'
+        : (request()->routeIs('pegawai.*')
+            ? 'role-pegawai'
+            : (request()->routeIs('atasan.*') ? 'role-atasan' : 'role-guest'));
+@endphp
+<body class="{{ $roleBodyClass }}">
     <!-- Modern Progress Bar - LinkedIn/Twitter Style -->
     <div class="progress-bar-container" id="modernProgressBar">
         <div class="progress-bar-fill"></div>
@@ -504,8 +514,6 @@
     <!-- PREFETCHING & NAVIGATION SMART SCRIPTS -->
     
     <script data-navigate-once>
-        let skeletonTimeout;
-
         // Mobile Sidebar Toggle Logic
         document.addEventListener('click', function(e) {
             const toggle = document.getElementById('mobileSidebarToggle');
@@ -524,20 +532,11 @@
         });
 
         document.addEventListener('livewire:navigate', () => {
-            // SHOW ULTRA MODERN PROGRESS BAR IMMEDIATELY
+            // Keep loading feedback minimal and instant.
             if (window.showProgressBar) {
                 window.showProgressBar();
             }
-
-            // Only show skeleton if navigation takes longer than 300ms
-            if (skeletonTimeout) clearTimeout(skeletonTimeout);
-            
-            skeletonTimeout = setTimeout(() => {
-                const skeleton = document.getElementById('skeleton-overlay');
-                if (skeleton && !document.body.classList.contains('ready')) {
-                    skeleton.classList.add('show');
-                }
-            }, 300);
+            document.body.classList.add('is-route-loading');
         });
 
         document.addEventListener('livewire:navigated', () => {
@@ -548,28 +547,18 @@
             if (window.hideAllLoaders) {
                 window.hideAllLoaders();
             }
-            
-            // Remove skeleton immediately
-            const skeleton = document.getElementById('skeleton-overlay');
-            if (skeleton) {
-                skeleton.classList.remove('show');
-            }
-            if (window.hideAllLoaders) window.hideAllLoaders();
-
-            if (skeletonTimeout) clearTimeout(skeletonTimeout);
-            
-            // Force re-trigger animation for content
-            const wrapper = document.getElementById('page-content-wrapper');
-            if (wrapper) {
-                wrapper.classList.remove('page-transition-fade');
-                void wrapper.offsetWidth; // trigger reflow
-                wrapper.classList.add('page-transition-fade');
-            }
+            // Safety reset: avoid accidental scroll lock persistence across navigations.
+            document.body.style.overflow = '';
+            const sidebar = document.querySelector('.pegawai-sidebar, .finance-sidebar, .atasan-sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            sidebar?.classList.remove('show');
+            backdrop?.classList.remove('show');
+            document.body.classList.remove('is-route-loading');
 
             // Trigger resize to fix layout/charts
             setTimeout(() => {
                 window.dispatchEvent(new Event('resize'));
-            }, 100);
+            }, 40);
             
             // Re-run AOS
             if (typeof AOS !== 'undefined') {
@@ -582,10 +571,61 @@
     <!-- SCRIPT ORDER -->
     <!-- ===================================================== -->
     
-    <!-- 1. Livewire (includes Alpine.js in v3) -->
+    <!-- 1. Livewire (includes Alpine runtime) -->
     @livewireScripts
 
-    <!-- 4. OCR & PDF Libraries -->
+    <!-- 2. Dashboard Chart Library (load only where needed) -->
+    @if (request()->routeIs('*.dashboard'))
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @endif
+    <script data-navigate-once>
+        window.ensureChartJsLoaded = window.ensureChartJsLoaded || (() => {
+            let pending = null;
+            const chartSrc = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+
+            return function ensureChartJsLoaded() {
+                if (window.Chart) {
+                    return Promise.resolve(window.Chart);
+                }
+
+                if (pending) {
+                    return pending;
+                }
+
+                pending = new Promise((resolve, reject) => {
+                    const onReady = () => resolve(window.Chart);
+                    const onError = () => {
+                        pending = null;
+                        reject(new Error('Failed to load Chart.js'));
+                    };
+
+                    const existing = document.querySelector('script[data-chartjs-loader="1"]');
+                    if (existing) {
+                        if (window.Chart) {
+                            onReady();
+                            return;
+                        }
+                        existing.addEventListener('load', onReady, { once: true });
+                        existing.addEventListener('error', onError, { once: true });
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+                    script.src = chartSrc;
+                    script.async = true;
+                    script.dataset.chartjsLoader = '1';
+                    script.onload = onReady;
+                    script.onerror = onError;
+                    document.head.appendChild(script);
+                });
+
+                return pending;
+            };
+        })();
+    </script>
+
+    <!-- 3. OCR & PDF Libraries (only on create form with OCR validation) -->
+    @if (request()->routeIs('*.pengajuan.create'))
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
@@ -593,28 +633,118 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
     </script>
+    @endif
 
-    <!-- 5. Page Scripts -->
+    <!-- 4. Page Scripts -->
     @stack('scripts')
     
     @auth
     <script data-navigate-once>
+        const notifUserRole = @js(Auth::user()->role ?? null);
+        const notifRouteMap = {
+            pegawai: {
+                detailBase: @js(url('/pegawai/pengajuan')),
+                notif: @js(route('pegawai.notifikasi')),
+                markReadBase: @js(url('/pegawai/notifikasi')),
+            },
+            atasan: {
+                detailBase: @js(url('/atasan/approval')),
+                notif: @js(route('atasan.notifikasi')),
+                markReadBase: @js(url('/atasan/notifikasi')),
+            },
+            finance: {
+                detailBase: @js(url('/finance/approval')),
+                notif: @js(route('finance.notifikasi')),
+                markReadBase: @js(url('/finance/notifikasi')),
+            },
+        };
+
+        const resolveRealtimeNotifUrl = (payload) => {
+            const roleRoutes = notifRouteMap[notifUserRole];
+            if (!roleRoutes) return null;
+
+            const pengajuanId = payload?.pengajuan_id ?? payload?.pengajuanId ?? null;
+            if (pengajuanId) {
+                return `${roleRoutes.detailBase}/${pengajuanId}`;
+            }
+
+            return roleRoutes.notif;
+        };
+
+        const resolveRealtimeMarkReadUrl = (payload) => {
+            const roleRoutes = notifRouteMap[notifUserRole];
+            if (!roleRoutes) return null;
+
+            const notifId = payload?.notifikasi_id ?? payload?.notifikasiId ?? null;
+            if (!notifId) return null;
+
+            return `${roleRoutes.markReadBase}/${notifId}/read`;
+        };
+
+        const markNotificationReadAndNavigate = async (payload) => {
+            const targetUrl = resolveRealtimeNotifUrl(payload);
+            const markReadUrl = resolveRealtimeMarkReadUrl(payload);
+
+            if (!markReadUrl) {
+                if (targetUrl) window.location.href = targetUrl;
+                return;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content');
+                await fetch(markReadUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken || '',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                });
+            } catch (error) {
+                // Ignore mark-read request failures and still navigate.
+            } finally {
+                if (targetUrl) {
+                    window.location.href = targetUrl;
+                }
+            }
+        };
+
+        const hasPengajuanContext = (payload) => {
+            const pengajuanId = payload?.pengajuan_id ?? payload?.pengajuanId ?? null;
+            return Boolean(pengajuanId);
+        };
+
         const initEchoListener = () => {
             if (window.Echo) {
-                window.Echo.private('App.Models.User.{{ Auth::id() }}')
+                const channelName = 'App.Models.User.{{ Auth::id() }}';
+                const bindFlagKey = '__echo_notif_bound_' + channelName.replace(/[^a-zA-Z0-9_]/g, '_');
+                if (window[bindFlagKey]) {
+                    return;
+                }
+                window[bindFlagKey] = true;
+
+                window.Echo.private(channelName)
                     .listen('.notifikasi.pengajuan', (e) => {
-                        window.showNotification(
-                            e.type === 'error' ? 'error' : (e.type === 'success' ? 'success' : 'info'),
-                            e.title ?? 'Notifikasi',
-                            e.message ?? '',
-                            6000
-                        );
+                        const targetUrl = resolveRealtimeNotifUrl(e);
                         window.dispatchEvent(new CustomEvent('refresh-notif-badges'));
                         if (window.Livewire) {
                             window.Livewire.dispatch('notifikasi-baru');
                         }
-                        window.dispatchEvent(new CustomEvent('refresh-approval-table'));
-                        window.dispatchEvent(new CustomEvent('refresh-pengajuan-table'));
+                        if (hasPengajuanContext(e)) {
+                            window.dispatchEvent(new CustomEvent('refresh-approval-table'));
+                            window.dispatchEvent(new CustomEvent('refresh-pengajuan-table'));
+                        }
+
+                        window.showNotification(
+                            e.type === 'error' ? 'error' : (e.type === 'success' ? 'success' : 'info'),
+                            e.title ?? 'Notifikasi',
+                            e.message ?? '',
+                            6000,
+                            {
+                                url: targetUrl,
+                                onClick: () => markNotificationReadAndNavigate(e),
+                            }
+                        );
                     });
             } else {
                 setTimeout(initEchoListener, 200);

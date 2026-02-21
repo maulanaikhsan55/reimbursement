@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Finance\MasterData;
 
-use App\Events\NotifikasiPengajuan;
 use App\Http\Controllers\Controller;
 use App\Models\COA;
 use App\Models\KasBank;
@@ -73,12 +72,6 @@ class KasBankController extends Controller
                     'is_read' => false,
                 ]);
 
-                try {
-                    event(new NotifikasiPengajuan(auth()->id(), 'Sinkronisasi Kas/Bank Gagal', $errorMsg, 'error'));
-                } catch (\Exception $e) {
-                    \Log::warning('Gagal mengirim broadcast sinkronisasi kas bank gagal: '.$e->getMessage());
-                }
-
                 return redirect()->route('finance.masterdata.kas_bank.index')
                     ->with('error', $errorMsg);
             }
@@ -95,12 +88,6 @@ class KasBankController extends Controller
                     'pesan' => $infoMsg,
                     'is_read' => false,
                 ]);
-
-                try {
-                    event(new NotifikasiPengajuan(auth()->id(), 'Sinkronisasi Kas/Bank Selesai', $infoMsg, 'info'));
-                } catch (\Exception $e) {
-                    \Log::warning('Gagal mengirim broadcast sinkronisasi kas bank selesai: '.$e->getMessage());
-                }
 
                 return redirect()->route('finance.masterdata.kas_bank.index')
                     ->with('info', $infoMsg);
@@ -229,12 +216,6 @@ class KasBankController extends Controller
                 'is_read' => false,
             ]);
 
-            try {
-                event(new NotifikasiPengajuan(auth()->id(), 'Sinkronisasi Kas/Bank Berhasil', $successMsg, 'success'));
-            } catch (\Exception $e) {
-                \Log::warning('Gagal mengirim broadcast sinkronisasi kas bank berhasil: '.$e->getMessage());
-            }
-
             return redirect()->route('finance.masterdata.kas_bank.index')
                 ->with('success', $successMsg);
         } catch (\Exception $e) {
@@ -247,12 +228,6 @@ class KasBankController extends Controller
                 'pesan' => $errorMsg,
                 'is_read' => false,
             ]);
-
-            try {
-                event(new NotifikasiPengajuan(auth()->id(), 'Kesalahan Sinkronisasi Kas/Bank', $errorMsg, 'error'));
-            } catch (\Exception $e) {
-                \Log::warning('Gagal mengirim broadcast kesalahan sinkronisasi kas bank: '.$e->getMessage());
-            }
 
             return redirect()->route('finance.masterdata.kas_bank.index')
                 ->with('error', $errorMsg);

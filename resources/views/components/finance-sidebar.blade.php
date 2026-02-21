@@ -27,9 +27,6 @@
         <div class="menu-section-label">REIMBURSEMENT</div>
 
         <!-- Persetujuan -->
-        @php
-            $pendingFinanceCount = \App\Models\Pengajuan::where('status', 'menunggu_finance')->count();
-        @endphp
         <a href="{{ route('finance.approval.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.approval.*') ? 'active' : '' }}">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 11l3 3L22 4"></path>
@@ -37,18 +34,24 @@
             </svg>
             <span class="menu-text">Persetujuan</span>
             <span class="badge-sidebar badge-approval-finance" 
-                x-data="{ count: {{ $pendingFinanceCount }} }" 
+                x-data="{ count: 0 }" 
                 x-init="
-                    window.addEventListener('refresh-notif-badges', () => {
+                    const updateApprovalCount = () => {
                         fetch('{{ route('finance.approval.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                             .then(r => r.json())
-                            .then(data => { count = data.pending_count; });
-                    });
-                    setInterval(() => {
-                        fetch('{{ route('finance.approval.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                            .then(r => r.json())
-                            .then(data => { count = data.pending_count; });
-                    }, 10000);
+                            .then(data => { count = Number(data.pending_count || 0); })
+                            .catch(() => {});
+                    };
+                    window.addEventListener('refresh-notif-badges', updateApprovalCount);
+                    if (typeof Livewire !== 'undefined') {
+                        Livewire.on('notifikasi-baru', () => setTimeout(updateApprovalCount, 250));
+                    }
+                    if ('requestIdleCallback' in window) {
+                        requestIdleCallback(updateApprovalCount, { timeout: 1200 });
+                    } else {
+                        setTimeout(updateApprovalCount, 120);
+                    }
+                    setInterval(updateApprovalCount, 30000);
                 " 
                 x-show="count > 0"
                 x-cloak
@@ -57,11 +60,6 @@
         </a>
 
         <!-- Pencairan -->
-        @php
-            $pendingDisbursementCount = \App\Models\Pengajuan::where('status', 'terkirim_accurate')
-                ->whereNull('tanggal_pencairan')
-                ->count();
-        @endphp
         <a href="{{ route('finance.disbursement.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.disbursement.*') ? 'active' : '' }}">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2v20m10-10H2"></path>
@@ -70,18 +68,24 @@
             </svg>
             <span class="menu-text">Pencairan</span>
             <span class="badge-sidebar badge-disbursement-finance" 
-                x-data="{ count: {{ $pendingDisbursementCount }} }" 
+                x-data="{ count: 0 }" 
                 x-init="
-                    window.addEventListener('refresh-notif-badges', () => {
+                    const updateDisbursementCount = () => {
                         fetch('{{ route('finance.disbursement.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                             .then(r => r.json())
-                            .then(data => { count = data.pending_count; });
-                    });
-                    setInterval(() => {
-                        fetch('{{ route('finance.disbursement.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                            .then(r => r.json())
-                            .then(data => { count = data.pending_count; });
-                    }, 10000);
+                            .then(data => { count = Number(data.pending_count || 0); })
+                            .catch(() => {});
+                    };
+                    window.addEventListener('refresh-notif-badges', updateDisbursementCount);
+                    if (typeof Livewire !== 'undefined') {
+                        Livewire.on('notifikasi-baru', () => setTimeout(updateDisbursementCount, 250));
+                    }
+                    if ('requestIdleCallback' in window) {
+                        requestIdleCallback(updateDisbursementCount, { timeout: 1200 });
+                    } else {
+                        setTimeout(updateDisbursementCount, 180);
+                    }
+                    setInterval(updateDisbursementCount, 30000);
                 " 
                 x-show="count > 0"
                 x-cloak
@@ -91,39 +95,36 @@
 
          <!-- Notifikasi -->
         <a href="{{ route('finance.notifikasi') }}" wire:navigate.hover class="menu-item notifikasi-menu {{ request()->routeIs('finance.notifikasi*') ? 'active' : '' }}" x-data="{
-            unreadCount: {{ \App\Models\Notifikasi::where('user_id', auth()->id())->where('is_read', false)->count() }}
+            unreadCount: 0
         }" x-init="
-            // Listen for notification events
-            window.addEventListener('refresh-notif-badges', () => {
+            const updateNotifCount = () => {
                 fetch('{{ route('finance.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                     .then(r => r.json())
                     .then(data => {
-                        unreadCount = data.unread_count;
-                    });
-            });
+                        unreadCount = Number(data.unread_count || 0);
+                    })
+                    .catch(() => {});
+            };
+
+            // Listen for notification events
+            window.addEventListener('refresh-notif-badges', updateNotifCount);
             
             // Also listen for Livewire event
             if (typeof Livewire !== 'undefined') {
                 Livewire.on('notifikasi-baru', () => {
-                    setTimeout(() => {
-                        fetch('{{ route('finance.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                            .then(r => r.json())
-                            .then(data => {
-                                unreadCount = data.unread_count;
-                            });
-                    }, 500);
+                    setTimeout(updateNotifCount, 350);
                 });
+            }
+
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(updateNotifCount, { timeout: 1200 });
+            } else {
+                setTimeout(updateNotifCount, 220);
             }
             
             // Fallback polling every 30 seconds
             setInterval(() => {
-                fetch('{{ route('finance.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.unread_count !== unreadCount) {
-                            unreadCount = data.unread_count;
-                        }
-                    });
+                updateNotifCount();
             }, 30000);
         ">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -131,7 +132,7 @@
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
             <span class="menu-text">Notifikasi</span>
-            <span class="notif-badge-sidebar" x-show="unreadCount > 0" x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
+            <span class="notif-badge-sidebar" x-show="unreadCount > 0" x-cloak x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
         </a>
 
         <!-- MASTER DATA Section -->
@@ -272,6 +273,15 @@
 </aside>
 
 <style>
+    :root {
+        --finance-sidebar-primary: #425d87;
+        --finance-sidebar-primary-700: #344d74;
+        --finance-sidebar-ink: #17233b;
+        --finance-sidebar-muted: #5f7393;
+        --finance-sidebar-label: #9badc8;
+        --finance-sidebar-danger: #e05555;
+    }
+
     /* Finance Sidebar */
     .finance-sidebar {
         width: 260px;
@@ -283,7 +293,7 @@
         left: 0;
         top: 0;
         z-index: 1000;
-        box-shadow: 8px 0 32px rgba(66, 93, 135, 0.12);
+        box-shadow: 8px 0 30px rgba(22, 37, 62, 0.12);
         border-radius: 0 2.5rem 2.5rem 0;
         padding: 0.5rem 1.25rem 0 1.25rem;
         scroll-behavior: smooth;
@@ -332,7 +342,8 @@
     }
 
     .logo-wrapper {
-        background: #f4f7fa;
+        background: linear-gradient(180deg, #f7f9fd 0%, #f1f5fb 100%);
+        border: 1px solid rgba(66, 93, 135, 0.1);
         padding: 0.75rem;
         border-radius: 1rem;
         display: flex;
@@ -352,9 +363,10 @@
     /* Menu Section */
     .sidebar-menu {
         flex: 1;
-        padding: 0.5rem 0 5rem 0;
+        padding: 0.5rem 0 0.75rem 0;
         overflow-y: auto;
         overflow-x: hidden;
+        scrollbar-gutter: stable both-edges;
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
@@ -362,16 +374,16 @@
         position: relative;
     }
 
-    /* Sliding Indicator - INSTANT (No Animation) */
+    /* Sliding Indicator */
     .menu-sliding-bg {
         position: absolute;
         left: 0;
         width: 100%;
-        background: linear-gradient(135deg, #425d87 0%, #5575a2 100%);
+        background: linear-gradient(135deg, var(--finance-sidebar-primary) 0%, var(--finance-sidebar-primary-700) 100%);
         border-radius: 1.5rem;
-        transition: none !important;
+        transition: top 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.24s ease, opacity 0.2s ease;
         z-index: 0;
-        box-shadow: 0 4px 16px rgba(66, 93, 135, 0.4);
+        box-shadow: 0 10px 22px rgba(66, 93, 135, 0.32);
         opacity: 0;
         pointer-events: none;
         will-change: top, height, opacity;
@@ -385,9 +397,9 @@
         border-radius: 1.5rem;
         font-size: 0.9rem;
         font-weight: 500;
-        color: #1a1a1a;
+        color: var(--finance-sidebar-ink);
         text-decoration: none;
-        transition: background-color 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+        transition: background-color 0.26s ease, color 0.26s ease, transform 0.22s ease, box-shadow 0.26s ease;
         position: relative;
         background: transparent;
         border: none;
@@ -396,13 +408,13 @@
     }
 
     .menu-item:hover {
-        background: linear-gradient(135deg, rgba(66, 93, 135, 0.08) 0%, rgba(60, 83, 121, 0.08) 100%);
-        color: #425d87;
-        transform: translateX(4px);
+        background: linear-gradient(135deg, rgba(66, 93, 135, 0.08) 0%, rgba(66, 93, 135, 0.05) 100%);
+        color: var(--finance-sidebar-primary);
+        transform: translateX(2px);
     }
 
     .menu-item:active {
-        transform: scale(0.92) translateX(4px);
+        transform: scale(0.98) translateX(2px);
     }
 
     .menu-item.active {
@@ -417,8 +429,8 @@
         width: 20px;
         height: 20px;
         flex-shrink: 0;
-        color: #5575a2;
-        transition: color 0.35s ease;
+        color: var(--finance-sidebar-muted);
+        transition: color 0.26s ease;
     }
 
     .menu-item.active .menu-icon {
@@ -427,7 +439,7 @@
 
     .menu-text {
         flex: 1;
-        color: #1a1a1a;
+        color: var(--finance-sidebar-ink);
     }
 
     .menu-item.active .menu-text {
@@ -436,7 +448,7 @@
 
     .badge-sidebar,
     .notif-badge-sidebar {
-        background: #ff5757;
+        background: var(--finance-sidebar-danger);
         color: white;
         padding: 0.2rem 0.5rem;
         border-radius: 0.5rem;
@@ -462,22 +474,21 @@
         padding: 1.25rem 1rem 0.5rem;
         font-size: 0.7rem;
         font-weight: 800;
-        color: #c0cbd8;
+        color: var(--finance-sidebar-label);
         text-transform: uppercase;
         letter-spacing: 0.8px;
         margin-top: 0.75rem;
     }
 
-    /* Logout Section - Fixed at bottom */
+    /* Logout Section - sits below scrollable menu */
     .logout-section {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        margin-top: auto;
+        position: relative;
         padding: 1rem 1.5rem 1.5rem;
-        border-top: 0.1px solid #f0f3f8;
-        background: linear-gradient(to top, #ffffff, #fafbfc);
+        border-top: 1px solid rgba(66, 93, 135, 0.1);
+        background: #ffffff;
         border-radius: 0 0 2.5rem 0;
+        z-index: 2;
     }
 
     .logout-section form {
@@ -507,7 +518,7 @@
     
     .logout-item-menu .menu-icon,
     .logout-item-menu .menu-text {
-        color: #ff5757 !important;
+        color: var(--finance-sidebar-danger) !important;
         transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     
@@ -540,4 +551,5 @@ function confirmLogout(event) {
         'Apakah Anda yakin ingin keluar dari sistem?'
     );
 }
+
 </script>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Notifikasi;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Notifikasi Controller
@@ -78,10 +79,25 @@ class NotifikasiController extends Controller
         $notifikasi = Notifikasi::where('notifikasi_id', $notifikasi_id)->firstOrFail();
 
         if ($notifikasi->user_id !== Auth::id()) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 403);
+            }
+
             return back()->with('error', 'Unauthorized');
         }
 
         $notifikasi->markAsRead();
+        Cache::forget('notif_unread_count_user_'.Auth::id());
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Notifikasi telah ditandai sebagai dibaca',
+            ]);
+        }
 
         return back()->with('success', 'Notifikasi telah ditandai sebagai dibaca');
     }
@@ -94,6 +110,7 @@ class NotifikasiController extends Controller
     public function markAllAsRead()
     {
         Notifikasi::markAllAsReadForUser(Auth::id());
+        Cache::forget('notif_unread_count_user_'.Auth::id());
 
         return back()->with('success', 'Semua notifikasi telah ditandai sebagai dibaca');
     }
@@ -105,9 +122,12 @@ class NotifikasiController extends Controller
      */
     public function getCount()
     {
-        $count = Notifikasi::where('user_id', Auth::id())
-            ->where('is_read', false)
-            ->count();
+        $userId = Auth::id();
+        $count = Cache::remember('notif_unread_count_user_'.$userId, 10, function () use ($userId) {
+            return Notifikasi::where('user_id', $userId)
+                ->where('is_read', false)
+                ->count();
+        });
 
         return response()->json(['unread_count' => $count]);
     }

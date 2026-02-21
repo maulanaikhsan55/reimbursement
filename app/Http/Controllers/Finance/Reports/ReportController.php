@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Finance\Reports;
 
+use App\Enums\PengajuanStatus;
 use App\Http\Controllers\Controller;
 use App\Models\COA;
 use App\Models\Departemen;
@@ -29,8 +30,13 @@ class ReportController extends Controller
 
     public function budgetAudit(Request $request)
     {
-        $year = $request->get('year', date('Y'));
+        $year = (int) $request->get('year', date('Y'));
         $departemenId = $request->get('departemen_id');
+        $basis = $request->get('basis', 'komitmen');
+
+        if (! in_array($basis, ['komitmen', 'realisasi'], true)) {
+            $basis = 'komitmen';
+        }
 
         $departemenQuery = Departemen::query();
         if ($departemenId) {
@@ -38,33 +44,110 @@ class ReportController extends Controller
         }
         $departemens = $departemenQuery->orderBy('nama_departemen')->get();
 
+        if ($basis === 'realisasi') {
+            $monthlyUsageRows = Pengajuan::query()
+                ->selectRaw('departemen_id, MONTH(COALESCE(tanggal_pencairan, DATE(updated_at))) as month_num, SUM(nominal) as total_nominal')
+                ->where('status', PengajuanStatus::DICAIRKAN->value)
+                ->where(function ($query) use ($year) {
+                    $query->whereYear('tanggal_pencairan', $year)
+                        ->orWhere(function ($fallbackQuery) use ($year) {
+                            $fallbackQuery->whereNull('tanggal_pencairan')
+                                ->whereYear('updated_at', $year);
+                        });
+                })
+                ->when($departemenId, fn ($query) => $query->where('departemen_id', $departemenId))
+                ->groupBy('departemen_id', 'month_num')
+                ->get();
+        } else {
+            $monthlyUsageRows = Pengajuan::query()
+                ->selectRaw('departemen_id, MONTH(tanggal_transaksi) as month_num, SUM(nominal) as total_nominal')
+                ->whereYear('tanggal_transaksi', $year)
+                ->whereNotIn('status', [
+                    PengajuanStatus::DITOLAK_ATASAN->value,
+                    PengajuanStatus::DITOLAK_FINANCE->value,
+                ])
+                ->when($departemenId, fn ($query) => $query->where('departemen_id', $departemenId))
+                ->groupBy('departemen_id', 'month_num')
+                ->get();
+        }
+
+        $usageByDeptMonth = [];
+        foreach ($monthlyUsageRows as $row) {
+            $usageByDeptMonth[$row->departemen_id][(int) $row->month_num] = (float) $row->total_nominal;
+        }
+
         $auditData = [];
+        $totalAnnualBudget = 0.0;
+        $totalYearUsage = 0.0;
+        $totalOverrun = 0.0;
+        $departemenOverLimit = 0;
 
         foreach ($departemens as $dept) {
+            $limit = (float) $dept->budget_limit;
+            $annualBudget = $limit * 12;
+
             $monthlyUsage = [];
+            $overBudgetMonths = 0;
+            $overrunTotal = 0.0;
+
             for ($m = 1; $m <= 12; $m++) {
-                $startOfMonth = Carbon::create($year, $m, 1)->startOfMonth();
-                $endOfMonth = Carbon::create($year, $m, 1)->endOfMonth();
+                $usage = (float) ($usageByDeptMonth[$dept->departemen_id][$m] ?? 0);
+                $monthlyUsage[$m] = $usage;
 
-                $usage = Pengajuan::where('departemen_id', $dept->departemen_id)
-                    ->whereIn('status', ['dicairkan', 'terkirim_accurate'])
-                    ->whereBetween('updated_at', [$startOfMonth, $endOfMonth])
-                    ->sum('nominal');
-
-                $monthlyUsage[$m] = (float) $usage;
+                if ($limit > 0 && $usage > $limit) {
+                    $overBudgetMonths++;
+                    $overrunTotal += ($usage - $limit);
+                } elseif ($limit <= 0 && $usage > 0) {
+                    $overBudgetMonths++;
+                    $overrunTotal += $usage;
+                }
             }
+
+            $totalYear = array_sum($monthlyUsage);
+            $avgMonthly = $totalYear / 12;
+            $utilizationPercent = $annualBudget > 0 ? ($totalYear / $annualBudget) * 100 : 0;
+
+            $statusLabel = $overBudgetMonths > 0
+                ? 'Melebihi'
+                : (($utilizationPercent >= 85) ? 'Waspada' : 'Aman');
+            $statusColor = $overBudgetMonths > 0
+                ? '#dc2626'
+                : (($utilizationPercent >= 85) ? '#b45309' : '#059669');
 
             $auditData[] = [
                 'departemen' => $dept,
                 'monthly_usage' => $monthlyUsage,
-                'total_year' => array_sum($monthlyUsage),
-                'budget_limit' => (float) $dept->budget_limit
+                'total_year' => $totalYear,
+                'avg_monthly' => $avgMonthly,
+                'budget_limit' => $limit,
+                'annual_budget' => $annualBudget,
+                'utilization_percent' => $utilizationPercent,
+                'over_budget_months' => $overBudgetMonths,
+                'overrun_total' => $overrunTotal,
+                'status_label' => $statusLabel,
+                'status_color' => $statusColor,
             ];
+
+            $totalAnnualBudget += $annualBudget;
+            $totalYearUsage += $totalYear;
+            $totalOverrun += $overrunTotal;
+            if ($overBudgetMonths > 0) {
+                $departemenOverLimit++;
+            }
         }
+
+        $summary = [
+            'total_departemen' => $departemens->count(),
+            'total_annual_budget' => $totalAnnualBudget,
+            'total_year_usage' => $totalYearUsage,
+            'overall_utilization' => $totalAnnualBudget > 0 ? (($totalYearUsage / $totalAnnualBudget) * 100) : 0,
+            'total_overrun' => $totalOverrun,
+            'departemen_over_limit' => $departemenOverLimit,
+        ];
 
         $allDepartemens = Departemen::orderBy('nama_departemen')->get();
 
-        return view('dashboard.finance.reports.budget_audit', compact('auditData', 'year', 'departemenId', 'allDepartemens'));
+        return view('dashboard.finance.reports.budget_audit', compact('auditData', 'year', 'departemenId', 'allDepartemens', 'basis', 'summary'));
     }
 
     /**
@@ -157,18 +240,19 @@ class ReportController extends Controller
 
         $pengajuan = $pengajuanQuery->with(['user', 'departemen', 'kategori'])->orderBy('tanggal_pencairan', 'desc')->get();
 
-        $headers = ['Nomor Pengajuan', 'Pegawai', 'Email', 'Departemen', 'Kategori Biaya', 'Deskripsi', 'Nominal', 'Tanggal Pencairan'];
+        $headers = ['No', 'Nomor Pengajuan', 'Pegawai', 'Email', 'Departemen', 'Kategori Biaya', 'Deskripsi', 'Nominal (IDR)', 'Tanggal Pencairan'];
 
-        $data = $pengajuan->map(function ($item) {
+        $data = $pengajuan->values()->map(function ($item, $index) {
             return [
+                $index + 1,
                 $item->nomor_pengajuan,
                 $item->user->name,
                 $item->user->email,
                 $item->departemen->nama_departemen,
                 $item->kategori ? $item->kategori->nama_kategori : '',
                 $item->deskripsi,
-                $item->nominal,
-                $item->tanggal_pencairan->format('Y-m-d'),
+                'Rp '.number_format((float) $item->nominal, 0, ',', '.'),
+                $item->tanggal_pencairan->format('d/m/Y'),
             ];
         });
 
@@ -275,18 +359,19 @@ class ReportController extends Controller
     {
         $allJournal = $this->getJurnalUmumData();
 
-        $headers = ['Tanggal', 'No. Ref', 'Pengajuan', 'Kode COA', 'Nama Akun', 'Deskripsi', 'Debit', 'Kredit'];
+        $headers = ['No', 'Tanggal', 'No. Ref', 'Pengajuan', 'Kode COA', 'Nama Akun', 'Deskripsi', 'Debit (IDR)', 'Kredit (IDR)'];
 
-        $data = $allJournal->map(function ($journal) {
+        $data = $allJournal->values()->map(function ($journal, $index) {
             return [
+                $index + 1,
                 $journal->tanggal_posting->format('d/m/Y'),
                 $journal->nomor_ref,
                 $journal->pengajuan ? $journal->pengajuan->nomor_pengajuan : '-',
                 $journal->coa->kode_coa,
                 $journal->coa->nama_coa,
                 $journal->deskripsi,
-                $journal->tipe_posting == 'debit' ? $journal->nominal : 0,
-                $journal->tipe_posting == 'credit' ? $journal->nominal : 0,
+                $journal->tipe_posting == 'debit' ? number_format((float) $journal->nominal, 0, ',', '.') : '-',
+                $journal->tipe_posting == 'credit' ? number_format((float) $journal->nominal, 0, ',', '.') : '-',
             ];
         });
 
@@ -294,6 +379,34 @@ class ReportController extends Controller
             'jurnal_umum_'.date('Y-m-d_His').'.csv',
             $headers,
             $data
+        );
+    }
+
+    public function jurnalUmumExportXlsx()
+    {
+        $allJournal = $this->getJurnalUmumData();
+
+        $headers = ['No', 'Tanggal', 'No. Ref', 'Pengajuan', 'Kode COA', 'Nama Akun', 'Deskripsi', 'Debit (IDR)', 'Kredit (IDR)'];
+
+        $data = $allJournal->values()->map(function ($journal, $index) {
+            return [
+                $index + 1,
+                $journal->tanggal_posting->format('d/m/Y'),
+                $journal->nomor_ref,
+                $journal->pengajuan ? $journal->pengajuan->nomor_pengajuan : '-',
+                $journal->coa->kode_coa,
+                $journal->coa->nama_coa,
+                $journal->deskripsi,
+                $journal->tipe_posting == 'debit' ? number_format((float) $journal->nominal, 0, ',', '.') : '-',
+                $journal->tipe_posting == 'credit' ? number_format((float) $journal->nominal, 0, ',', '.') : '-',
+            ];
+        });
+
+        return $this->exportService->exportToXlsx(
+            'jurnal_umum_'.date('Y-m-d_His').'.xlsx',
+            $headers,
+            $data,
+            ['sheet_name' => 'Jurnal Umum']
         );
     }
 
@@ -320,7 +433,8 @@ class ReportController extends Controller
         return $this->exportService->exportToPDF(
             'jurnal_umum_'.date('Y-m-d_His').'.pdf',
             'dashboard.finance.reports.pdf.jurnal_umum',
-            compact('groupedJournal', 'startDate', 'endDate', 'totalDebit', 'totalCredit')
+            compact('groupedJournal', 'startDate', 'endDate', 'totalDebit', 'totalCredit'),
+            ['orientation' => 'landscape']
         );
     }
 
@@ -892,15 +1006,16 @@ class ReportController extends Controller
             ];
         })->sortBy('coa.kode_coa');
 
-        $headers = ['Kode Akun', 'Nama Akun', 'Debit', 'Kredit', 'Saldo', 'Jumlah Transaksi'];
+        $headers = ['No', 'Kode Akun', 'Nama Akun', 'Debit (IDR)', 'Kredit (IDR)', 'Saldo (IDR)', 'Jumlah Transaksi'];
 
-        $data = $ledger->map(function ($item) {
+        $data = $ledger->values()->map(function ($item, $index) {
             return [
+                $index + 1,
                 $item['coa']->kode_coa,
                 $item['coa']->nama_coa,
-                $item['debit'],
-                $item['credit'],
-                $item['saldo'],
+                number_format((float) $item['debit'], 0, ',', '.'),
+                number_format((float) $item['credit'], 0, ',', '.'),
+                number_format((float) $item['saldo'], 0, ',', '.'),
                 $item['count'],
             ];
         });
@@ -909,6 +1024,49 @@ class ReportController extends Controller
             'buku_besar_'.date('Y-m-d').'.csv',
             $headers,
             $data
+        );
+    }
+
+    public function bukuBesarExportXlsx()
+    {
+        $entries = $this->getBukuBesarData();
+
+        $ledger = $entries->groupBy('coa_id')->map(function ($items) {
+            $coa = $items->first()->coa;
+            $debit = $items->where('tipe_posting', 'debit')->sum('nominal');
+            $credit = $items->where('tipe_posting', 'credit')->sum('nominal');
+
+            $isDebitNormal = in_array($coa->tipe_akun, ['asset', 'expense']);
+            $saldoAkhir = $isDebitNormal ? ($debit - $credit) : ($credit - $debit);
+
+            return [
+                'coa' => $coa,
+                'debit' => $debit,
+                'credit' => $credit,
+                'saldo' => $saldoAkhir,
+                'count' => $items->count(),
+            ];
+        })->sortBy('coa.kode_coa');
+
+        $headers = ['No', 'Kode Akun', 'Nama Akun', 'Debit (IDR)', 'Kredit (IDR)', 'Saldo (IDR)', 'Jumlah Transaksi'];
+
+        $data = $ledger->values()->map(function ($item, $index) {
+            return [
+                $index + 1,
+                $item['coa']->kode_coa,
+                $item['coa']->nama_coa,
+                number_format((float) $item['debit'], 0, ',', '.'),
+                number_format((float) $item['credit'], 0, ',', '.'),
+                number_format((float) $item['saldo'], 0, ',', '.'),
+                $item['count'],
+            ];
+        });
+
+        return $this->exportService->exportToXlsx(
+            'buku_besar_'.date('Y-m-d').'.xlsx',
+            $headers,
+            $data,
+            ['sheet_name' => 'Buku Besar']
         );
     }
 
@@ -942,7 +1100,8 @@ class ReportController extends Controller
         return $this->exportService->exportToPDF(
             'buku_besar_'.date('Y-m-d').'.pdf',
             'dashboard.finance.reports.pdf.buku_besar',
-            compact('ledger', 'startDate', 'endDate', 'totalDebit', 'totalCredit')
+            compact('ledger', 'startDate', 'endDate', 'totalDebit', 'totalCredit'),
+            ['orientation' => 'landscape']
         );
     }
 
@@ -1161,10 +1320,11 @@ class ReportController extends Controller
 
         $entries = $query->orderBy('tanggal_posting', 'desc')->get();
 
-        $headers = ['Tanggal', 'No. Referensi', 'Pengajuan', 'Departemen', 'Kategori', 'Kode Akun', 'Keterangan', 'Penerimaan', 'Pengeluaran'];
+        $headers = ['No', 'Tanggal', 'No. Referensi', 'Pengajuan', 'Departemen', 'Kategori', 'Kode Akun', 'Keterangan', 'Penerimaan (IDR)', 'Pengeluaran (IDR)'];
 
-        $data = $entries->map(function ($entry) {
+        $data = $entries->values()->map(function ($entry, $index) {
             return [
+                $index + 1,
                 $entry->tanggal_posting->format('d/m/Y'),
                 $entry->nomor_ref,
                 $entry->pengajuan ? $entry->pengajuan->nomor_pengajuan : '-',
@@ -1172,8 +1332,8 @@ class ReportController extends Controller
                 $entry->pengajuan && $entry->pengajuan->kategori ? $entry->pengajuan->kategori->nama_kategori : '-',
                 $entry->coa->kode_coa,
                 $entry->deskripsi,
-                $entry->tipe_posting == 'debit' ? $entry->nominal : 0,
-                $entry->tipe_posting == 'credit' ? $entry->nominal : 0,
+                $entry->tipe_posting == 'debit' ? number_format((float) $entry->nominal, 0, ',', '.') : '-',
+                $entry->tipe_posting == 'credit' ? number_format((float) $entry->nominal, 0, ',', '.') : '-',
             ];
         });
 
@@ -1181,6 +1341,56 @@ class ReportController extends Controller
             'laporan_arus_kas_'.date('Y-m-d').'.csv',
             $headers,
             $data
+        );
+    }
+
+    public function laporanArusKasExportXlsx()
+    {
+        $startDate = request('start_date') ? Carbon::parse(request('start_date')) : Carbon::now()->subMonths(1);
+        $endDate = request('end_date') ? Carbon::parse(request('end_date')) : Carbon::now();
+
+        $cashBankCoaIds = KasBank::pluck('coa_id')->toArray();
+
+        $query = Jurnal::whereBetween('tanggal_posting', [$startDate, $endDate])
+            ->whereIn('coa_id', $cashBankCoaIds)
+            ->with(['coa', 'pengajuan.user', 'pengajuan.departemen', 'pengajuan.kategori']);
+
+        if (request('kategori_id')) {
+            $query->whereHas('pengajuan', function ($q) {
+                $q->where('kategori_id', request('kategori_id'));
+            });
+        }
+
+        if (request('departemen_id')) {
+            $query->whereHas('pengajuan', function ($q) {
+                $q->where('departemen_id', request('departemen_id'));
+            });
+        }
+
+        $entries = $query->orderBy('tanggal_posting', 'desc')->get();
+
+        $headers = ['No', 'Tanggal', 'No. Referensi', 'Pengajuan', 'Departemen', 'Kategori', 'Kode Akun', 'Keterangan', 'Penerimaan (IDR)', 'Pengeluaran (IDR)'];
+
+        $data = $entries->values()->map(function ($entry, $index) {
+            return [
+                $index + 1,
+                $entry->tanggal_posting->format('d/m/Y'),
+                $entry->nomor_ref,
+                $entry->pengajuan ? $entry->pengajuan->nomor_pengajuan : '-',
+                $entry->pengajuan && $entry->pengajuan->departemen ? $entry->pengajuan->departemen->nama_departemen : '-',
+                $entry->pengajuan && $entry->pengajuan->kategori ? $entry->pengajuan->kategori->nama_kategori : '-',
+                $entry->coa->kode_coa,
+                $entry->deskripsi,
+                $entry->tipe_posting == 'debit' ? number_format((float) $entry->nominal, 0, ',', '.') : '-',
+                $entry->tipe_posting == 'credit' ? number_format((float) $entry->nominal, 0, ',', '.') : '-',
+            ];
+        });
+
+        return $this->exportService->exportToXlsx(
+            'laporan_arus_kas_'.date('Y-m-d').'.xlsx',
+            $headers,
+            $data,
+            ['sheet_name' => 'Arus Kas']
         );
     }
 
@@ -1216,7 +1426,8 @@ class ReportController extends Controller
         return $this->exportService->exportToPDF(
             'laporan_arus_kas_'.date('Y-m-d').'.pdf',
             'dashboard.finance.reports.pdf.arus_kas',
-            compact('entries', 'startDate', 'endDate', 'totalInflow', 'totalOutflow', 'netFlow')
+            compact('entries', 'startDate', 'endDate', 'totalInflow', 'totalOutflow', 'netFlow'),
+            ['orientation' => 'landscape']
         );
     }
 }

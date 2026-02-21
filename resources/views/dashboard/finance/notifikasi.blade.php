@@ -7,8 +7,10 @@
     <div class="dashboard-container">
         <x-page-header title="Notifikasi" subtitle="Pantau semua notifikasi sistem reimbursement Anda" :showNotification="true" :showProfile="true" />
 
-        <div class="dashboard-content">
-            <livewire:notification-list />
+        <div class="dashboard-content notification-page-content">
+            <div class="notification-single-shell">
+                <livewire:notification-list />
+            </div>
         </div>
     </div>
 </div>

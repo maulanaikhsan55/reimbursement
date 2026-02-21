@@ -1,7 +1,7 @@
 <div>
     <!-- Quick Stats -->
     <div class="notif-stats">
-        <div class="stat-card">
+        <div class="stat-card modern">
             <div class="stat-left">
                 <div class="stat-value">{{ \App\Models\Notifikasi::where('user_id', auth()->id())->where('is_read', false)->count() }}</div>
                 <div class="stat-label">Belum Dibaca</div>
@@ -13,7 +13,7 @@
                 </svg>
             </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card modern">
             <div class="stat-left">
                 <div class="stat-value">{{ \App\Models\Notifikasi::where('user_id', auth()->id())->count() }}</div>
                 <div class="stat-label">Total Notifikasi</div>
@@ -30,11 +30,21 @@
     <!-- Notifications List -->
     <div class="notif-section">
         <div class="notif-header">
-            <h2>Aktivitas Terbaru</h2>
+            <div class="notif-header-copy">
+                <h2 class="section-title">Aktivitas Terbaru</h2>
+                <p class="section-subtitle notif-subtitle">Notifikasi terbaru yang perlu perhatian dan tindak lanjut</p>
+            </div>
             @if(\App\Models\Notifikasi::where('user_id', auth()->id())->where('is_read', false)->count() > 0)
-                <button wire:click="markAllAsRead" class="btn-modern btn-modern-secondary btn-modern-sm">
+                <button
+                    type="button"
+                    class="btn-modern btn-modern-secondary btn-modern-sm"
+                    x-on:click.prevent.stop="$wire.markAllAsRead()"
+                    wire:loading.attr="disabled"
+                    wire:target="markAllAsRead"
+                >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px; margin-right: 6px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>Tandai Semua Dibaca</span>
+                    <span wire:loading.remove wire:target="markAllAsRead">Tandai Semua Dibaca</span>
+                    <span wire:loading wire:target="markAllAsRead">Memproses...</span>
                 </button>
             @endif
         </div>

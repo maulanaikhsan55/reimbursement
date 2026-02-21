@@ -12,7 +12,7 @@
         :showProfile="true" 
     />
 
-    <div class="dashboard-content">
+    <div class="dashboard-content detail-single-content">
         <!-- Employee Card -->
             <section class="modern-section" style="padding: 1.5rem;">
                 <div class="employee-card-inline">

@@ -149,10 +149,10 @@
         </div>
 
         <section class="modern-section">
-            <div class="section-header" style="justify-content: flex-start !important; align-items: flex-start !important; gap: 2rem;">
-                <div style="text-align: left !important; flex: 1;">
-                    <h2 class="section-title" style="text-align: left !important; margin: 0;">Daftar Kas/Bank</h2>
-                    <p class="section-subtitle" style="text-align: left !important; margin-top: 4px;">Data disinkronkan secara otomatis dari Accurate</p>
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Daftar Kas/Bank</h2>
+                    <p class="section-subtitle">Data disinkronkan secara otomatis dari Accurate</p>
                 </div>
                 <div class="header-actions">
                     <form action="{{ route('finance.masterdata.kas_bank.sync') }}" method="POST" class="d-inline" id="syncForm">

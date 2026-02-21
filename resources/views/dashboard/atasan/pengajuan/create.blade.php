@@ -27,66 +27,81 @@
                 </a>
             </div>
 
-            <x-budget-indicator 
-                :status="$budgetStatus" 
-                :departmentName="Auth::user()->departemen->nama_departemen" 
-            />
+            <div class="create-layout-grid">
+                <aside class="create-side-panel">
+                    <x-budget-indicator 
+                        :status="$budgetStatus" 
+                        :departmentName="Auth::user()->departemen->nama_departemen" 
+                    />
 
-            <!-- Guidelines Section - Compact -->
-            <details class="compact-details info-details">
-                <summary class="info-summary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: #4f46e5; flex-shrink: 0;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                    </svg>
-                    <span>Ketentuan Pengajuan</span>
-                </summary>
-                <div class="info-content">
-                    <ul class="guidelines-list">
-                        <li class="guideline-item">
-                            <x-icon name="check-circle" class="w-4 h-4" style="color: #4f46e5; flex-shrink: 0; margin-top: 0.15rem;" />
-                            <div><strong class="guideline-title">Batas 15 Hari</strong><span class="guideline-desc">Dari tanggal transaksi</span></div>
-                        </li>
-                        <li class="guideline-item">
-                            <x-icon name="check-circle" class="w-4 h-4" style="color: #4f46e5; flex-shrink: 0; margin-top: 0.15rem;" />
-                            <div><strong class="guideline-title">Dokumen Jelas</strong><span class="guideline-desc">Tidak buram/terpotong</span></div>
-                        </li>
-                        <li class="guideline-item">
-                            <x-icon name="check-circle" class="w-4 h-4" style="color: #4f46e5; flex-shrink: 0; margin-top: 0.15rem;" />
-                            <div><strong class="guideline-title">Data Akurat</strong><span class="guideline-desc">Sesuai struk untuk validasi AI</span></div>
-                        </li>
-                    </ul>
-                </div>
-            </details>
+                    <details class="compact-details info-details" open>
+                        <summary class="info-summary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: #4f46e5; flex-shrink: 0;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span>Ketentuan Pengajuan</span>
+                        </summary>
+                        <div class="info-content">
+                            <ul class="guidelines-list">
+                                <li class="guideline-item">
+                                    <x-icon name="check-circle" class="w-4 h-4" style="color: #4f46e5; flex-shrink: 0; margin-top: 0.15rem;" />
+                                    <div><strong class="guideline-title">Batas 15 Hari</strong><span class="guideline-desc">Dari tanggal transaksi</span></div>
+                                </li>
+                                <li class="guideline-item">
+                                    <x-icon name="check-circle" class="w-4 h-4" style="color: #4f46e5; flex-shrink: 0; margin-top: 0.15rem;" />
+                                    <div><strong class="guideline-title">Dokumen Jelas</strong><span class="guideline-desc">Tidak buram/terpotong</span></div>
+                                </li>
+                                <li class="guideline-item">
+                                    <x-icon name="check-circle" class="w-4 h-4" style="color: #4f46e5; flex-shrink: 0; margin-top: 0.15rem;" />
+                                    <div><strong class="guideline-title">Data Akurat</strong><span class="guideline-desc">Sesuai struk untuk validasi AI</span></div>
+                                </li>
+                            </ul>
+                        </div>
+                    </details>
 
-            <!-- Approval Flow - Compact -->
-            <details class="compact-details info-details" style="margin-bottom: 1.5rem;">
-                <summary class="info-summary info-summary-blue">
-                    <x-icon name="git-branch" class="w-4 h-4" style="flex-shrink: 0;" />
-                    <span>Alur Persetujuan</span>
-                </summary>
-                <div class="info-content info-content-blue">
-                    <div class="flow-container">
-                        <div class="flow-step">
-                            <span class="flow-step-number">1</span>
-                            <span class="flow-step-text">AI & Kirim</span>
+                    <details class="compact-details info-details" open>
+                        <summary class="info-summary info-summary-blue">
+                            <x-icon name="git-branch" class="w-4 h-4" style="flex-shrink: 0;" />
+                            <span>Alur Persetujuan</span>
+                        </summary>
+                        <div class="info-content info-content-blue">
+                            <div class="flow-container">
+                                <div class="flow-step">
+                                    <span class="flow-step-number">1</span>
+                                    <span class="flow-step-text">AI & Kirim</span>
+                                </div>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flow-arrow"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                <div class="flow-step">
+                                    <span class="flow-step-number">2</span>
+                                    <span class="flow-step-text">Finance</span>
+                                </div>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flow-arrow"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                <div class="flow-step flow-step-success">
+                                    <x-icon name="check" class="w-3 h-3" style="color: #16a34a;" />
+                                    <span class="flow-step-success-text">Cair</span>
+                                </div>
+                            </div>
                         </div>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flow-arrow"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        <div class="flow-step">
-                            <span class="flow-step-number">2</span>
-                            <span class="flow-step-text">Finance</span>
+                    </details>
+
+                    <div class="compact-details docs-compact-card">
+                        <div class="docs-card-header">
+                            <x-icon name="file-text" class="w-4 h-4" />
+                            <span>Checklist Dokumen</span>
                         </div>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flow-arrow"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        <div class="flow-step flow-step-success">
-                            <x-icon name="check" class="w-3 h-3" style="color: #16a34a;" />
-                            <span class="flow-step-success-text">Cair</span>
-                        </div>
+                        <ul class="docs-checklist">
+                            <li>Struk/nota terbaca lengkap</li>
+                            <li>Tanggal transaksi valid</li>
+                            <li>Nominal sama dengan bukti</li>
+                            <li>Deskripsi pengeluaran jelas</li>
+                            <li>Kategori biaya sesuai transaksi</li>
+                        </ul>
                     </div>
-                </div>
-            </details>
+                </aside>
 
-            <form action="{{ route('atasan.pengajuan.store') }}" method="POST" enctype="multipart/form-data" class="form-pengajuan">
+                <form action="{{ route('atasan.pengajuan.store') }}" method="POST" enctype="multipart/form-data" class="form-pengajuan create-main-form">
                 @csrf
                 <input type="hidden" name="ocr_text" id="ocr_text">
                 <input type="hidden" name="ocr_data_json" id="ocr_data_json">
@@ -274,104 +289,93 @@
                     @enderror
                 </div>
 
-
-
-                <div id="validationResults" class="validation-dashboard" style="display: none; margin-top: 1.25rem;">
-                    <div style="padding: 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9;">
-                            <x-icon name="cpu" class="w-5 h-5" style="color: #4f46e5;" />
-                            <h3 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b;">Validasi AI & OCR</h3>
+                <div id="validationResults" class="validation-dashboard" style="display: none;">
+                    <div class="validation-shell">
+                        <div class="validation-shell-header">
+                            <x-icon name="cpu" class="w-5 h-5 validation-shell-icon" />
+                            <h3 class="validation-shell-title">Validasi AI & OCR</h3>
                         </div>
-                        
-                        <div class="validation-grid" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                            <!-- Header -->
-                            <div style="display: grid; grid-template-columns: 100px 1fr 1fr 80px; gap: 1rem; padding: 0 0.5rem; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+
+                        <div class="validation-grid">
+                            <div class="validation-row validation-row-head">
                                 <div>Field</div>
                                 <div>Hasil OCR</div>
                                 <div>Input Anda</div>
-                                <div style="text-align: center;">Status</div>
+                                <div class="validation-status-head">Status</div>
                             </div>
 
-                            <!-- Vendor -->
-                            <div style="display: grid; grid-template-columns: 100px 1fr 1fr 80px; gap: 1rem; padding: 0.75rem; background: #f8fafc; border-radius: 0.75rem; align-items: center; border: 1px solid #f1f5f9;">
-                                <div style="font-weight: 600; color: #475569; font-size: 0.85rem;">Vendor</div>
-                                <div id="dash-ocr-vendor" style="padding: 0.4rem 0.6rem; color: #4f46e5; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 0.4rem; cursor: pointer; font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Klik untuk menggunakan nilai ini">-</div>
-                                <div id="dash-input-vendor" style="padding: 0.4rem 0.6rem; color: #1e293b; background: white; border: 1px solid #e2e8f0; border-radius: 0.4rem; font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
-                                <div id="dash-status-vendor" style="text-align: center;">-</div>
+                            <div class="validation-row">
+                                <div class="validation-field-name">Vendor</div>
+                                <div id="dash-ocr-vendor" class="validation-pill validation-pill-ocr" title="Klik untuk menggunakan nilai ini">-</div>
+                                <div id="dash-input-vendor" class="validation-pill validation-pill-input">-</div>
+                                <div id="dash-status-vendor" class="validation-status-cell">-</div>
                             </div>
 
-                            <!-- Nominal -->
-                            <div style="display: grid; grid-template-columns: 100px 1fr 1fr 80px; gap: 1rem; padding: 0.75rem; background: #f8fafc; border-radius: 0.75rem; align-items: center; border: 1px solid #f1f5f9;">
-                                <div style="font-weight: 600; color: #475569; font-size: 0.85rem;">Nominal</div>
-                                <div id="dash-ocr-nominal" style="padding: 0.4rem 0.6rem; color: #4f46e5; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 0.4rem; cursor: pointer; font-size: 0.85rem; font-weight: 500;" title="Klik untuk menggunakan nilai ini">-</div>
-                                <div id="dash-input-nominal" style="padding: 0.4rem 0.6rem; color: #1e293b; background: white; border: 1px solid #e2e8f0; border-radius: 0.4rem; font-size: 0.85rem; font-weight: 500;">-</div>
-                                <div id="dash-status-nominal" style="text-align: center;">-</div>
+                            <div class="validation-row">
+                                <div class="validation-field-name">Nominal</div>
+                                <div id="dash-ocr-nominal" class="validation-pill validation-pill-ocr" title="Klik untuk menggunakan nilai ini">-</div>
+                                <div id="dash-input-nominal" class="validation-pill validation-pill-input">-</div>
+                                <div id="dash-status-nominal" class="validation-status-cell">-</div>
                             </div>
 
-                            <!-- Date -->
-                            <div style="display: grid; grid-template-columns: 100px 1fr 1fr 80px; gap: 1rem; padding: 0.75rem; background: #f8fafc; border-radius: 0.75rem; align-items: center; border: 1px solid #f1f5f9;">
-                                <div style="font-weight: 600; color: #475569; font-size: 0.85rem;">Tanggal</div>
-                                <div id="dash-ocr-date" style="padding: 0.4rem 0.6rem; color: #4f46e5; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 0.4rem; cursor: pointer; font-size: 0.85rem; font-weight: 500;" title="Klik untuk menggunakan nilai ini">-</div>
-                                <div id="dash-input-date" style="padding: 0.4rem 0.6rem; color: #1e293b; background: white; border: 1px solid #e2e8f0; border-radius: 0.4rem; font-size: 0.85rem; font-weight: 500;">-</div>
-                                <div id="dash-status-date" style="text-align: center;">-</div>
+                            <div class="validation-row">
+                                <div class="validation-field-name">Tanggal</div>
+                                <div id="dash-ocr-date" class="validation-pill validation-pill-ocr" title="Klik untuk menggunakan nilai ini">-</div>
+                                <div id="dash-input-date" class="validation-pill validation-pill-input">-</div>
+                                <div id="dash-status-date" class="validation-status-cell">-</div>
                             </div>
                         </div>
                     </div>
 
-                    <div id="duplicateAlert" style="display: none; padding: 0.6rem; background: #fef2f2; border: 1px solid #fecdd3; border-radius: 0.4rem; color: #dc2626; font-size: 0.8rem; font-weight: 600;">
-                        <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
-                            <x-icon name="alert-triangle" class="w-4 h-4" style="flex-shrink: 0; margin-top: 0.1rem;" />
+                    <div id="duplicateAlert" class="validation-alert-duplicate" style="display: none;">
+                        <div class="validation-alert-content">
+                            <x-icon name="alert-triangle" class="w-4 h-4 validation-alert-icon" />
                             <span>Duplikasi: File ini sudah pernah diupload.</span>
                         </div>
                     </div>
 
-                    <div id="validationSummary" style="margin-top: 0.5rem; padding: 0.6rem; border-radius: 0.4rem; font-size: 0.85rem;">
+                    <div id="validationSummary" class="validation-summary-box">
                         <!-- Summary text will go here -->
                     </div>
 
-                    <!-- Ultra Smart OCR Summary Section -->
                     <div id="ultra-smart-summary" class="ultra-smart-container" style="display: none;">
                         <div class="smart-header">
                             <x-icon name="ai" class="w-5 h-5" />
                             <h3>Ultra Smart OCR Result</h3>
                         </div>
-                        
+
                         <div class="smart-grid">
-                            <!-- Kolom Kiri: Ringkasan Transaksi -->
                             <div class="smart-card">
                                 <p class="smart-card-title">Detail Transaksi</p>
-                                <div id="smart-items-list" style="font-size: 0.85rem; color: #1e293b;">
-                                    <!-- Daftar barang akan muncul di sini -->
-                                    <span style="color: #94a3b8; font-style: italic;">Menganalisis item...</span>
+                                <div id="smart-items-list" class="smart-items-list">
+                                    <span class="smart-items-placeholder">Menganalisis item...</span>
                                 </div>
                             </div>
-                            
-                            <!-- Kolom Kanan: Keamanan & Kategori -->
-                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                                <div class="smart-card fraud-card" style="background: #f0fdf4; border-color: #bbf7d0;">
-                                    <p class="smart-card-title" style="color: #166534;">Analisis Keamanan</p>
-                                    <div id="smart-fraud-score" style="font-size: 0.9rem; font-weight: 800; color: #16a34a;">-</div>
-                                    <div id="smart-fraud-note" style="font-size: 0.75rem; color: #15803d; line-height: 1.3; margin-top: 0.25rem;">-</div>
+
+                            <div class="smart-side-stack">
+                                <div class="smart-card fraud-card">
+                                    <p class="smart-card-title smart-card-title-success">Analisis Keamanan</p>
+                                    <div id="smart-fraud-score" class="smart-score smart-score-safe">-</div>
+                                    <div id="smart-fraud-note" class="smart-note smart-note-safe">-</div>
                                 </div>
 
                                 <div class="smart-card">
                                     <p class="smart-card-title">Confidence AI</p>
-                                    <div id="smart-confidence-score" style="font-size: 0.9rem; font-weight: 800; color: #475569;">-</div>
-                                    <div id="smart-confidence-reason" style="font-size: 0.7rem; color: #64748b; line-height: 1.3; margin-top: 0.25rem;">-</div>
+                                    <div id="smart-confidence-score" class="smart-score">-</div>
+                                    <div id="smart-confidence-reason" class="smart-note">-</div>
                                 </div>
 
-                                <div class="smart-card" style="background: #eff6ff; border-color: #bfdbfe;">
-                                    <p class="smart-card-title" style="color: #1e40af;">Kategori Pintar</p>
-                                    <div id="smart-category-badge" class="smart-badge" style="background: #3b82f6;">-</div>
+                                <div class="smart-card smart-card-accent">
+                                    <p class="smart-card-title smart-card-title-accent">Kategori Pintar</p>
+                                    <div id="smart-category-badge" class="smart-badge">-</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Debug Section - Compact -->
-                    <details style="font-size: 0.8rem;">
-                        <summary style="cursor: pointer; color: #64748b; font-weight: 500; padding: 0.4rem; user-select: none;">Lihat Raw OCR Text</summary>
-                        <textarea id="debug-raw-ocr" rows="4" style="margin-top: 0.4rem; width: 100%; padding: 0.5rem; font-size: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.4rem; font-family: monospace; background: #f8fafc; color: #475569;" readonly placeholder="Raw OCR data akan muncul di sini..."></textarea>
+                    <details class="validation-debug-details">
+                        <summary class="validation-debug-summary">Lihat Raw OCR Text</summary>
+                        <textarea id="debug-raw-ocr" rows="4" class="validation-debug-textarea" readonly placeholder="Raw OCR data akan muncul di sini..."></textarea>
                     </details>
                 </div>
 
@@ -385,6 +389,7 @@
                     </button>
                 </div>
             </form>
+            </div>
         </section>
     </div>
     </div>
@@ -420,6 +425,144 @@
             background: #f1f5f9;
         }
 
+        .create-layout-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 1rem;
+            align-items: start;
+        }
+
+        .create-main-form {
+            grid-column: 1;
+            grid-row: 1;
+            margin: 0;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1.05rem;
+            padding: 1rem 1.05rem;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+        }
+
+        .create-main-form .form-row {
+            gap: 0.7rem;
+        }
+
+        .create-main-form .form-group {
+            gap: 0.42rem;
+        }
+
+        .create-main-form .form-actions {
+            margin-top: 1.25rem !important;
+            padding-top: 1rem !important;
+        }
+
+        .create-side-panel {
+            grid-column: 2;
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            position: sticky;
+            top: 0.85rem;
+        }
+
+        .create-side-panel .budget-status-container,
+        .create-side-panel .budget-status-container.linkedin-style {
+            margin: 0 !important;
+            padding: 1rem !important;
+            border-radius: 1rem !important;
+        }
+
+        .create-side-panel .info-details {
+            margin: 0 !important;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.9rem;
+            background: #ffffff;
+        }
+
+        .create-side-panel .guidelines-list {
+            grid-template-columns: 1fr;
+            gap: 0.65rem;
+        }
+
+        .create-side-panel .flow-container {
+            gap: 0.45rem;
+        }
+
+        .create-side-panel .flow-step {
+            padding: 0.35rem 0.58rem;
+            border-radius: 0.85rem;
+            gap: 0.32rem;
+        }
+
+        .create-side-panel .flow-step-number {
+            width: 16px;
+            height: 16px;
+            font-size: 0.62rem;
+        }
+
+        .create-side-panel .flow-step-text,
+        .create-side-panel .flow-step-success-text {
+            font-size: 0.74rem;
+        }
+
+        .docs-compact-card {
+            border: 1px solid #dbe4f2;
+            border-radius: 0.9rem;
+            background: #f8fbff;
+            padding: 0.85rem 0.95rem;
+        }
+
+        .docs-card-header {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            color: #39577f;
+            font-weight: 700;
+            font-size: 0.82rem;
+            margin-bottom: 0.55rem;
+        }
+
+        .docs-checklist {
+            margin: 0;
+            padding-left: 1rem;
+            display: grid;
+            gap: 0.32rem;
+        }
+
+        .docs-checklist li {
+            color: #4d607e;
+            font-size: 0.78rem;
+            line-height: 1.35;
+            font-weight: 500;
+        }
+
+        @media (max-width: 1280px) {
+            .create-layout-grid {
+                grid-template-columns: minmax(0, 1fr) 310px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .create-layout-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .create-main-form {
+                order: 1;
+                grid-column: 1;
+                grid-row: auto;
+            }
+
+            .create-side-panel {
+                order: 2;
+                grid-column: 1;
+                grid-row: auto;
+                position: static;
+                top: auto;
+            }
+        }
+
         .form-group .form-label {
             color: #475569;
             font-weight: 600;
@@ -441,82 +584,165 @@
         }
 
         /* AI Validation Styling */
-        .validation-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 1rem;
-            padding: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .validation-card.valid { border-color: #10b981; background: #f0fdf4; }
-        .validation-card.invalid { border-color: #ef4444; background: #fef2f2; }
-        .validation-card.warning { border-color: #f59e0b; background: #fffbeb; }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-            font-weight: 700;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-            color: #64748b;
-        }
-
-        .val-item {
+        .validation-dashboard {
+            margin-top: 1.15rem;
             display: flex;
             flex-direction: column;
-            margin-bottom: 0.5rem;
+            gap: 0.7rem;
         }
 
-        .val-item:last-child { margin-bottom: 0; }
+        .validation-shell {
+            padding: 1rem 1.05rem;
+            background: linear-gradient(165deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid #dbe7f7;
+            border-radius: 1rem;
+            box-shadow: 0 10px 24px rgba(30, 58, 106, 0.08);
+        }
 
-        .val-item .label {
-            font-size: 0.7rem;
-            color: #94a3b8;
+        .validation-shell-header {
+            display: flex;
+            align-items: center;
+            gap: 0.52rem;
+            margin-bottom: 0.82rem;
+            padding-bottom: 0.62rem;
+            border-bottom: 1px solid #e7eef8;
+        }
+
+        .validation-shell-icon {
+            color: #4f46e5;
+        }
+
+        .validation-shell-title {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1e293b;
+            letter-spacing: 0.01em;
+        }
+
+        .validation-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.48rem;
+        }
+
+        .validation-row {
+            display: grid;
+            grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr) 70px;
+            gap: 0.7rem;
+            padding: 0.58rem 0.64rem;
+            align-items: center;
+            border: 1px solid #edf2fa;
+            border-radius: 0.72rem;
+            background: #fbfdff;
+        }
+
+        .validation-row-head {
+            border: none;
+            background: transparent;
+            padding: 0 0.5rem 0.2rem;
+            border-radius: 0;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .validation-field-name {
+            font-weight: 700;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+
+        .validation-pill {
+            padding: 0.38rem 0.58rem;
+            border-radius: 0.52rem;
+            font-size: 0.81rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .validation-pill-ocr {
+            color: #4338ca;
+            background: #f2f0ff;
+            border: 1px solid #ddd6fe;
+            cursor: pointer;
+        }
+
+        .validation-pill-input {
+            color: #1e293b;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .validation-status-head,
+        .validation-status-cell {
+            text-align: center;
+        }
+
+        .validation-alert-duplicate {
+            padding: 0.58rem 0.7rem;
+            background: #fef2f2;
+            border: 1px solid #fecdd3;
+            border-radius: 0.7rem;
+            color: #dc2626;
+            font-size: 0.8rem;
             font-weight: 600;
         }
 
-        .val-item .value-input, .val-item .value-ocr {
-            font-size: 0.85rem;
-            font-weight: 700;
-            word-break: break-all;
+        .validation-alert-content {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+
+        .validation-alert-icon {
+            flex-shrink: 0;
+            margin-top: 0.1rem;
         }
 
         .validation-summary-box {
-            padding: 1rem 1.25rem;
-            border-radius: 1rem;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            margin-top: 1rem;
+            padding: 0.72rem 0.86rem;
+            border-radius: 0.72rem;
+            font-size: 0.82rem;
+            line-height: 1.45;
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            margin-top: 0.08rem;
             animation: slideIn 0.3s ease-out;
         }
-        .validation-summary-error {
-            background: #fef2f2;
-            border-color: #fecdd3;
-            color: #991b1b;
+
+        .validation-debug-details {
+            font-size: 0.8rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.8rem;
+            background: #f8fafc;
+            padding: 0.15rem;
         }
-        .validation-summary-warning {
-            background: #fffbeb;
-            border-color: #fef3c7;
-            color: #92400e;
+
+        .validation-debug-summary {
+            cursor: pointer;
+            color: #64748b;
+            font-weight: 600;
+            padding: 0.4rem 0.5rem;
+            user-select: none;
         }
-        .validation-summary-success {
-            background: #f0fdf4;
-            border-color: #bbf7d0;
-            color: #166534;
-        }
-        .validation-summary-info {
-            background: #eff6ff;
-            border-color: #bfdbfe;
-            color: #1e40af;
+
+        .validation-debug-textarea {
+            margin-top: 0.2rem;
+            width: 100%;
+            padding: 0.55rem;
+            font-size: 0.74rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.55rem;
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            background: #f8fafc;
+            color: #475569;
+            resize: vertical;
+            min-height: 88px;
         }
 
         /* Budget Progress Bar Styles */
@@ -612,65 +838,137 @@
 
         /* Ultra Smart Summary Styles */
         .ultra-smart-container {
-            margin-bottom: 1.25rem;
-            padding: 1.25rem;
-            background: #ffffff;
-            border: 2px solid #e0e7ff;
-            border-radius: 1.25rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1rem;
+            padding: 1.05rem;
+            background: linear-gradient(170deg, #ffffff 0%, #f7faff 100%);
+            border: 1px solid #dbe8fb;
+            border-radius: 1rem;
+            box-shadow: 0 12px 26px rgba(31, 56, 94, 0.08);
             animation: slideIn 0.4s ease-out;
         }
+
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
         .smart-header {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
-            margin-bottom: 1rem;
+            gap: 0.5rem;
+            margin-bottom: 0.7rem;
             color: #4338ca;
         }
+
         .smart-header h3 {
             margin: 0;
-            font-size: 1.1rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
         }
+
         .smart-grid {
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 1rem;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 0.72rem;
         }
+
+        .smart-side-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.62rem;
+        }
+
         .smart-card {
-            padding: 1rem;
+            padding: 0.82rem;
             background: #f8fafc;
-            border-radius: 1rem;
+            border-radius: 0.82rem;
             border: 1px solid #e2e8f0;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.38rem;
         }
+
         .smart-card.fraud-card {
-            transition: all 0.3s ease;
+            background: #f0fdf4;
+            border-color: #bbf7d0;
         }
+
+        .smart-card-accent {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
         .smart-card-title {
             margin: 0;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 800;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+
+        .smart-card-title-success {
+            color: #166534;
+        }
+
+        .smart-card-title-accent {
+            color: #1e40af;
+        }
+
+        .smart-items-list {
+            font-size: 0.82rem;
+            color: #1e293b;
+            line-height: 1.45;
+        }
+
+        .smart-items-placeholder {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .smart-score {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: #475569;
+            line-height: 1.25;
+        }
+
+        .smart-score-safe {
+            color: #16a34a;
+        }
+
+        .smart-note {
+            font-size: 0.72rem;
+            color: #64748b;
+            line-height: 1.35;
+        }
+
+        .smart-note-safe {
+            color: #15803d;
+        }
+
         .smart-badge {
             display: inline-block;
-            padding: 0.25rem 0.75rem;
-            background: #4f46e5;
-            color: white;
-            border-radius: 2rem;
-            font-size: 0.75rem;
+            padding: 0.2rem 0.72rem;
+            background: #3b82f6;
+            color: #ffffff;
+            border-radius: 999px;
+            font-size: 0.72rem;
             font-weight: 700;
             width: fit-content;
+        }
+
+        @media (max-width: 900px) {
+            .validation-row {
+                grid-template-columns: 82px minmax(0, 1fr) minmax(0, 1fr) 62px;
+                gap: 0.52rem;
+                padding: 0.52rem;
+            }
+
+            .smart-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 @endpush
@@ -679,18 +977,355 @@
 <script>
     function closeFileModal() {
         const modal = document.getElementById('fileModal');
-        if (modal) {
-            modal.classList.remove('show');
-        }
+        if (modal) modal.classList.remove('show');
     }
 
     const OCR_ROUTES = {
         process: "{{ route('atasan.validasi-ai.process-file') }}",
         validate: "{{ route('atasan.validasi-ai.validate-input') }}"
     };
+
+    (function () {
+        const notify = (type, title, message) => {
+            if (window.showNotification) {
+                window.showNotification(type, title, message);
+            } else {
+                console[type === 'error' ? 'error' : 'log'](`${title}: ${message}`);
+            }
+        };
+
+        const formatRupiah = (value) => {
+            const num = Number(String(value || 0).replace(/[^\d.-]/g, '')) || 0;
+            return `Rp ${num.toLocaleString('id-ID')}`;
+        };
+
+        const statusBadge = (status) => {
+            if (status === 'pass') return '<span style="color:#16a34a;font-weight:700;">OK</span>';
+            if (status === 'warning') return '<span style="color:#d97706;font-weight:700;">WARN</span>';
+            if (status === 'fail') return '<span style="color:#dc2626;font-weight:700;">FAIL</span>';
+            return '<span style="color:#64748b;font-weight:600;">-</span>';
+        };
+
+        const initOcrCreateForm = () => {
+            const form = document.querySelector('form.form-pengajuan');
+            if (!form || form.dataset.ocrBound === '1') return;
+            form.dataset.ocrBound = '1';
+
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const fileInput = document.getElementById('file_bukti');
+            const submitBtn = document.getElementById('submitBtn');
+            const vendorInput = document.getElementById('nama_vendor');
+            const nominalInput = document.getElementById('nominal');
+            const dateInput = document.getElementById('tanggal_transaksi');
+            const trxTypeInput = document.getElementById('jenis_transaksi');
+            const ocrTextInput = document.getElementById('ocr_text');
+            const ocrJsonInput = document.getElementById('ocr_data_json');
+            const validationResults = document.getElementById('validationResults');
+            const duplicateAlert = document.getElementById('duplicateAlert');
+            const validationSummary = document.getElementById('validationSummary');
+            const uploadContent = document.getElementById('uploadContent');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const filePreview = document.getElementById('filePreview');
+            const removeFile = document.getElementById('removeFile');
+            const retryOcr = document.getElementById('retry-ocr');
+            const multiInvoice = document.getElementById('multi-invoice-selector');
+            const multiOptions = document.getElementById('multi-invoice-options');
+
+            const ocrVendor = document.getElementById('dash-ocr-vendor');
+            const ocrNominal = document.getElementById('dash-ocr-nominal');
+            const ocrDate = document.getElementById('dash-ocr-date');
+            const inputVendor = document.getElementById('dash-input-vendor');
+            const inputNominal = document.getElementById('dash-input-nominal');
+            const inputDate = document.getElementById('dash-input-date');
+            const statusVendor = document.getElementById('dash-status-vendor');
+            const statusNominal = document.getElementById('dash-status-nominal');
+            const statusDate = document.getElementById('dash-status-date');
+
+            const rawOcr = document.getElementById('debug-raw-ocr');
+            const smartWrap = document.getElementById('ultra-smart-summary');
+            const smartItems = document.getElementById('smart-items-list');
+            const smartFraudScore = document.getElementById('smart-fraud-score');
+            const smartFraudNote = document.getElementById('smart-fraud-note');
+            const smartConfidenceScore = document.getElementById('smart-confidence-score');
+            const smartConfidenceReason = document.getElementById('smart-confidence-reason');
+            const smartCategory = document.getElementById('smart-category-badge');
+
+            let currentOcrData = null;
+            let isDuplicate = false;
+            let canSubmitByValidation = false;
+            let validateTimer = null;
+            let validateRequestId = 0;
+
+            const debounceValidateInput = (delay = 220) => {
+                clearTimeout(validateTimer);
+                validateTimer = setTimeout(() => {
+                    void validateInput();
+                }, delay);
+            };
+
+            const setSubmitState = () => {
+                if (!submitBtn) return;
+                const hasFile = !!(fileInput && fileInput.files && fileInput.files.length);
+                submitBtn.disabled = !(hasFile && !isDuplicate && canSubmitByValidation);
+            };
+
+            const setSummary = (type, text) => {
+                if (!validationSummary) return;
+                const map = {
+                    error: ['#fef2f2', '#fecaca', '#991b1b'],
+                    warning: ['#fffbeb', '#fde68a', '#92400e'],
+                    success: ['#f0fdf4', '#bbf7d0', '#166534'],
+                    info: ['#eff6ff', '#bfdbfe', '#1e40af']
+                };
+                const [bg, bd, color] = map[type] || map.info;
+                validationSummary.style.background = bg;
+                validationSummary.style.border = `1px solid ${bd}`;
+                validationSummary.style.color = color;
+                validationSummary.textContent = text;
+            };
+
+            const bindCopy = (sourceEl, setter) => {
+                if (!sourceEl || sourceEl.dataset.copyBound === '1') return;
+                sourceEl.dataset.copyBound = '1';
+                sourceEl.addEventListener('click', () => setter(sourceEl.textContent.trim()));
+            };
+
+            bindCopy(ocrVendor, (val) => {
+                if (val && val !== '-' && vendorInput) vendorInput.value = val;
+                debounceValidateInput(0);
+            });
+            bindCopy(ocrNominal, (val) => {
+                if (val && val !== '-' && nominalInput) nominalInput.value = String(val).replace(/[^\d]/g, '');
+                debounceValidateInput(0);
+            });
+            bindCopy(ocrDate, (val) => {
+                if (val && val !== '-' && dateInput) dateInput.value = val;
+                debounceValidateInput(0);
+            });
+
+            const renderOcrData = (data) => {
+                validationResults && (validationResults.style.display = 'block');
+                duplicateAlert && (duplicateAlert.style.display = 'none');
+
+                const vendor = data?.vendor || '-';
+                const nominal = data?.nominal || 0;
+                const tanggal = data?.tanggal || '-';
+
+                if (ocrVendor) ocrVendor.textContent = vendor;
+                if (ocrNominal) ocrNominal.textContent = nominal ? formatRupiah(nominal) : '-';
+                if (ocrDate) ocrDate.textContent = tanggal;
+                if (rawOcr) rawOcr.value = data?.raw_text || '';
+
+                if (ocrTextInput) ocrTextInput.value = data?.raw_text || '';
+                if (ocrJsonInput) ocrJsonInput.value = JSON.stringify(data || {});
+
+                if (smartWrap) smartWrap.style.display = 'block';
+                if (smartItems) smartItems.textContent = (data?.items || []).length ? data.items.join(', ') : (data?.detail_transaksi || 'Data item tidak tersedia');
+                if (smartFraudScore) smartFraudScore.textContent = data?.fraud_score ? `${data.fraud_score}% aman` : 'Aman';
+                if (smartFraudNote) smartFraudNote.textContent = data?.fraud_note || 'Tidak ada anomali signifikan terdeteksi';
+                if (smartConfidenceScore) smartConfidenceScore.textContent = data?.confidence_score ? `${data.confidence_score}%` : '-';
+                if (smartConfidenceReason) smartConfidenceReason.textContent = data?.confidence_reason || 'Analisis OCR selesai';
+                if (smartCategory) smartCategory.textContent = data?.predicted_category || data?.kategori || 'Umum';
+            };
+
+            const renderValidation = (result) => {
+                const matches = result?.matches || {};
+                if (inputVendor) inputVendor.textContent = vendorInput?.value || '-';
+                if (inputNominal) inputNominal.textContent = nominalInput?.value ? formatRupiah(nominalInput.value) : '-';
+                if (inputDate) inputDate.textContent = dateInput?.value || '-';
+
+                if (statusVendor) statusVendor.innerHTML = statusBadge(matches.vendor?.status);
+                if (statusNominal) statusNominal.innerHTML = statusBadge(matches.nominal?.status);
+                if (statusDate) statusDate.innerHTML = statusBadge(matches.tanggal?.status);
+
+                const issues = result?.issues || [];
+                if (issues.length > 0) {
+                    const top = issues[0];
+                    setSummary(top.type || 'warning', `${top.title}: ${top.message}`);
+                } else {
+                    setSummary('success', 'Data valid. Pengajuan siap dikirim.');
+                }
+            };
+
+            const validateInput = async () => {
+                const requestId = ++validateRequestId;
+                if (!currentOcrData) {
+                    canSubmitByValidation = !!(vendorInput?.value && nominalInput?.value && dateInput?.value);
+                    setSubmitState();
+                    return;
+                }
+                try {
+                    const response = await fetch(OCR_ROUTES.validate, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrf,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            ocr_data: currentOcrData,
+                            nama_vendor: vendorInput?.value || '',
+                            nominal: nominalInput?.value || '',
+                            tanggal_transaksi: dateInput?.value || '',
+                            jenis_transaksi: trxTypeInput?.value || ''
+                        })
+                    });
+                    const result = await response.json();
+                    if (requestId !== validateRequestId) return;
+                    if (!response.ok || result.success === false) {
+                        canSubmitByValidation = false;
+                        setSummary('error', result.message || 'Validasi input gagal.');
+                        setSubmitState();
+                        return;
+                    }
+                    canSubmitByValidation = !!result.can_submit;
+                    renderValidation(result);
+                    setSubmitState();
+                } catch (e) {
+                    if (requestId !== validateRequestId) return;
+                    canSubmitByValidation = false;
+                    setSummary('error', 'Gagal menghubungi server validasi.');
+                    setSubmitState();
+                }
+            };
+
+            const processOcr = async () => {
+                if (!fileInput || !fileInput.files.length) return;
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('file_bukti', file);
+                formData.append('jenis_transaksi', trxTypeInput?.value || '');
+                formData.append('ocr_text', ocrTextInput?.value || '');
+
+                if (uploadContent) uploadContent.innerHTML = '<p style="margin:0;font-size:.9rem;color:#4f46e5;">Memproses OCR...</p>';
+
+                try {
+                    const response = await fetch(OCR_ROUTES.process, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrf,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (!response.ok || result.success === false) {
+                        currentOcrData = null;
+                        validateRequestId++;
+                        canSubmitByValidation = false;
+                        setSummary('error', result.message || 'OCR gagal diproses.');
+                        setSubmitState();
+                        notify('error', 'OCR Gagal', result.message || 'Proses OCR gagal.');
+                        return;
+                    }
+
+                    isDuplicate = !!result.is_duplicate;
+                    if (duplicateAlert) duplicateAlert.style.display = isDuplicate ? 'block' : 'none';
+                    if (isDuplicate) {
+                        validateRequestId++;
+                        canSubmitByValidation = false;
+                        setSummary('error', result.message || 'File terdeteksi duplikat.');
+                        setSubmitState();
+                        return;
+                    }
+
+                    currentOcrData = result.ocr_data || null;
+                    renderOcrData(currentOcrData || {});
+
+                    if (multiInvoice && multiOptions) {
+                        const options = result.multi_invoice?.amounts || [];
+                        if (options.length > 1) {
+                            multiInvoice.style.display = 'block';
+                            multiOptions.innerHTML = options.map((amt, idx) => `
+                                <label style="display:flex;gap:.4rem;align-items:center;margin:.25rem 0;">
+                                    <input type="radio" name="ocr_nominal_pick" value="${amt}" ${idx === 0 ? 'checked' : ''}>
+                                    <span>${formatRupiah(amt)}</span>
+                                </label>
+                            `).join('');
+                            multiOptions.querySelectorAll('input[name="ocr_nominal_pick"]').forEach((el) => {
+                                el.addEventListener('change', () => {
+                                    if (nominalInput) nominalInput.value = String(el.value).replace(/[^\d]/g, '');
+                                    debounceValidateInput(0);
+                                });
+                            });
+                        } else {
+                            multiInvoice.style.display = 'none';
+                        }
+                    }
+
+                    await validateInput();
+                    notify('success', 'OCR Berhasil', result.message || 'Data struk berhasil dibaca.');
+                } catch (e) {
+                    currentOcrData = null;
+                    validateRequestId++;
+                    canSubmitByValidation = false;
+                    setSummary('error', 'Terjadi gangguan jaringan saat OCR.');
+                    setSubmitState();
+                } finally {
+                    if (uploadContent) {
+                        uploadContent.innerHTML = `
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p style="margin: 0.4rem 0 0; font-size: 0.95rem;">Upload bukti transaksi</p>
+                            <span style="font-size: 0.75rem;">JPG, PNG, WebP, PDF | Maks 5MB</span>
+                        `;
+                    }
+                }
+            };
+
+            fileInput?.addEventListener('change', () => {
+                const file = fileInput.files?.[0];
+                if (!file) return;
+                if (fileName) fileName.textContent = file.name;
+                if (fileSize) fileSize.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+                if (filePreview) filePreview.style.display = 'block';
+                processOcr();
+            });
+
+            removeFile?.addEventListener('click', () => {
+                if (fileInput) fileInput.value = '';
+                if (filePreview) filePreview.style.display = 'none';
+                if (validationResults) validationResults.style.display = 'none';
+                if (duplicateAlert) duplicateAlert.style.display = 'none';
+                if (multiInvoice) multiInvoice.style.display = 'none';
+                currentOcrData = null;
+                isDuplicate = false;
+                canSubmitByValidation = false;
+                clearTimeout(validateTimer);
+                validateRequestId++;
+                setSubmitState();
+            });
+
+            retryOcr?.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput?.click();
+            });
+
+            [vendorInput, nominalInput, dateInput, trxTypeInput].forEach((el) => {
+                el?.addEventListener('input', () => debounceValidateInput(220));
+                el?.addEventListener('change', () => debounceValidateInput(0));
+            });
+
+            form.addEventListener('submit', (e) => {
+                if (submitBtn?.disabled) {
+                    e.preventDefault();
+                    notify('warning', 'Belum Valid', 'Lengkapi data dan tunggu validasi OCR selesai.');
+                }
+            });
+
+            setSubmitState();
+        };
+
+        document.addEventListener('DOMContentLoaded', initOcrCreateForm);
+        document.addEventListener('livewire:navigated', initOcrCreateForm);
+    })();
 </script>
-<script src="{{ asset('js/tesseract-ocr.js') }}"></script>
-<script src="{{ asset('js/modules/pengajuan.js') }}"></script>
 @endpush
 
 @endsection

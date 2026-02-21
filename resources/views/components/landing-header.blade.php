@@ -1,10 +1,10 @@
 <header class="landing-header">
     <div class="header-container">
         <a href="#home" class="logo">
-            <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo-image">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo-image" width="350" height="100" decoding="async">
         </a>
 
-        <nav class="nav-menu">
+        <nav class="nav-menu" aria-label="Primary Navigation">
             <a href="#home" class="nav-link">Home</a>
             <a href="#features" class="nav-link">Technology</a>
             <a href="#roles" class="nav-link">Ecosystem</a>

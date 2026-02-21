@@ -1,0 +1,2220 @@
+/* Unified visual system for role Pegawai and Atasan.
+   Goal: match Finance quality and keep spacing/type/components consistent. */
+
+body.role-pegawai,
+body.role-atasan {
+    --role-primary: #425d87;
+    --role-primary-700: #31486f;
+    --role-primary-50: #f4f7fc;
+    --role-accent: #3b82f6;
+    --role-ink-900: #1b2a42;
+    --role-ink-700: #334867;
+    --role-ink-500: #657a97;
+    --role-border: rgba(66, 93, 135, 0.15);
+    --role-border-soft: rgba(66, 93, 135, 0.1);
+    --role-shadow: 0 14px 32px rgba(23, 39, 65, 0.1);
+    --role-shadow-soft: 0 8px 22px rgba(23, 39, 65, 0.08);
+    --role-radius-shell: 1.6rem;
+    --role-radius-card: 1.1rem;
+    --role-radius-soft: 0.88rem;
+}
+
+body.role-atasan {
+    --role-primary: #3f5f94;
+    --role-primary-700: #2f4b76;
+}
+
+body.role-pegawai .dashboard-wrapper,
+body.role-atasan .dashboard-wrapper {
+    padding: 0.95rem !important;
+    min-height: 100vh;
+    background:
+        radial-gradient(860px 320px at 10% -16%, rgba(66, 93, 135, 0.12), transparent 72%),
+        radial-gradient(740px 280px at 94% -14%, rgba(59, 130, 246, 0.09), transparent 72%),
+        linear-gradient(138deg, #f5f8fd 0%, #edf3fb 100%) !important;
+}
+
+body.role-pegawai .dashboard-content,
+body.role-atasan .dashboard-content {
+    gap: 0.9rem !important;
+}
+
+body.role-pegawai .dashboard-main-grid,
+body.role-atasan .dashboard-main-grid {
+    gap: 0.95rem !important;
+}
+
+body.role-pegawai .page-title,
+body.role-atasan .page-title {
+    color: var(--role-ink-900) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.01em;
+}
+
+body.role-pegawai .page-subtitle,
+body.role-atasan .page-subtitle {
+    color: var(--role-ink-500) !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em;
+}
+
+body.role-pegawai .modern-section,
+body.role-atasan .modern-section,
+body.role-pegawai .tabs-container,
+body.role-atasan .tabs-container,
+body.role-pegawai .notif-section,
+body.role-atasan .notif-section,
+body.role-pegawai .recent-section,
+body.role-atasan .recent-section,
+body.role-pegawai .status-chart-card,
+body.role-atasan .status-chart-card,
+body.role-pegawai .team-overview-card,
+body.role-atasan .team-overview-card,
+body.role-pegawai .approval-queue-card,
+body.role-atasan .approval-queue-card,
+body.role-pegawai .budget-status-container,
+body.role-atasan .budget-status-container,
+body.role-pegawai .notifikasi-section,
+body.role-atasan .notifikasi-section {
+    border-radius: var(--role-radius-shell) !important;
+    border: 1px solid var(--role-border) !important;
+    background: linear-gradient(160deg, #ffffff 0%, #f8fbff 100%) !important;
+    box-shadow: var(--role-shadow) !important;
+}
+
+body.role-pegawai .welcome-card,
+body.role-atasan .welcome-card {
+    border-radius: var(--role-radius-shell) !important;
+    box-shadow: 0 16px 34px rgba(49, 72, 111, 0.3) !important;
+}
+
+body.role-pegawai .stat-card,
+body.role-atasan .stat-card,
+body.role-pegawai .stat-card.modern,
+body.role-atasan .stat-card.modern,
+body.role-pegawai .modern-action-card,
+body.role-atasan .modern-action-card,
+body.role-pegawai .notifikasi-item,
+body.role-atasan .notifikasi-item,
+body.role-pegawai .notif-card,
+body.role-atasan .notif-card,
+body.role-pegawai .alert,
+body.role-atasan .alert,
+body.role-pegawai .password-note,
+body.role-atasan .password-note,
+body.role-pegawai .form-display,
+body.role-atasan .form-display,
+body.role-pegawai .description-box,
+body.role-atasan .description-box,
+body.role-pegawai .file-upload,
+body.role-atasan .file-upload,
+body.role-pegawai .compact-details,
+body.role-atasan .compact-details {
+    border-radius: var(--role-radius-card) !important;
+    border: 1px solid var(--role-border-soft) !important;
+    box-shadow: var(--role-shadow-soft);
+}
+
+body.role-pegawai .section-header,
+body.role-atasan .section-header {
+    border-bottom: 1px solid rgba(66, 93, 135, 0.14) !important;
+    margin-bottom: 0.65rem !important;
+    padding-bottom: 0.55rem !important;
+}
+
+body.role-pegawai .section-title,
+body.role-atasan .section-title {
+    color: var(--role-ink-900) !important;
+    font-size: clamp(1.02rem, 1.08vw, 1.22rem) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.012em;
+    line-height: 1.25;
+    margin: 0 !important;
+}
+
+body.role-pegawai .section-subtitle,
+body.role-atasan .section-subtitle,
+body.role-pegawai .chart-subtitle,
+body.role-atasan .chart-subtitle,
+body.role-pegawai .notif-subtitle,
+body.role-atasan .notif-subtitle,
+body.role-pegawai .section-info,
+body.role-atasan .section-info,
+body.role-pegawai .stat-sub-label,
+body.role-atasan .stat-sub-label {
+    color: var(--role-ink-500) !important;
+    font-size: 0.84rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em;
+    line-height: 1.42;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    text-align: left !important;
+}
+
+body.role-pegawai .stat-value,
+body.role-atasan .stat-value {
+    color: var(--role-ink-900) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.006em;
+}
+
+body.role-pegawai .stat-label,
+body.role-atasan .stat-label {
+    color: var(--role-ink-500) !important;
+    font-weight: 600 !important;
+}
+
+/* Cross-role header/typography alignment consistency (Finance, Atasan, Pegawai) */
+body.role-finance .modern-section > .section-header,
+body.role-pegawai .modern-section > .section-header,
+body.role-atasan .modern-section > .section-header {
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+}
+
+body.role-finance .modern-section > .section-header > div:first-child,
+body.role-pegawai .modern-section > .section-header > div:first-child,
+body.role-atasan .modern-section > .section-header > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.24rem;
+    min-width: 0;
+    text-align: left !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+body.role-finance .section-title {
+    color: #1c2d47 !important;
+    font-size: clamp(1.02rem, 1.08vw, 1.22rem) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.012em;
+    line-height: 1.25;
+    margin: 0 !important;
+    text-align: left !important;
+}
+
+body.role-finance .section-subtitle,
+body.role-finance .chart-subtitle,
+body.role-finance .notif-subtitle,
+body.role-finance .section-info,
+body.role-finance .stat-sub-label {
+    color: #607392 !important;
+    font-size: 0.84rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em;
+    line-height: 1.42;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    text-align: left !important;
+}
+
+body.role-pegawai .recent-section p:not([class]),
+body.role-atasan .recent-section p:not([class]),
+body.role-pegawai .team-overview-card p:not([class]),
+body.role-atasan .team-overview-card p:not([class]),
+body.role-pegawai .approval-queue-card p:not([class]),
+body.role-atasan .approval-queue-card p:not([class]),
+body.role-pegawai .status-chart-card p:not([class]),
+body.role-atasan .status-chart-card p:not([class]) {
+    color: var(--role-ink-500) !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em;
+}
+
+body.role-pegawai .btn-modern,
+body.role-atasan .btn-modern,
+body.role-pegawai .btn-action-icon,
+body.role-atasan .btn-action-icon,
+body.role-pegawai .btn-check,
+body.role-atasan .btn-check,
+body.role-pegawai .btn-reset-pegawai,
+body.role-atasan .btn-reset-pegawai {
+    border-radius: var(--role-radius-soft) !important;
+}
+
+body.role-pegawai .btn-modern-primary,
+body.role-atasan .btn-modern-primary {
+    background: linear-gradient(135deg, var(--role-primary) 0%, var(--role-primary-700) 100%) !important;
+    box-shadow: 0 10px 20px rgba(66, 93, 135, 0.24) !important;
+}
+
+body.role-pegawai .btn-modern-primary:hover,
+body.role-atasan .btn-modern-primary:hover {
+    box-shadow: 0 14px 26px rgba(66, 93, 135, 0.3) !important;
+}
+
+body.role-pegawai .btn-modern-secondary,
+body.role-atasan .btn-modern-secondary {
+    border: 1px solid var(--role-border) !important;
+    background: linear-gradient(175deg, #ffffff 0%, #f6f9ff 100%) !important;
+    color: var(--role-primary) !important;
+}
+
+body.role-pegawai .filter-container,
+body.role-atasan .filter-container {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    margin-bottom: 0.75rem !important;
+    padding: 0 !important;
+}
+
+body.role-pegawai .filter-form,
+body.role-atasan .filter-form,
+body.role-pegawai .filter-form-pegawai,
+body.role-atasan .filter-form-pegawai {
+    background: #f6f9fd !important;
+    border: 1px solid var(--role-border) !important;
+    border-radius: 1rem !important;
+    padding: 0.78rem 0.86rem !important;
+    gap: 0.72rem !important;
+    box-shadow: none !important;
+}
+
+body.role-pegawai .filter-label,
+body.role-atasan .filter-label,
+body.role-pegawai .filter-label-pegawai,
+body.role-atasan .filter-label-pegawai {
+    color: var(--role-ink-500) !important;
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+}
+
+body.role-pegawai .filter-input,
+body.role-atasan .filter-input,
+body.role-pegawai .filter-select,
+body.role-atasan .filter-select,
+body.role-pegawai .filter-input-pegawai,
+body.role-atasan .filter-input-pegawai,
+body.role-pegawai .date-group-pegawai,
+body.role-atasan .date-group-pegawai {
+    border-radius: 0.84rem !important;
+    border: 1px solid #d4deec !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+}
+
+body.role-pegawai .filter-input:focus,
+body.role-atasan .filter-input:focus,
+body.role-pegawai .filter-select:focus,
+body.role-atasan .filter-select:focus,
+body.role-pegawai .filter-input-pegawai:focus,
+body.role-atasan .filter-input-pegawai:focus {
+    border-color: var(--role-primary) !important;
+    box-shadow: 0 0 0 3px rgba(66, 93, 135, 0.13) !important;
+}
+
+body.role-pegawai .data-table-wrapper,
+body.role-atasan .data-table-wrapper {
+    border-radius: var(--role-radius-card) !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+body.role-pegawai .data-table thead,
+body.role-atasan .data-table thead {
+    background: linear-gradient(165deg, #f4f8ff 0%, #edf3fc 100%) !important;
+    border-bottom: 1px solid rgba(66, 93, 135, 0.16) !important;
+}
+
+body.role-pegawai .data-table th,
+body.role-atasan .data-table th {
+    color: #4f6282 !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+}
+
+body.role-pegawai .data-table td,
+body.role-atasan .data-table td {
+    color: var(--role-ink-700) !important;
+    border-bottom: 1px solid rgba(66, 93, 135, 0.09) !important;
+}
+
+body.role-pegawai .data-table tbody tr:hover,
+body.role-atasan .data-table tbody tr:hover {
+    background: #f6faff !important;
+}
+
+body.role-pegawai .notif-card,
+body.role-atasan .notif-card,
+body.role-pegawai .notifikasi-item,
+body.role-atasan .notifikasi-item {
+    position: relative;
+    background: #fbfcff !important;
+}
+
+body.role-pegawai .notif-card.unread,
+body.role-atasan .notif-card.unread,
+body.role-pegawai .notifikasi-item.unread,
+body.role-atasan .notifikasi-item.unread {
+    background: #eef4ff !important;
+    border-color: #d5e2f4 !important;
+}
+
+body.role-pegawai .notif-card.unread::before,
+body.role-atasan .notif-card.unread::before {
+    content: '';
+    position: absolute;
+    left: 0.6rem;
+    top: 0.8rem;
+    bottom: 0.8rem;
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #5f7eb2, #3f5f94);
+}
+
+body.role-pegawai .tabs-container,
+body.role-atasan .tabs-container {
+    overflow: hidden;
+}
+
+body.role-pegawai .tabs-header,
+body.role-atasan .tabs-header {
+    border-bottom: 1px solid rgba(66, 93, 135, 0.12) !important;
+    box-shadow: none !important;
+}
+
+body.role-pegawai .tabs-nav,
+body.role-atasan .tabs-nav {
+    gap: 0.5rem !important;
+}
+
+body.role-pegawai .tab-btn,
+body.role-atasan .tab-btn {
+    border-radius: 999px !important;
+    border: 1px solid rgba(66, 93, 135, 0.22) !important;
+    color: var(--role-ink-500) !important;
+    font-weight: 650 !important;
+}
+
+body.role-pegawai .tab-btn.active,
+body.role-atasan .tab-btn.active {
+    background: linear-gradient(135deg, var(--role-primary), var(--role-primary-700)) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 10px 18px rgba(66, 93, 135, 0.22) !important;
+}
+
+body.role-pegawai .form-control,
+body.role-atasan .form-control,
+body.role-pegawai .form-input,
+body.role-atasan .form-input,
+body.role-pegawai .form-select,
+body.role-atasan .form-select,
+body.role-pegawai textarea,
+body.role-atasan textarea {
+    border-radius: var(--role-radius-soft) !important;
+    border: 1px solid var(--role-border) !important;
+    background: #ffffff !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px rgba(20, 33, 56, 0.05);
+}
+
+body.role-pegawai .form-control:focus,
+body.role-atasan .form-control:focus,
+body.role-pegawai .form-input:focus,
+body.role-atasan .form-input:focus,
+body.role-pegawai .form-select:focus,
+body.role-atasan .form-select:focus,
+body.role-pegawai textarea:focus,
+body.role-atasan textarea:focus {
+    border-color: var(--role-primary) !important;
+    box-shadow: 0 0 0 3px rgba(66, 93, 135, 0.13), 0 10px 20px rgba(20, 33, 56, 0.08) !important;
+}
+
+body.role-pegawai .modern-action-card:hover,
+body.role-atasan .modern-action-card:hover,
+body.role-pegawai .stat-card:hover,
+body.role-atasan .stat-card:hover,
+body.role-pegawai .stat-card.modern:hover,
+body.role-atasan .stat-card.modern:hover,
+body.role-pegawai .recent-section:hover,
+body.role-atasan .recent-section:hover,
+body.role-pegawai .team-overview-card:hover,
+body.role-atasan .team-overview-card:hover,
+body.role-pegawai .approval-queue-card:hover,
+body.role-atasan .approval-queue-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 32px rgba(23, 39, 65, 0.14) !important;
+}
+
+body.role-pegawai .quick-actions-minimal,
+body.role-atasan .quick-actions-minimal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+}
+
+body.role-pegawai .quick-actions-title,
+body.role-atasan .quick-actions-title {
+    margin: 0 0 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+body.role-pegawai .quick-actions-title-line,
+body.role-atasan .quick-actions-title-line {
+    flex: 1;
+    height: 1px;
+    background: #dbe4f0;
+    opacity: 0.75;
+}
+
+body.role-pegawai .quick-actions-vertical,
+body.role-atasan .quick-actions-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+body.role-pegawai .quick-card,
+body.role-atasan .quick-card {
+    --quick-accent: rgba(66, 93, 135, 0.12);
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-height: 72px;
+    padding: 0.86rem 0.95rem;
+    text-decoration: none;
+    border-radius: 1rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.16) !important;
+    background: linear-gradient(152deg, #ffffff 0%, #f8fbff 100%) !important;
+    box-shadow: 0 10px 20px rgba(32, 50, 80, 0.08) !important;
+    overflow: hidden;
+}
+
+body.role-pegawai .quick-card-primary,
+body.role-atasan .quick-card-primary {
+    --quick-accent: rgba(66, 93, 135, 0.16);
+}
+
+body.role-pegawai .quick-card-warning,
+body.role-atasan .quick-card-warning {
+    --quick-accent: rgba(245, 158, 11, 0.15);
+}
+
+body.role-pegawai .quick-card-success,
+body.role-atasan .quick-card-success {
+    --quick-accent: rgba(16, 185, 129, 0.15);
+}
+
+body.role-pegawai .quick-card::after,
+body.role-atasan .quick-card::after {
+    content: "";
+    position: absolute;
+    top: -52px;
+    right: -48px;
+    width: 132px;
+    height: 132px;
+    border-radius: 999px;
+    background: var(--quick-accent);
+    pointer-events: none;
+}
+
+body.role-pegawai .quick-card:hover,
+body.role-atasan .quick-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 30px rgba(28, 47, 79, 0.14) !important;
+    border-color: rgba(66, 93, 135, 0.28) !important;
+}
+
+body.role-pegawai .quick-card-icon,
+body.role-atasan .quick-card-icon {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 13px;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.22s ease;
+}
+
+body.role-pegawai .quick-card:hover .quick-card-icon,
+body.role-atasan .quick-card:hover .quick-card-icon {
+    transform: translateY(-1px) scale(1.03);
+}
+
+body.role-pegawai .quick-card-icon-primary,
+body.role-atasan .quick-card-icon-primary {
+    background: linear-gradient(135deg, #425d87 0%, #314464 100%);
+    box-shadow: 0 8px 16px rgba(66, 93, 135, 0.24);
+}
+
+body.role-pegawai .quick-card-icon-warning,
+body.role-atasan .quick-card-icon-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 8px 16px rgba(217, 119, 6, 0.24);
+}
+
+body.role-pegawai .quick-card-icon-success,
+body.role-atasan .quick-card-icon-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 8px 16px rgba(5, 150, 105, 0.24);
+}
+
+body.role-pegawai .quick-card-content,
+body.role-atasan .quick-card-content {
+    min-width: 0;
+}
+
+body.role-pegawai .quick-card-title,
+body.role-atasan .quick-card-title {
+    margin: 0 0 0.08rem;
+    font-weight: 750;
+    color: #1e293b;
+    font-size: 0.86rem;
+    line-height: 1.25;
+}
+
+body.role-pegawai .quick-card-subtitle,
+body.role-atasan .quick-card-subtitle {
+    margin: 0;
+    font-size: 0.72rem;
+    color: #64748b;
+    line-height: 1.35;
+}
+
+body.role-pegawai .link-back,
+body.role-atasan .link-back {
+    border-radius: 0.8rem !important;
+    border: 1px solid var(--role-border) !important;
+    padding: 0.5rem 0.8rem !important;
+    color: var(--role-primary) !important;
+    background: #f5f9ff !important;
+    font-weight: 700 !important;
+}
+
+body.role-pegawai .link-back:hover,
+body.role-atasan .link-back:hover {
+    background: #ebf2fc !important;
+    border-color: rgba(66, 93, 135, 0.28) !important;
+}
+
+@media (max-width: 1024px) {
+    body.role-pegawai .dashboard-wrapper,
+    body.role-atasan .dashboard-wrapper {
+        padding: 0.8rem !important;
+    }
+
+    body.role-pegawai .dashboard-content,
+    body.role-atasan .dashboard-content {
+        gap: 0.75rem !important;
+    }
+
+    body.role-pegawai .dashboard-wrapper > .dashboard-container > .dashboard-content > div[style*="display: grid"],
+    body.role-atasan .dashboard-wrapper > .dashboard-container > .dashboard-content > div[style*="display: grid"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 768px) {
+    body.role-pegawai .dashboard-wrapper,
+    body.role-atasan .dashboard-wrapper {
+        padding: 0.72rem !important;
+    }
+
+    body.role-pegawai .modern-section,
+    body.role-atasan .modern-section,
+    body.role-pegawai .notif-section,
+    body.role-atasan .notif-section,
+    body.role-pegawai .recent-section,
+    body.role-atasan .recent-section,
+    body.role-pegawai .team-overview-card,
+    body.role-atasan .team-overview-card,
+    body.role-pegawai .approval-queue-card,
+    body.role-atasan .approval-queue-card,
+    body.role-pegawai .tabs-container,
+    body.role-atasan .tabs-container {
+        border-radius: 1.25rem !important;
+    }
+
+    body.role-pegawai .section-title,
+    body.role-atasan .section-title {
+        font-size: 1rem !important;
+    }
+
+    body.role-pegawai .section-subtitle,
+    body.role-atasan .section-subtitle {
+        font-size: 0.79rem !important;
+    }
+}
+
+/* Final cross-role spacing/typography polish (Finance, Atasan, Pegawai) */
+body.role-finance,
+body.role-pegawai,
+body.role-atasan {
+    --ui-space-2xs: 0.5rem;
+    --ui-space-xs: 0.7rem;
+    --ui-space-sm: 0.9rem;
+    --ui-space-md: 1.1rem;
+    --ui-space-lg: 1.3rem;
+}
+
+body.role-finance .dashboard-wrapper,
+body.role-pegawai .dashboard-wrapper,
+body.role-atasan .dashboard-wrapper {
+    padding: clamp(0.78rem, 1.05vw, 1.04rem) !important;
+}
+
+body.role-finance .dashboard-container,
+body.role-pegawai .dashboard-container,
+body.role-atasan .dashboard-container {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+body.role-finance .dashboard-content,
+body.role-pegawai .dashboard-content,
+body.role-atasan .dashboard-content {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--ui-space-sm) !important;
+}
+
+body.role-finance .dashboard-content > *,
+body.role-pegawai .dashboard-content > *,
+body.role-atasan .dashboard-content > * {
+    margin: 0 !important;
+}
+
+body.role-finance .stats-grid,
+body.role-pegawai .stats-grid,
+body.role-atasan .stats-grid {
+    margin: 0 !important;
+    gap: 0.86rem !important;
+}
+
+body.role-finance .modern-section,
+body.role-pegawai .modern-section,
+body.role-atasan .modern-section,
+body.role-finance .report-section,
+body.role-finance .tabs-container,
+body.role-pegawai .tabs-container,
+body.role-atasan .tabs-container {
+    margin: 0 !important;
+    padding: clamp(1rem, 1.08vw, 1.24rem) !important;
+}
+
+body.role-finance .modern-section > .section-header,
+body.role-pegawai .modern-section > .section-header,
+body.role-atasan .modern-section > .section-header,
+body.role-finance .report-section > .section-header {
+    display: flex;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: var(--ui-space-sm) !important;
+    margin-bottom: 0.72rem !important;
+    padding-bottom: 0.58rem !important;
+}
+
+body.role-finance .modern-section > .section-header > div:first-child,
+body.role-pegawai .modern-section > .section-header > div:first-child,
+body.role-atasan .modern-section > .section-header > div:first-child,
+body.role-finance .report-section > .section-header > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+body.role-finance .header-actions,
+body.role-pegawai .header-actions,
+body.role-atasan .header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+body.role-finance .export-actions,
+body.role-pegawai .export-actions,
+body.role-atasan .export-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+body.role-finance .section-title,
+body.role-pegawai .section-title,
+body.role-atasan .section-title {
+    font-size: clamp(1.01rem, 1.02vw, 1.17rem) !important;
+    font-weight: 700 !important;
+    line-height: 1.24;
+    letter-spacing: 0.008em;
+    margin: 0 !important;
+}
+
+body.role-finance .section-subtitle,
+body.role-pegawai .section-subtitle,
+body.role-atasan .section-subtitle,
+body.role-finance .chart-subtitle,
+body.role-pegawai .chart-subtitle,
+body.role-atasan .chart-subtitle,
+body.role-finance .stat-sub-label,
+body.role-pegawai .stat-sub-label,
+body.role-atasan .stat-sub-label {
+    font-size: clamp(0.79rem, 0.82vw, 0.88rem) !important;
+    font-weight: 500 !important;
+    line-height: 1.44;
+    letter-spacing: 0.008em;
+    margin: 0.12rem 0 0 !important;
+}
+
+body.role-finance .page-title,
+body.role-pegawai .page-title,
+body.role-atasan .page-title {
+    font-size: clamp(1.26rem, 1.48vw, 1.56rem) !important;
+    line-height: 1.14;
+}
+
+body.role-finance .page-subtitle,
+body.role-pegawai .page-subtitle,
+body.role-atasan .page-subtitle {
+    font-size: clamp(0.8rem, 0.88vw, 0.92rem) !important;
+    font-weight: 500 !important;
+    line-height: 1.42;
+}
+
+body.role-finance .filter-container,
+body.role-pegawai .filter-container,
+body.role-atasan .filter-container {
+    margin: 0.14rem 0 0.08rem !important;
+}
+
+body.role-finance .filter-form-finance,
+body.role-finance .filter-form-history,
+body.role-finance .filter-form,
+body.role-pegawai .filter-form-pegawai,
+body.role-atasan .filter-form-pegawai,
+body.role-pegawai .filter-form,
+body.role-atasan .filter-form {
+    column-gap: 0.72rem !important;
+    row-gap: 0.72rem !important;
+}
+
+body.role-finance .data-table-wrapper,
+body.role-pegawai .data-table-wrapper,
+body.role-atasan .data-table-wrapper {
+    margin-top: 0.74rem !important;
+}
+
+body.role-finance .pagination-wrapper,
+body.role-pegawai .pagination-wrapper,
+body.role-atasan .pagination-wrapper {
+    margin-top: 0.96rem !important;
+}
+
+@media (max-width: 1024px) {
+    body.role-finance .header-actions,
+    body.role-pegawai .header-actions,
+    body.role-atasan .header-actions {
+        justify-content: flex-start;
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    body.role-finance .dashboard-wrapper,
+    body.role-pegawai .dashboard-wrapper,
+    body.role-atasan .dashboard-wrapper {
+        padding: 0.72rem !important;
+    }
+
+    body.role-finance .modern-section,
+    body.role-pegawai .modern-section,
+    body.role-atasan .modern-section,
+    body.role-finance .report-section,
+    body.role-finance .tabs-container,
+    body.role-pegawai .tabs-container,
+    body.role-atasan .tabs-container {
+        padding: 0.9rem 0.92rem !important;
+    }
+
+    body.role-finance .dashboard-content,
+    body.role-pegawai .dashboard-content,
+    body.role-atasan .dashboard-content {
+        gap: 0.74rem !important;
+    }
+}
+
+/* Pegawai dashboard compact consistency */
+body.role-pegawai .dashboard-content > .welcome-card {
+    min-height: 158px !important;
+    padding: 1.7rem 1.9rem !important;
+}
+
+body.role-pegawai .dashboard-content > .smarter-dashboard-alerts {
+    gap: 0.72rem !important;
+}
+
+body.role-pegawai .dashboard-content .amount-grid {
+    gap: 0.78rem !important;
+    margin: 0 !important;
+}
+
+body.role-pegawai .dashboard-content .status-chart-card,
+body.role-pegawai .dashboard-content .recent-section {
+    padding: 0.95rem !important;
+}
+
+body.role-pegawai .dashboard-content .section-header {
+    margin-bottom: 0.58rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+@media (max-width: 1024px) {
+    body.role-pegawai .dashboard-content > .welcome-card {
+        min-height: 146px !important;
+        padding: 1.35rem 1.45rem !important;
+    }
+
+    body.role-pegawai .dashboard-content .amount-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Sidebar polish for Finance + Atasan + Pegawai */
+body.role-finance .finance-sidebar,
+body.role-pegawai .pegawai-sidebar,
+body.role-atasan .atasan-sidebar {
+    background: linear-gradient(180deg, #ffffff 0%, #f9fcff 100%) !important;
+    border-right: 1px solid rgba(66, 93, 135, 0.14);
+    box-shadow: 10px 0 32px rgba(22, 37, 62, 0.12) !important;
+}
+
+body.role-finance .finance-sidebar .sidebar-header,
+body.role-pegawai .pegawai-sidebar .sidebar-header,
+body.role-atasan .atasan-sidebar .sidebar-header {
+    padding-top: 1.35rem !important;
+}
+
+body.role-finance .finance-sidebar .logo-wrapper,
+body.role-pegawai .pegawai-sidebar .logo-wrapper,
+body.role-atasan .atasan-sidebar .logo-wrapper {
+    border-radius: 1.02rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.12) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 4px 12px rgba(49, 72, 111, 0.06);
+}
+
+body.role-finance .finance-sidebar .menu-section-label,
+body.role-pegawai .pegawai-sidebar .menu-section-label,
+body.role-atasan .atasan-sidebar .menu-section-label {
+    color: #a2b3cc !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.1em !important;
+    font-size: 0.68rem !important;
+    padding-top: 1.05rem !important;
+}
+
+body.role-finance .finance-sidebar .menu-item,
+body.role-pegawai .pegawai-sidebar .menu-item,
+body.role-atasan .atasan-sidebar .menu-item {
+    min-height: 40px;
+    padding: 0.54rem 0.95rem !important;
+    border-radius: 1.15rem !important;
+    font-size: 0.885rem !important;
+    font-weight: 560 !important;
+    letter-spacing: 0.004em;
+    transition: transform 0.2s ease, background-color 0.24s ease, color 0.24s ease, box-shadow 0.24s ease !important;
+}
+
+body.role-finance .finance-sidebar .menu-item:hover,
+body.role-pegawai .pegawai-sidebar .menu-item:hover,
+body.role-atasan .atasan-sidebar .menu-item:hover {
+    transform: translateX(3px);
+    background: linear-gradient(140deg, rgba(66, 93, 135, 0.1) 0%, rgba(66, 93, 135, 0.05) 100%) !important;
+    color: #425d87 !important;
+}
+
+body.role-finance .finance-sidebar .menu-item.active,
+body.role-pegawai .pegawai-sidebar .menu-item.active,
+body.role-atasan .atasan-sidebar .menu-item.active {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+body.role-finance .finance-sidebar .menu-item.active::before,
+body.role-pegawai .pegawai-sidebar .menu-item.active::before,
+body.role-atasan .atasan-sidebar .menu-item.active::before {
+    content: "";
+    position: absolute;
+    left: 0.45rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+}
+
+body.role-finance .finance-sidebar .menu-item .menu-icon,
+body.role-pegawai .pegawai-sidebar .menu-item .menu-icon,
+body.role-atasan .atasan-sidebar .menu-item .menu-icon {
+    width: 19px;
+    height: 19px;
+    opacity: 0.94;
+}
+
+body.role-finance .finance-sidebar .menu-item .menu-text,
+body.role-pegawai .pegawai-sidebar .menu-item .menu-text,
+body.role-atasan .atasan-sidebar .menu-item .menu-text {
+    line-height: 1.18;
+}
+
+body.role-finance .finance-sidebar .menu-sliding-bg,
+body.role-pegawai .pegawai-sidebar .menu-sliding-bg,
+body.role-atasan .atasan-sidebar .menu-sliding-bg {
+    border-radius: 1.15rem !important;
+    box-shadow: 0 10px 22px rgba(66, 93, 135, 0.34) !important;
+}
+
+body.role-finance .finance-sidebar .badge-sidebar,
+body.role-finance .finance-sidebar .notif-badge-sidebar,
+body.role-pegawai .pegawai-sidebar .badge-sidebar,
+body.role-pegawai .pegawai-sidebar .notif-badge-sidebar,
+body.role-atasan .atasan-sidebar .badge-sidebar,
+body.role-atasan .atasan-sidebar .notif-badge-sidebar {
+    min-width: 21px;
+    height: 21px;
+    border-radius: 999px !important;
+    font-size: 0.66rem !important;
+    font-weight: 800 !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 6px 12px rgba(215, 67, 67, 0.24);
+}
+
+body.role-finance .finance-sidebar .menu-item.active .badge-sidebar,
+body.role-finance .finance-sidebar .menu-item.active .notif-badge-sidebar,
+body.role-pegawai .pegawai-sidebar .menu-item.active .badge-sidebar,
+body.role-pegawai .pegawai-sidebar .menu-item.active .notif-badge-sidebar,
+body.role-atasan .atasan-sidebar .menu-item.active .badge-sidebar,
+body.role-atasan .atasan-sidebar .menu-item.active .notif-badge-sidebar {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.45);
+    box-shadow: none;
+}
+
+body.role-finance .finance-sidebar .logout-section,
+body.role-pegawai .pegawai-sidebar .logout-section,
+body.role-atasan .atasan-sidebar .logout-section {
+    border-top: 1px solid rgba(66, 93, 135, 0.12) !important;
+    background: linear-gradient(180deg, rgba(248, 251, 255, 0.3) 0%, #ffffff 100%) !important;
+}
+
+body.role-finance .finance-sidebar .logout-item-menu:hover,
+body.role-pegawai .pegawai-sidebar .logout-item-menu:hover,
+body.role-atasan .atasan-sidebar .logout-item-menu:hover {
+    background: linear-gradient(140deg, rgba(239, 68, 68, 0.09) 0%, rgba(239, 68, 68, 0.05) 100%) !important;
+}
+
+/* Final spacing & typography pass across 3 roles */
+body.role-finance .dashboard-main-grid,
+body.role-pegawai .dashboard-main-grid,
+body.role-atasan .dashboard-main-grid {
+    gap: 0.9rem !important;
+}
+
+body.role-finance .stat-label,
+body.role-pegawai .stat-label,
+body.role-atasan .stat-label {
+    font-size: 0.84rem !important;
+    line-height: 1.35;
+    letter-spacing: 0.004em;
+}
+
+body.role-finance .form-label,
+body.role-pegawai .form-label,
+body.role-atasan .form-label {
+    font-size: 0.82rem !important;
+    font-weight: 650 !important;
+    letter-spacing: 0.004em;
+    margin-bottom: 0.38rem !important;
+}
+
+body.role-finance .btn-modern,
+body.role-pegawai .btn-modern,
+body.role-atasan .btn-modern,
+body.role-finance .btn-action-icon,
+body.role-pegawai .btn-action-icon,
+body.role-atasan .btn-action-icon {
+    font-weight: 650 !important;
+    letter-spacing: 0.005em;
+}
+
+body.role-finance .data-table th,
+body.role-pegawai .data-table th,
+body.role-atasan .data-table th {
+    line-height: 1.28;
+}
+
+body.role-finance .data-table td,
+body.role-pegawai .data-table td,
+body.role-atasan .data-table td {
+    line-height: 1.4;
+}
+
+@media (max-width: 1200px) {
+    body.role-finance .finance-sidebar,
+    body.role-pegawai .pegawai-sidebar,
+    body.role-atasan .atasan-sidebar {
+        width: 252px;
+        border-radius: 0 2.1rem 2.1rem 0;
+    }
+}
+
+/* Final consistency pass: profile, notifications, show/detail, and AI cards */
+body.role-finance .tabs-container,
+body.role-pegawai .tabs-container,
+body.role-atasan .tabs-container {
+    border-radius: 1.3rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.14) !important;
+    background: linear-gradient(155deg, #ffffff 0%, #f8fbff 100%) !important;
+    box-shadow: 0 12px 28px rgba(22, 37, 62, 0.09) !important;
+}
+
+body.role-finance .tabs-nav,
+body.role-pegawai .tabs-nav,
+body.role-atasan .tabs-nav {
+    gap: 0.52rem !important;
+    padding: 0.88rem 1.06rem 0.78rem !important;
+}
+
+body.role-finance .tab-btn,
+body.role-pegawai .tab-btn,
+body.role-atasan .tab-btn {
+    min-height: 38px;
+    border-radius: 999px !important;
+    font-size: 0.79rem !important;
+    font-weight: 650 !important;
+}
+
+body.role-finance .notif-stats,
+body.role-pegawai .notif-stats,
+body.role-atasan .notif-stats {
+    margin: 0.25rem 0 0.82rem !important;
+    gap: 0.78rem !important;
+}
+
+body.role-finance .notif-section,
+body.role-pegawai .notif-section,
+body.role-atasan .notif-section {
+    border-radius: 1.28rem !important;
+    padding: 1.02rem 1.06rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.14) !important;
+    background: linear-gradient(160deg, #ffffff 0%, #f9fcff 100%) !important;
+    box-shadow: 0 12px 26px rgba(22, 37, 62, 0.08) !important;
+}
+
+body.role-finance .notif-header,
+body.role-pegawai .notif-header,
+body.role-atasan .notif-header {
+    margin-bottom: 0.72rem !important;
+    padding-bottom: 0.58rem !important;
+    border-bottom: 1px solid rgba(66, 93, 135, 0.12) !important;
+}
+
+body.role-finance .notif-card,
+body.role-pegawai .notif-card,
+body.role-atasan .notif-card {
+    border-radius: 1rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.14) !important;
+    padding: 0.9rem 0.96rem !important;
+    box-shadow: 0 8px 18px rgba(20, 34, 56, 0.06) !important;
+}
+
+body.role-finance .notif-title,
+body.role-pegawai .notif-title,
+body.role-atasan .notif-title {
+    font-size: 0.89rem !important;
+    font-weight: 700 !important;
+    line-height: 1.3;
+}
+
+body.role-finance .notif-message,
+body.role-pegawai .notif-message,
+body.role-atasan .notif-message {
+    font-size: 0.81rem !important;
+    line-height: 1.42;
+    color: #51637e !important;
+}
+
+body.role-finance .notif-time,
+body.role-pegawai .notif-time,
+body.role-atasan .notif-time {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+}
+
+body.role-finance .pengajuan-index-shell,
+body.role-pegawai .pengajuan-index-shell,
+body.role-atasan .pengajuan-index-shell {
+    padding: 1.02rem 1.08rem 1.1rem !important;
+}
+
+body.role-finance .pengajuan-index-shell .section-header,
+body.role-pegawai .pengajuan-index-shell .section-header,
+body.role-atasan .pengajuan-index-shell .section-header {
+    margin-bottom: 0.72rem !important;
+    padding-bottom: 0.58rem !important;
+}
+
+body.role-finance .dashboard-content .modern-section .detail-grid,
+body.role-pegawai .dashboard-content .modern-section .detail-grid,
+body.role-atasan .dashboard-content .modern-section .detail-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 0.72rem !important;
+    padding: 0 !important;
+}
+
+body.role-finance .dashboard-content .modern-section .detail-item,
+body.role-pegawai .dashboard-content .modern-section .detail-item,
+body.role-atasan .dashboard-content .modern-section .detail-item {
+    border-radius: 0.96rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.14) !important;
+    background: linear-gradient(165deg, #ffffff 0%, #f8fbff 100%) !important;
+    box-shadow: 0 7px 16px rgba(23, 39, 65, 0.06) !important;
+    padding: 0.8rem 0.88rem !important;
+    gap: 0.34rem !important;
+}
+
+body.role-finance .dashboard-content .modern-section .detail-item.full-width,
+body.role-pegawai .dashboard-content .modern-section .detail-item.full-width,
+body.role-atasan .dashboard-content .modern-section .detail-item.full-width {
+    grid-column: 1 / -1 !important;
+    margin-top: 0 !important;
+}
+
+body.role-finance .dashboard-content .modern-section .detail-label,
+body.role-pegawai .dashboard-content .modern-section .detail-label,
+body.role-atasan .dashboard-content .modern-section .detail-label {
+    font-size: 0.7rem !important;
+    font-weight: 750 !important;
+    letter-spacing: 0.045em !important;
+}
+
+body.role-finance .dashboard-content .modern-section .detail-value,
+body.role-pegawai .dashboard-content .modern-section .detail-value,
+body.role-atasan .dashboard-content .modern-section .detail-value {
+    font-size: 0.84rem !important;
+    line-height: 1.42;
+}
+
+body.role-finance .dashboard-content .modern-section .description-box,
+body.role-pegawai .dashboard-content .modern-section .description-box,
+body.role-atasan .dashboard-content .modern-section .description-box {
+    border-radius: 0.82rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.14) !important;
+    padding: 0.72rem 0.78rem !important;
+    background: #f8fbff !important;
+}
+
+body.role-pegawai .timeline,
+body.role-atasan .timeline {
+    padding-left: 2.2rem !important;
+}
+
+body.role-pegawai .timeline-item,
+body.role-atasan .timeline-item {
+    padding-bottom: 1.35rem !important;
+}
+
+body.role-pegawai .timeline-dot,
+body.role-atasan .timeline-dot {
+    width: 16px !important;
+    height: 16px !important;
+    left: -1.48rem !important;
+}
+
+body.role-atasan .employee-card-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.88rem;
+    padding: 0.88rem 0.94rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(66, 93, 135, 0.14);
+    background: linear-gradient(152deg, #ffffff 0%, #f7fbff 100%);
+    box-shadow: 0 8px 18px rgba(23, 39, 65, 0.06);
+}
+
+body.role-atasan .employee-card-inline .employee-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+}
+
+body.role-atasan .employee-card-inline .employee-info h4 {
+    margin: 0 0 0.12rem;
+    font-size: 0.95rem;
+}
+
+body.role-atasan .employee-card-inline .employee-info p {
+    margin: 0;
+    font-size: 0.76rem;
+    color: #607392;
+    font-weight: 600;
+}
+
+body.role-finance .validation-dashboard,
+body.role-pegawai .validation-dashboard,
+body.role-atasan .validation-dashboard {
+    margin-top: 0.82rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.16) !important;
+    border-radius: 1rem !important;
+    background: linear-gradient(160deg, #ffffff 0%, #f8fbff 100%) !important;
+    box-shadow: 0 10px 24px rgba(22, 37, 62, 0.08) !important;
+    padding: 0.82rem !important;
+}
+
+body.role-finance .validation-shell,
+body.role-pegawai .validation-shell,
+body.role-atasan .validation-shell {
+    padding: 0.72rem 0.78rem !important;
+    border-radius: 0.9rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.14) !important;
+    background: #ffffff !important;
+}
+
+body.role-finance .validation-shell-title,
+body.role-pegawai .validation-shell-title,
+body.role-atasan .validation-shell-title {
+    font-size: 0.85rem !important;
+    font-weight: 750 !important;
+}
+
+body.role-finance .validation-grid,
+body.role-pegawai .validation-grid,
+body.role-atasan .validation-grid {
+    gap: 0.36rem !important;
+}
+
+body.role-finance .validation-row,
+body.role-pegawai .validation-row,
+body.role-atasan .validation-row {
+    padding: 0.38rem 0.46rem !important;
+    border-radius: 0.7rem !important;
+}
+
+body.role-finance .validation-pill,
+body.role-pegawai .validation-pill,
+body.role-atasan .validation-pill {
+    min-height: 28px;
+    border-radius: 0.62rem !important;
+    font-size: 0.73rem !important;
+}
+
+body.role-finance .validation-summary-box,
+body.role-pegawai .validation-summary-box,
+body.role-atasan .validation-summary-box {
+    margin-top: 0.6rem !important;
+    border-radius: 0.82rem !important;
+    padding: 0.62rem 0.74rem !important;
+    font-size: 0.77rem !important;
+}
+
+body.role-finance .ultra-smart-container,
+body.role-pegawai .ultra-smart-container,
+body.role-atasan .ultra-smart-container {
+    margin-top: 0.68rem !important;
+    padding: 0.74rem !important;
+    border-radius: 0.9rem !important;
+}
+
+body.role-finance .smart-grid,
+body.role-pegawai .smart-grid,
+body.role-atasan .smart-grid {
+    gap: 0.58rem !important;
+}
+
+body.role-finance .smart-card,
+body.role-pegawai .smart-card,
+body.role-atasan .smart-card {
+    border-radius: 0.78rem !important;
+    padding: 0.62rem 0.7rem !important;
+}
+
+body.role-finance .ai-validation-result .ai-audit-shell,
+body.role-pegawai .ai-validation-result .ai-audit-shell,
+body.role-atasan .ai-validation-result .ai-audit-shell {
+    margin-bottom: 1rem !important;
+    border-radius: 1rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.16) !important;
+    box-shadow: 0 10px 22px rgba(23, 39, 65, 0.08) !important;
+}
+
+body.role-finance .ai-validation-result .ai-audit-head,
+body.role-pegawai .ai-validation-result .ai-audit-head,
+body.role-atasan .ai-validation-result .ai-audit-head {
+    padding: 0.78rem 0.9rem !important;
+    background: linear-gradient(160deg, #f7faff 0%, #eef4ff 100%) !important;
+}
+
+body.role-finance .ai-validation-result .ai-audit-title,
+body.role-pegawai .ai-validation-result .ai-audit-title,
+body.role-atasan .ai-validation-result .ai-audit-title {
+    font-size: 0.84rem !important;
+    letter-spacing: 0.005em !important;
+}
+
+body.role-finance .ai-validation-result .ai-audit-body,
+body.role-pegawai .ai-validation-result .ai-audit-body,
+body.role-atasan .ai-validation-result .ai-audit-body {
+    padding: 0.88rem !important;
+    gap: 0.82rem !important;
+}
+
+body.role-finance .ai-validation-result .ai-validation-grid,
+body.role-pegawai .ai-validation-result .ai-validation-grid,
+body.role-atasan .ai-validation-result .ai-validation-grid {
+    gap: 0.58rem !important;
+}
+
+body.role-finance .ai-validation-result .ai-validation-card,
+body.role-pegawai .ai-validation-result .ai-validation-card,
+body.role-atasan .ai-validation-result .ai-validation-card {
+    border-radius: 0.86rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.14) !important;
+    padding: 0.74rem !important;
+    box-shadow: 0 7px 14px rgba(22, 37, 62, 0.05) !important;
+}
+
+body.role-finance .ai-validation-empty,
+body.role-pegawai .ai-validation-empty,
+body.role-atasan .ai-validation-empty {
+    border-radius: 0.95rem !important;
+    background: #f7fbff !important;
+    border: 1px dashed #cfdced !important;
+    padding: 1rem !important;
+}
+
+@media (max-width: 992px) {
+    body.role-finance .ai-validation-result .ai-audit-head,
+    body.role-pegawai .ai-validation-result .ai-audit-head,
+    body.role-atasan .ai-validation-result .ai-audit-head {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.58rem !important;
+    }
+
+    body.role-finance .ai-validation-result .ai-audit-body,
+    body.role-pegawai .ai-validation-result .ai-audit-body,
+    body.role-atasan .ai-validation-result .ai-audit-body {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Profile page: reduce stacked containers, keep one clear content panel */
+body.role-finance .profile-page-content,
+body.role-pegawai .profile-page-content,
+body.role-atasan .profile-page-content {
+    gap: 0.72rem !important;
+    width: 100%;
+    max-width: none;
+    margin: 0 !important;
+    padding: 0 !important;
+    align-items: stretch !important;
+}
+
+body.role-finance .profile-tabs-container,
+body.role-pegawai .profile-tabs-container,
+body.role-atasan .profile-tabs-container {
+    width: 100%;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0.62rem;
+}
+
+body.role-finance .profile-tabs-header,
+body.role-pegawai .profile-tabs-header,
+body.role-atasan .profile-tabs-header {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+body.role-finance .profile-tabs-nav,
+body.role-pegawai .profile-tabs-nav,
+body.role-atasan .profile-tabs-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.46rem !important;
+    padding: 0.38rem !important;
+    border-radius: 0.96rem !important;
+    background: linear-gradient(165deg, #f7faff 0%, #edf3fc 100%) !important;
+    border: 1px solid rgba(66, 93, 135, 0.16) !important;
+    box-shadow: 0 8px 18px rgba(23, 39, 65, 0.08) !important;
+}
+
+body.role-finance .profile-tabs-nav .tab-btn,
+body.role-pegawai .profile-tabs-nav .tab-btn,
+body.role-atasan .profile-tabs-nav .tab-btn {
+    min-height: 36px;
+    padding: 0.52rem 0.86rem !important;
+    font-size: 0.78rem !important;
+    font-weight: 660 !important;
+    border-radius: 999px !important;
+}
+
+body.role-finance .profile-tabs-nav .tab-btn.active,
+body.role-pegawai .profile-tabs-nav .tab-btn.active,
+body.role-atasan .profile-tabs-nav .tab-btn.active {
+    box-shadow: 0 9px 18px rgba(66, 93, 135, 0.23) !important;
+}
+
+body.role-finance .profile-tab-content.active,
+body.role-pegawai .profile-tab-content.active,
+body.role-atasan .profile-tab-content.active {
+    display: block;
+    width: 100%;
+}
+
+body.role-finance .profile-modern-section,
+body.role-pegawai .profile-modern-section,
+body.role-atasan .profile-modern-section {
+    width: 100%;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 1rem 1.06rem 1.12rem !important;
+    border-radius: 1.2rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.16) !important;
+    background: linear-gradient(162deg, #ffffff 0%, #f8fbff 100%) !important;
+    box-shadow: 0 14px 30px rgba(22, 37, 62, 0.09) !important;
+}
+
+body.role-finance .profile-modern-section .section-header,
+body.role-pegawai .profile-modern-section .section-header,
+body.role-atasan .profile-modern-section .section-header {
+    margin-bottom: 0.72rem !important;
+    padding-bottom: 0.56rem !important;
+    border-bottom: 1px solid rgba(66, 93, 135, 0.12) !important;
+}
+
+body.role-finance .profile-modern-section .form-grid,
+body.role-pegawai .profile-modern-section .form-grid,
+body.role-atasan .profile-modern-section .form-grid {
+    gap: 0.76rem !important;
+    margin-bottom: 0.76rem !important;
+}
+
+body.role-finance .profile-modern-section form,
+body.role-pegawai .profile-modern-section form,
+body.role-atasan .profile-modern-section form {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+body.role-finance .profile-modern-section form > .form-grid,
+body.role-pegawai .profile-modern-section form > .form-grid,
+body.role-atasan .profile-modern-section form > .form-grid {
+    grid-template-columns: repeat(2, minmax(260px, 1fr)) !important;
+    column-gap: 0.8rem !important;
+    row-gap: 0.72rem !important;
+}
+
+body.role-finance .profile-modern-section form > .form-grid > .form-group:last-child:nth-child(odd),
+body.role-pegawai .profile-modern-section form > .form-grid > .form-group:last-child:nth-child(odd),
+body.role-atasan .profile-modern-section form > .form-grid > .form-group:last-child:nth-child(odd) {
+    grid-column: 1 / -1 !important;
+}
+
+body.role-finance .profile-modern-section .form-section,
+body.role-pegawai .profile-modern-section .form-section,
+body.role-atasan .profile-modern-section .form-section {
+    margin-top: 0.86rem !important;
+    padding-top: 0.76rem !important;
+    border-top: 1px solid rgba(66, 93, 135, 0.12) !important;
+}
+
+body.role-finance .profile-modern-section .form-actions,
+body.role-pegawai .profile-modern-section .form-actions,
+body.role-atasan .profile-modern-section .form-actions {
+    margin-top: 0.92rem !important;
+    padding-top: 0.78rem !important;
+    border-top: 1px solid rgba(66, 93, 135, 0.12) !important;
+}
+
+body.role-finance .profile-modern-section .password-note,
+body.role-pegawai .profile-modern-section .password-note,
+body.role-atasan .profile-modern-section .password-note {
+    margin-bottom: 0.78rem !important;
+    padding: 0.72rem 0.82rem !important;
+    border-radius: 0.84rem !important;
+}
+
+@media (max-width: 768px) {
+    body.role-finance .profile-tabs-nav,
+    body.role-pegawai .profile-tabs-nav,
+    body.role-atasan .profile-tabs-nav {
+        width: 100%;
+    }
+
+    body.role-finance .profile-tabs-nav .tab-btn,
+    body.role-pegawai .profile-tabs-nav .tab-btn,
+    body.role-atasan .profile-tabs-nav .tab-btn {
+        flex: 1 1 0;
+    }
+
+    body.role-finance .profile-modern-section,
+    body.role-pegawai .profile-modern-section,
+    body.role-atasan .profile-modern-section {
+        padding: 0.88rem 0.9rem 0.98rem !important;
+        border-radius: 1rem !important;
+    }
+
+    body.role-finance .profile-page-content,
+    body.role-pegawai .profile-page-content,
+    body.role-atasan .profile-page-content {
+        max-width: 100%;
+    }
+
+    body.role-finance .profile-modern-section form,
+    body.role-pegawai .profile-modern-section form,
+    body.role-atasan .profile-modern-section form {
+        max-width: 100%;
+    }
+
+    body.role-finance .profile-modern-section form > .form-grid,
+    body.role-pegawai .profile-modern-section form > .form-grid,
+    body.role-atasan .profile-modern-section form > .form-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Notification: single clear panel rhythm */
+body.role-finance .notification-page-content,
+body.role-pegawai .notification-page-content,
+body.role-atasan .notification-page-content {
+    gap: 0.72rem !important;
+}
+
+body.role-finance .notification-single-shell,
+body.role-pegawai .notification-single-shell,
+body.role-atasan .notification-single-shell {
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+
+body.role-finance .notification-single-shell > div,
+body.role-pegawai .notification-single-shell > div,
+body.role-atasan .notification-single-shell > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.72rem;
+    min-width: 0;
+}
+
+/* Show/detail: single clear panel rhythm */
+body.role-finance .detail-single-content,
+body.role-pegawai .detail-single-content,
+body.role-atasan .detail-single-content {
+    gap: 0.74rem !important;
+}
+
+body.role-finance .detail-single-content > .modern-section,
+body.role-pegawai .detail-single-content > .modern-section,
+body.role-atasan .detail-single-content > .modern-section {
+    margin: 0 !important;
+    padding: 0.98rem 1.04rem !important;
+    border-radius: 1.16rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.15) !important;
+    background: linear-gradient(162deg, #ffffff 0%, #f8fbff 100%) !important;
+    box-shadow: 0 12px 26px rgba(22, 37, 62, 0.08) !important;
+}
+
+body.role-finance .detail-single-content > .budget-status-container,
+body.role-pegawai .detail-single-content > .budget-status-container,
+body.role-atasan .detail-single-content > .budget-status-container {
+    margin: 0 !important;
+    border-radius: 1.12rem !important;
+}
+
+body.role-finance .detail-single-content > .modern-section .section-header,
+body.role-pegawai .detail-single-content > .modern-section .section-header,
+body.role-atasan .detail-single-content > .modern-section .section-header {
+    margin-bottom: 0.7rem !important;
+    padding-bottom: 0.55rem !important;
+}
+
+/* Finance profile fix: prevent text from leaking outside panel */
+body.role-finance .profile-page-content,
+body.role-finance .profile-tabs-container,
+body.role-finance .profile-modern-section {
+    min-width: 0 !important;
+}
+
+body.role-finance .profile-modern-section {
+    overflow: hidden !important;
+}
+
+body.role-finance .profile-modern-section .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+body.role-finance .profile-modern-section .form-grid > *,
+body.role-finance .profile-modern-section .form-group {
+    min-width: 0 !important;
+}
+
+body.role-finance .profile-modern-section .form-control,
+body.role-finance .profile-modern-section .form-display {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+body.role-finance .profile-modern-section .form-help-text {
+    display: block !important;
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    line-height: 1.42 !important;
+}
+
+@media (max-width: 768px) {
+    body.role-finance .profile-modern-section .form-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Finance reports: reduce over-container feel, keep premium clarity */
+body.role-finance .reports-clean-content {
+    gap: 0.76rem !important;
+}
+
+body.role-finance .reports-clean-content > .stats-grid {
+    margin: 0 !important;
+    gap: 0.78rem !important;
+}
+
+body.role-finance .reports-clean-content > .modern-section.report-section,
+body.role-finance .reports-clean-content > .modern-section.budget-audit-section,
+body.role-finance .reports-clean-content > .modern-section.reports-hub-section {
+    margin: 0 !important;
+    padding: 1rem 1.08rem !important;
+    border-radius: 1.2rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.15) !important;
+    background: linear-gradient(160deg, #ffffff 0%, #f8fbff 100%) !important;
+    box-shadow: 0 12px 26px rgba(22, 37, 62, 0.08) !important;
+}
+
+body.role-finance .reports-clean-content .section-header {
+    margin-bottom: 0.72rem !important;
+    padding-bottom: 0.56rem !important;
+}
+
+body.role-finance .reports-clean-content .filter-container {
+    margin-top: 0.2rem !important;
+    margin-bottom: 0.58rem !important;
+}
+
+body.role-finance .reports-clean-content .filter-form-finance {
+    gap: 0.72rem !important;
+}
+
+body.role-finance .reports-clean-content .coa-group-card,
+body.role-finance .reports-clean-content .recon-card {
+    border-radius: 1rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.14) !important;
+    background: linear-gradient(162deg, #ffffff 0%, #f9fcff 100%) !important;
+    box-shadow: 0 8px 20px rgba(20, 33, 56, 0.06) !important;
+    margin-bottom: 0.72rem !important;
+    transform: none !important;
+}
+
+body.role-finance .reports-clean-content .coa-group-card:hover,
+body.role-finance .reports-clean-content .recon-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 24px rgba(20, 33, 56, 0.1) !important;
+}
+
+body.role-finance .reports-clean-content .coa-header,
+body.role-finance .reports-clean-content .recon-header {
+    padding: 0.88rem 0.95rem !important;
+    border-bottom: 1px solid rgba(66, 93, 135, 0.12) !important;
+    background: linear-gradient(165deg, #f7fbff 0%, #eef4ff 100%) !important;
+}
+
+body.role-finance .reports-clean-content .coa-header h3,
+body.role-finance .reports-clean-content .recon-info h3 {
+    font-size: 0.95rem !important;
+    line-height: 1.32;
+}
+
+body.role-finance .reports-clean-content .coa-summary-badge {
+    border-radius: 999px !important;
+    padding: 0.34rem 0.68rem !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+}
+
+body.role-finance .reports-clean-content .data-table-wrapper,
+body.role-finance .reports-clean-content .budget-audit-table-wrap {
+    margin-top: 0.55rem !important;
+    border-radius: 0.98rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.12) !important;
+    background: #ffffff !important;
+    box-shadow: 0 8px 18px rgba(23, 39, 65, 0.05) !important;
+}
+
+body.role-finance .reports-clean-content .data-table th {
+    padding: 0.72rem 0.68rem !important;
+}
+
+body.role-finance .reports-clean-content .data-table td {
+    padding: 0.72rem 0.68rem !important;
+}
+
+body.role-finance .reports-clean-content .recon-grid {
+    margin-top: 0.5rem !important;
+    gap: 0.75rem !important;
+}
+
+body.role-finance .reports-clean-content .balance-comparison {
+    padding: 0.72rem 0.78rem !important;
+    border-radius: 0.8rem !important;
+    border: 1px solid rgba(66, 93, 135, 0.12);
+    background: #f8fbff !important;
+}
+
+body.role-finance .reports-clean-content .budget-policy-note {
+    margin-top: 0.72rem !important;
+    border-radius: 0.95rem !important;
+}
+
+/* Finance profile final overflow safeguard */
+body.role-finance .profile-modern-section .form-help-text {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 0.34rem !important;
+    min-width: 0 !important;
+    white-space: normal !important;
+}
+
+body.role-finance .profile-modern-section .form-help-text svg {
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+body.role-finance .profile-modern-section input[readonly] {
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 1024px) {
+    body.role-finance .reports-clean-content > .modern-section.report-section,
+    body.role-finance .reports-clean-content > .modern-section.budget-audit-section,
+    body.role-finance .reports-clean-content > .modern-section.reports-hub-section {
+        padding: 0.92rem 0.94rem !important;
+    }
+}
+
+/* Final polish pass: compact-create, index density, and report/worklist de-layering */
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 318px !important;
+    grid-template-areas: "main side" !important;
+    gap: 0.8rem !important;
+    align-items: start !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form {
+    grid-area: main !important;
+    align-self: start !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    padding: 0.92rem 0.98rem !important;
+    box-shadow: 0 8px 20px rgba(22, 37, 62, 0.05) !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form.form-pengajuan,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form.form-pengajuan {
+    gap: 0.92rem !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .form-row,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .form-row {
+    gap: 0.65rem !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .form-group,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .form-group {
+    gap: 0.36rem !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .validation-dashboard,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .validation-dashboard {
+    margin-top: 0.9rem !important;
+    gap: 0.56rem !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .ultra-smart-container,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .ultra-smart-container {
+    margin-bottom: 0.42rem !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .form-actions,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-main-form .form-actions {
+    margin-top: 1.08rem !important;
+    padding-top: 0.9rem !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel {
+    grid-area: side !important;
+    position: sticky !important;
+    top: 0.82rem !important;
+    gap: 0.62rem !important;
+    align-self: start !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel .budget-status-container,
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel .budget-status-container.linkedin-style,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel .budget-status-container,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel .budget-status-container.linkedin-style {
+    margin: 0 !important;
+    padding: 0.88rem 0.94rem !important;
+    border-radius: 0.96rem !important;
+    box-shadow: 0 6px 16px rgba(22, 37, 62, 0.05) !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel .info-details,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel .info-details {
+    margin: 0 !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel .docs-compact-card,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel .docs-compact-card {
+    margin: 0 !important;
+    padding: 0.74rem 0.84rem !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .pengajuan-index-shell,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .pengajuan-index-shell {
+    padding: 0.98rem 1.05rem 1.02rem !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .pengajuan-index-shell .data-table th,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .pengajuan-index-shell .data-table th {
+    padding: 0.9rem 0.9rem !important;
+}
+
+body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .pengajuan-index-shell .data-table td,
+body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .pengajuan-index-shell .data-table td {
+    padding: 0.86rem 0.9rem !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content.reports-clean-content .reports-hub-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 0.76rem !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content.reports-clean-content .report-hub-card {
+    min-height: 166px !important;
+    padding: 0.92rem !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content.reports-clean-content .reports-hub-section {
+    padding-bottom: 0.9rem !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content.reports-clean-content .coa-group-card,
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content.reports-clean-content .recon-card {
+    margin-bottom: 0.62rem !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content.reports-clean-content .coa-group-card:last-child,
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content.reports-clean-content .recon-card:last-child {
+    margin-bottom: 0 !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content.reports-clean-content .coa-header,
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content.reports-clean-content .recon-header {
+    border: 0 !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid rgba(66, 93, 135, 0.12) !important;
+    border-radius: 0.96rem 0.96rem 0 0 !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content:not(.reports-clean-content) .filter-form-finance,
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content:not(.reports-clean-content) .filter-form-history {
+    padding: 0.64rem 0.72rem !important;
+    gap: 0.62rem !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content:not(.reports-clean-content) .data-table-wrapper {
+    margin-top: 0.66rem !important;
+    border-radius: 1rem !important;
+    border: 1px solid rgba(62, 87, 130, 0.14) !important;
+    box-shadow: 0 9px 20px rgba(22, 37, 62, 0.06) !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content:not(.reports-clean-content) .data-table th {
+    padding: 0.88rem 0.9rem !important;
+}
+
+body.role-finance .dashboard-wrapper .dashboard-container .dashboard-content:not(.reports-clean-content) .data-table td {
+    padding: 0.84rem 0.9rem !important;
+}
+
+@media (max-width: 1280px) {
+    body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid,
+    body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid {
+        grid-template-columns: minmax(0, 1fr) 300px !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid,
+    body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid {
+        grid-template-columns: 1fr !important;
+        grid-template-areas:
+            "main"
+            "side" !important;
+    }
+
+    body.role-pegawai .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel,
+    body.role-atasan .dashboard-wrapper .dashboard-container .dashboard-content .create-layout-grid .create-side-panel {
+        position: static !important;
+        top: auto !important;
+    }
+}
+
+/* Premium icon language across Finance, Atasan, Pegawai */
+body.role-finance .finance-sidebar .menu-item .menu-icon,
+body.role-pegawai .pegawai-sidebar .menu-item .menu-icon,
+body.role-atasan .atasan-sidebar .menu-item .menu-icon {
+    width: 16px !important;
+    height: 16px !important;
+    padding: 2.5px;
+    box-sizing: content-box;
+    border-radius: 0.68rem;
+    border: 1px solid rgba(66, 93, 135, 0.18);
+    background: linear-gradient(160deg, #ffffff 0%, #edf4ff 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 10px rgba(22, 37, 62, 0.1);
+    stroke-width: 2.2 !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s ease, color 0.2s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body.role-finance .finance-sidebar .menu-item:hover .menu-icon,
+body.role-pegawai .pegawai-sidebar .menu-item:hover .menu-icon,
+body.role-atasan .atasan-sidebar .menu-item:hover .menu-icon {
+    transform: translateY(-1px);
+    color: #355987 !important;
+    border-color: rgba(66, 93, 135, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 14px rgba(22, 37, 62, 0.16);
+}
+
+body.role-finance .finance-sidebar .menu-item.active .menu-icon,
+body.role-pegawai .pegawai-sidebar .menu-item.active .menu-icon,
+body.role-atasan .atasan-sidebar .menu-item.active .menu-icon {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.14) 100%) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 8px 14px rgba(0, 0, 0, 0.12) !important;
+}
+
+body.role-finance .stat-icon,
+body.role-pegawai .stat-icon,
+body.role-atasan .stat-icon,
+body.role-finance .report-hub-icon,
+body.role-pegawai .report-hub-icon,
+body.role-atasan .report-hub-icon,
+body.role-finance .priority-action-icon,
+body.role-pegawai .priority-action-icon,
+body.role-atasan .priority-action-icon,
+body.role-finance .action-icon,
+body.role-pegawai .action-icon,
+body.role-atasan .action-icon,
+body.role-finance .info-icon-wrapper,
+body.role-pegawai .info-icon-wrapper,
+body.role-atasan .info-icon-wrapper,
+body.role-finance .quick-card-icon,
+body.role-pegawai .quick-card-icon,
+body.role-atasan .quick-card-icon {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.45) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 10px 18px rgba(22, 37, 62, 0.13) !important;
+}
+
+body.role-finance .empty-state-icon,
+body.role-pegawai .empty-state-icon,
+body.role-atasan .empty-state-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    margin: 0 auto 1rem;
+    padding: 0;
+    border: none !important;
+    box-shadow: none !important;
+    position: static;
+    overflow: visible;
+}
+
+body.role-finance .stat-icon::after,
+body.role-pegawai .stat-icon::after,
+body.role-atasan .stat-icon::after,
+body.role-finance .report-hub-icon::after,
+body.role-pegawai .report-hub-icon::after,
+body.role-atasan .report-hub-icon::after,
+body.role-finance .priority-action-icon::after,
+body.role-pegawai .priority-action-icon::after,
+body.role-atasan .priority-action-icon::after,
+body.role-finance .action-icon::after,
+body.role-pegawai .action-icon::after,
+body.role-atasan .action-icon::after,
+body.role-finance .info-icon-wrapper::after,
+body.role-pegawai .info-icon-wrapper::after,
+body.role-atasan .info-icon-wrapper::after,
+body.role-finance .quick-card-icon::after,
+body.role-pegawai .quick-card-icon::after,
+body.role-atasan .quick-card-icon::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(152deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.02) 70%);
+    pointer-events: none;
+}
+
+body.role-finance .stat-icon svg,
+body.role-pegawai .stat-icon svg,
+body.role-atasan .stat-icon svg,
+body.role-finance .report-hub-icon svg,
+body.role-pegawai .report-hub-icon svg,
+body.role-atasan .report-hub-icon svg,
+body.role-finance .priority-action-icon svg,
+body.role-pegawai .priority-action-icon svg,
+body.role-atasan .priority-action-icon svg,
+body.role-finance .action-icon svg,
+body.role-pegawai .action-icon svg,
+body.role-atasan .action-icon svg,
+body.role-finance .info-icon-wrapper svg,
+body.role-pegawai .info-icon-wrapper svg,
+body.role-atasan .info-icon-wrapper svg,
+body.role-finance .quick-card-icon svg,
+body.role-pegawai .quick-card-icon svg,
+body.role-atasan .quick-card-icon svg,
+body.role-finance .tab-icon,
+body.role-pegawai .tab-icon,
+body.role-atasan .tab-icon,
+body.role-finance .btn-action-icon svg,
+body.role-pegawai .btn-action-icon svg,
+body.role-atasan .btn-action-icon svg,
+body.role-finance .btn-action-modern svg,
+body.role-pegawai .btn-action-modern svg,
+body.role-atasan .btn-action-modern svg {
+    position: relative;
+    z-index: 1;
+    stroke-width: 2.2 !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+body.role-finance .btn-action-icon,
+body.role-pegawai .btn-action-icon,
+body.role-atasan .btn-action-icon,
+body.role-finance .btn-action-modern,
+body.role-pegawai .btn-action-modern,
+body.role-atasan .btn-action-modern {
+    border: 1px solid rgba(66, 93, 135, 0.14) !important;
+    box-shadow: 0 8px 16px rgba(22, 37, 62, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+body.role-finance .btn-action-icon:hover,
+body.role-pegawai .btn-action-icon:hover,
+body.role-atasan .btn-action-icon:hover,
+body.role-finance .btn-action-modern:hover,
+body.role-pegawai .btn-action-modern:hover,
+body.role-atasan .btn-action-modern:hover {
+    box-shadow: 0 12px 22px rgba(22, 37, 62, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+body.role-finance .notification-bell-btn,
+body.role-pegawai .notification-bell-btn,
+body.role-atasan .notification-bell-btn {
+    width: 38px;
+    height: 38px;
+    padding: 0 !important;
+    border-radius: 999px;
+    border: 1px solid rgba(66, 93, 135, 0.18);
+    background: linear-gradient(165deg, #ffffff 0%, #f2f7ff 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 8px 16px rgba(22, 37, 62, 0.1);
+    color: #476493 !important;
+}
+
+body.role-finance .notification-bell-btn .bell-icon,
+body.role-pegawai .notification-bell-btn .bell-icon,
+body.role-atasan .notification-bell-btn .bell-icon {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.2 !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+body.role-finance .notification-bell-btn:hover,
+body.role-pegawai .notification-bell-btn:hover,
+body.role-atasan .notification-bell-btn:hover {
+    background: linear-gradient(165deg, #ffffff 0%, #eaf2ff 100%);
+    border-color: rgba(66, 93, 135, 0.26);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 12px 20px rgba(22, 37, 62, 0.14);
+    color: #355987 !important;
+    transform: translateY(-1px);
+}
+
+body.role-finance .tab-btn .tab-icon,
+body.role-pegawai .tab-btn .tab-icon,
+body.role-atasan .tab-btn .tab-icon {
+    width: 17px;
+    height: 17px;
+    stroke-width: 2.2 !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+@media (max-width: 768px) {
+    body.role-finance .notification-bell-btn,
+    body.role-pegawai .notification-bell-btn,
+    body.role-atasan .notification-bell-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    body.role-finance .finance-sidebar .menu-item .menu-icon,
+    body.role-pegawai .pegawai-sidebar .menu-item .menu-icon,
+    body.role-atasan .atasan-sidebar .menu-item .menu-icon {
+        width: 15px !important;
+        height: 15px !important;
+        padding: 2px;
+    }
+}

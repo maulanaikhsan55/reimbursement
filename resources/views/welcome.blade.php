@@ -16,13 +16,13 @@
     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
     @vite(['resources/css/app.css', 'resources/css/landing.css', 'resources/js/app.js', 'resources/js/dashboard-ultra.js'])
     <style>
-        
-        body { 
-            opacity: 0; 
+        body {
+            opacity: 0;
             background: #ffffff;
         }
-        body.ready { 
-            opacity: 1; 
+
+        body.ready {
+            opacity: 1;
             transition: opacity 0.5s ease;
         }
 
@@ -43,128 +43,18 @@
             animation: clip-loader-spin 0.75s 0s infinite linear;
             animation-fill-mode: both;
         }
-
-        /* --- MODERN UI ENHANCEMENTS --- */
-        
-        /* 1. Smooth Scroll */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* 2. Solid Brand Text */
-        .text-gradient {
-            color: #425d87; /* Solid primary color */
-            background: none;
-            -webkit-text-fill-color: initial;
-        }
-
-        @keyframes float-hero {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); } 
-            100% { transform: translateY(0px); }
-        }
-        .hero-floating {
-            animation: float-hero 6s ease-in-out infinite;
-            will-change: transform; /* Hardware acceleration */
-            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.1)); 
-        }
-
-        /* 4. Glassmorphism Cards (LIGHTWEIGHT) */
-        .feature-card, .benefit-card, .problem-card, .user-card {
-            background: rgba(255, 255, 255, 0.9) !important; 
-            backdrop-filter: blur(8px) !important; 
-            -webkit-backdrop-filter: blur(8px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.6) !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important; /* Simpler shadow */
-            transition: transform 0.3s ease, box-shadow 0.3s ease !important; /* Simplified transition */
-            border-radius: 1.5rem !important;
-        }
-
-        /* Hover Effect: Optimized */
-        .feature-card:hover, .benefit-card:hover, .problem-card:hover, .detail-step:hover, .user-card:hover {
-            transform: translateY(-5px) !important; /* Reduced movement */
-            box-shadow: 0 15px 30px -5px rgba(66, 93, 135, 0.1) !important; /* Lighter shadow */
-            border-color: rgba(66, 93, 135, 0.2) !important;
-            background: #ffffff !important; 
-            z-index: 10;
-        }
-
-        /* 5. Modern Button Consistency (Matching App) */
-        .btn-primary {
-            background: linear-gradient(135deg, #425d87 0%, #3c5379 100%) !important;
-            color: white !important;
-            padding: 12px 28px !important;
-            border-radius: 20px !important;
-            font-weight: 600 !important;
-            box-shadow: 0 8px 24px rgba(66, 93, 135, 0.2) !important;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            border: none !important;
-            text-decoration: none !important;
-        }
-        
-        .btn-primary:hover {
-            transform: translate3d(0, -3px, 0) !important;
-            box-shadow: 0 16px 40px rgba(66, 93, 135, 0.3) !important;
-            color: white !important;
-        }
-
-        .btn-sm {
-            padding: 8px 18px !important;
-            font-size: 12px !important;
-            border-radius: 18px !important;
-        }
-
-        /* 6. Hero Background */
-        .hero {
-            background: #ffffff;
-        }
-
-        /* 7. FAQ Accordion Style */
-        .faq-item {
-            border: 1px solid rgba(0,0,0,0.05);
-            border-radius: 1rem;
-            background: #fff;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        .faq-item:hover {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border-color: rgba(66, 93, 135, 0.2);
-        }
-
-        .btn-secondary {
-            background: #ffffff !important;
-            color: #425d87 !important;
-            padding: 12px 28px !important;
-            border-radius: 20px !important;
-            font-weight: 600 !important;
-            border: 1px solid #d0d9e7 !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            text-decoration: none !important;
-        }
-
-        .btn-secondary:hover {
-            background: #f8fafc !important;
-            border-color: #425d87 !important;
-            transform: translate3d(0, -2px, 0) !important;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
-        }
     </style>
 </head>
-<body>
+<body class="landing-page">
     <!-- Global Loader -->
     <div id="global-loader" style="position: fixed; inset: 0; z-index: 9999; background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; transition: opacity 0.3s ease-out;">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
             <div class="clip-loader"></div>
             <span class="text-xs text-gray-500 font-medium tracking-wide" style="font-family: 'Poppins', sans-serif;">loading...</span>
         </div>
+    </div>
+    <div class="scroll-progress-bar" aria-hidden="true">
+        <span id="scrollProgress"></span>
     </div>
 
     @include('components.landing-header')
@@ -177,29 +67,95 @@
         </div>
         <div class="hero-overlay"></div>
         
-        <div class="hero-content-wrapper">
-            <div class="hero-text-section" data-aos="fade-up" data-aos-duration="800">
-                <h1 class="hero-title">Smarter <span class="text-gradient">Reimbursement</span> for Modern Teams</h1>
-                <p class="hero-subtitle">Ultra-fast expense management powered by AI OCR. Submit receipts in seconds, eliminate duplicates, and get approved faster than ever.</p>
-                <div class="hero-buttons">
-                    @auth
-                        @if(auth()->user()->isFinance())
-                            <a href="{{ route('finance.dashboard') }}" class="btn btn-primary" data-external>Finance Dashboard</a>
-                        @elseif(auth()->user()->isAtasan())
-                            <a href="{{ route('atasan.dashboard') }}" class="btn btn-primary" data-external>Manager Dashboard</a>
-                        @elseif(auth()->user()->isPegawai())
-                            <a href="{{ route('pegawai.dashboard') }}" class="btn btn-primary" data-external>Employee Dashboard</a>
-                        @endif
-                    @else
-                        <a href="{{ route('login') }}" class="btn btn-primary" data-external>Start Smart Now</a>
-                    @endauth
+        <div class="container hero-layout">
+            <div class="hero-content-wrapper">
+                <div class="hero-text-section" data-aos="fade-up" data-aos-duration="800">
+                    <h1 class="hero-title">Smarter <span class="text-gradient">Reimbursement</span> for Modern Teams</h1>
+                    <p class="hero-subtitle">AI OCR reads receipts in seconds, blocks duplicates instantly, and routes approvals with full control for every team.</p>
+                    <div class="hero-buttons">
+                        @auth
+                            @if(auth()->user()->isFinance())
+                                <a href="{{ route('finance.dashboard') }}" class="btn btn-primary" data-external>Finance Dashboard</a>
+                            @elseif(auth()->user()->isAtasan())
+                                <a href="{{ route('atasan.dashboard') }}" class="btn btn-primary" data-external>Manager Dashboard</a>
+                            @elseif(auth()->user()->isPegawai())
+                                <a href="{{ route('pegawai.dashboard') }}" class="btn btn-primary" data-external>Employee Dashboard</a>
+                            @endif
+                        @else
+                            <a href="{{ route('login') }}" class="btn btn-primary" data-external>Start Smart Now</a>
+                        @endauth
+                    </div>
+                    <div class="hero-proof-row" aria-label="Key proof points">
+                        <span class="hero-proof-chip"><x-icon name="check-circle" /> &lt; 2 mins submit</span>
+                        <span class="hero-proof-chip"><x-icon name="check-circle" /> 99.9% OCR accuracy</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-image-section">
+                <div class="hero-image-wrapper hero-floating" data-aos="zoom-in" data-aos-duration="1000" data-aos-delay="200">
+                    <div class="hero-note hero-note-left" data-aos="fade-right" data-aos-delay="260">
+                        <span class="hero-note-icon"><x-icon name="cpu" /></span>
+                        <div>
+                            <p class="hero-note-title">AI OCR Assist</p>
+                            <p class="hero-note-desc">Auto-check amount, vendor, date.</p>
+                        </div>
+                    </div>
+
+                    <div class="hero-note hero-note-right" data-aos="fade-left" data-aos-delay="320">
+                        <span class="hero-note-icon"><x-icon name="shield" /></span>
+                        <div>
+                            <p class="hero-note-title">Duplicate Guard</p>
+                            <p class="hero-note-desc">Detect duplicate claims instantly.</p>
+                        </div>
+                    </div>
+
+                    <div class="hero-note hero-note-bottom" data-aos="fade-up" data-aos-delay="360">
+                        <span class="hero-note-icon"><x-icon name="git-branch" /></span>
+                        <div>
+                            <p class="hero-note-title">Approval + Sync</p>
+                            <p class="hero-note-desc">Fast flow to manager and finance.</p>
+                        </div>
+                    </div>
+
+                    <img src="{{ asset('images/mockup.png') }}" alt="Smart reimbursement dashboard preview" class="dashboard-image" fetchpriority="high" width="1920" height="1536" sizes="(max-width: 1024px) 100vw, 56vw" decoding="async">
                 </div>
             </div>
         </div>
+    </section>
 
-        <div class="hero-image-section">
-            <div class="hero-image-wrapper hero-floating" data-aos="zoom-in" data-aos-duration="1000" data-aos-delay="200" style="max-width: 1000px; margin: 0 auto;">
-                <img src="{{ asset('images/mockup.png') }}" alt="Smart Dashboard Mockup" class="dashboard-image" fetchpriority="high" decoding="async">
+    <!-- DATA PROOF STRIP -->
+    <section class="data-proof-section" id="proof">
+        <div class="container">
+            <div class="proof-head" data-aos="fade-up" data-aos-duration="700">
+                <p class="proof-eyebrow">Performance Snapshot</p>
+                <h2>Built for Speed, Accuracy, and Financial Control</h2>
+            </div>
+
+            <div class="proof-grid">
+                <article class="proof-item" data-aos="fade-up" data-aos-delay="0">
+                    <p class="proof-label">Submission Time</p>
+                    <h3 class="proof-value">&lt; 2 mins</h3>
+                    <p class="proof-note">From upload to validated request.</p>
+                </article>
+
+                <article class="proof-item" data-aos="fade-up" data-aos-delay="80">
+                    <p class="proof-label">OCR Accuracy</p>
+                    <h3 class="proof-value">99.9%</h3>
+                    <p class="proof-note">Reliable extraction for receipt data.</p>
+                </article>
+
+                <article class="proof-item" data-aos="fade-up" data-aos-delay="160">
+                    <p class="proof-label">Duplicate Prevention</p>
+                    <h3 class="proof-value">100%</h3>
+                    <p class="proof-note">Automatic checks before approvals.</p>
+                </article>
+
+                <article class="proof-item" data-aos="fade-up" data-aos-delay="240">
+                    <p class="proof-label">Process Speed</p>
+                    <h3 class="proof-value">+90%</h3>
+                    <p class="proof-note">Faster cycle from request to close.</p>
+                </article>
             </div>
         </div>
     </section>
@@ -207,34 +163,38 @@
     <!-- STATISTICS SECTION -->
     <section class="statistics-section" id="statistics">
         <div class="container">
+            <div class="stats-head" data-aos="fade-up" data-aos-duration="700">
+                <p class="stats-eyebrow">Scale and Reliability</p>
+                <h2>Trusted by Finance Teams That Move Fast</h2>
+            </div>
             <div class="stats-grid">
                 <div class="stat-item" data-aos="fade-up" data-aos-delay="0">
                     <div class="stat-icon">
                         <x-icon name="check-circle" />
                     </div>
-                    <div class="stat-counter" data-target="99.9">0<span class="counter-suffix">%</span></div>
-                    <div class="stat-label">Accuracy Rate</div>
+                    <div class="stat-counter" data-target="350">0<span class="counter-suffix">+</span></div>
+                    <div class="stat-label">Active Teams</div>
                 </div>
                 <div class="stat-item" data-aos="fade-up" data-aos-delay="100">
                     <div class="stat-icon">
                         <x-icon name="zap" />
                     </div>
-                    <div class="stat-counter" data-target="90">0<span class="counter-suffix">%</span></div>
-                    <div class="stat-label">Faster Processing</div>
+                    <div class="stat-counter" data-target="24">0<span class="counter-suffix">h</span></div>
+                    <div class="stat-label">Avg Approval SLA</div>
                 </div>
                 <div class="stat-item" data-aos="fade-up" data-aos-delay="200">
                     <div class="stat-icon">
                         <x-icon name="users" />
                     </div>
                     <div class="stat-counter" data-target="5000">0<span class="counter-suffix">+</span></div>
-                    <div class="stat-label">Transactions Processed</div>
+                    <div class="stat-label">Monthly Claims</div>
                 </div>
                 <div class="stat-item" data-aos="fade-up" data-aos-delay="300">
                     <div class="stat-icon">
                         <x-icon name="shield" />
                     </div>
-                    <div class="stat-counter" data-target="100">0<span class="counter-suffix">%</span></div>
-                    <div class="stat-label">Duplicate Prevention</div>
+                    <div class="stat-counter" data-target="98">0<span class="counter-suffix">%</span></div>
+                    <div class="stat-label">Finance Satisfaction</div>
                 </div>
             </div>
         </div>
@@ -246,7 +206,7 @@
             <div data-aos="fade-up">
                 <span class="platform-badge">The Platform</span>
                 <h2>Ultra-Smart Workflow</h2>
-                <p class="about-text">Stop wasting time on manual data entry. Our platform uses advanced AI OCR to extract receipt data with 99.9% accuracy, detects duplicates automatically, and routes approvals through your company's hierarchy in real-time.</p>
+                <p class="about-text">Replace repetitive manual checks with one clean workflow. Validate receipts instantly, keep approvals controlled, and produce cleaner finance data.</p>
             </div>
         </div>
     </section>
@@ -254,9 +214,9 @@
     <!-- SMART TECHNOLOGY BENTO -->
     <section class="bento-section" id="features">
         <div class="container">
-            <div class="section-header" data-aos="fade-up">
+            <div class="section-header section-split" data-aos="fade-up">
                 <h2>The Smart Core</h2>
-                <p>Advanced technology that streamlines your workflow and secures your financial integrity.</p>
+                <p>Core automation that accelerates submissions while preserving strict financial integrity.</p>
             </div>
             
             <div class="bento-grid">
@@ -264,7 +224,7 @@
                 <div class="bento-item large" data-aos="fade-up">
                     <div class="bento-icon"><x-icon name="cpu" /></div>
                     <h3>AI OCR Validation</h3>
-                    <p>Our AI assists your data entry by validating receipts instantly. This ensures high data integrity and saves the Finance team hours of manual verification.</p>
+                    <p>AI reads and validates receipt fields instantly, reducing manual entry and improving data consistency.</p>
                     
                     <!-- Smart OCR Preview Simulation -->
                     <div class="ocr-preview-box">
@@ -285,14 +245,14 @@
                 <div class="bento-item" data-aos="fade-up" data-aos-delay="100">
                     <div class="bento-icon"><x-icon name="shield" /></div>
                     <h3>Integrity Guard</h3>
-                    <p>High-security validation process that ensures every receipt is unique and legitimate before approval.</p>
+                    <p>Smart duplicate and fraud checks keep every submission unique before approval starts.</p>
                 </div>
 
                 <!-- Integration -->
                 <div class="bento-item" data-aos="fade-up" data-aos-delay="200">
                     <div class="bento-icon"><x-icon name="git-branch" /></div>
                     <h3>Accurate Sync</h3>
-                    <p>Seamlessly integrated with Accurate Online to ensure all reports are recorded with precision.</p>
+                    <p>Sync approved claims to Accurate Online with structured, reconciliation-ready records.</p>
                 </div>
 
                 <!-- Results -->
@@ -301,7 +261,7 @@
                         <div class="bento-icon" style="margin-bottom: 0;"><x-icon name="zap" /></div>
                         <div>
                             <h3>90% Faster Flow</h3>
-                            <p>Accelerate your reimbursement from submission to payment with integrity-first processing.</p>
+                            <p>Speed up reimbursement from submission to close with an integrity-first process.</p>
                         </div>
                     </div>
                 </div>
@@ -312,9 +272,9 @@
     <!-- ROLE ECOSYSTEM -->
     <section class="roles-section" id="roles">
         <div class="container">
-            <div class="section-header" data-aos="fade-up">
+            <div class="section-header section-split" data-aos="fade-up">
                 <h2>Unified Ecosystem</h2>
-                <p>Tailored experiences designed for every role in your financial journey.</p>
+                <p>Focused experiences for employees, managers, and finance in one connected platform.</p>
             </div>
 
             <div class="roles-container">
@@ -329,7 +289,7 @@
                     <div id="role-pegawai" class="role-panel active">
                         <div class="role-info" data-aos="fade-right">
                             <h3>Smart Data Entry</h3>
-                            <p>Employees submit receipts with AI-assisted validation, making it significantly faster for Finance to verify and process.</p>
+                            <p>Employees submit faster with AI-assisted validation, so Finance receives cleaner requests from the start.</p>
                             <ul class="role-features">
                                 <li><x-icon name="check-circle" /> AI OCR data verification</li>
                                 <li><x-icon name="check-circle" /> Reduced Finance verification time</li>
@@ -337,7 +297,7 @@
                             </ul>
                         </div>
                         <div class="role-visual" data-aos="fade-left">
-                            <img src="{{ asset('images/pegawai.png') }}" alt="Pegawai View" class="floating-dashboard" loading="lazy" decoding="async">
+                            <img src="{{ asset('images/pegawai.png') }}" alt="Employee reimbursement dashboard view" class="floating-dashboard" loading="lazy" width="1920" height="1536" sizes="(max-width: 1024px) 100vw, 44vw" decoding="async">
                         </div>
                     </div>
 
@@ -345,7 +305,7 @@
                     <div id="role-atasan" class="role-panel">
                         <div class="role-info">
                             <h3>Dynamic Workflow</h3>
-                            <p>Managers can submit their own expenses directly to Finance or review team requests with secure, one-by-one validation.</p>
+                            <p>Managers can submit direct claims or review team requests with clear controls and traceable decisions.</p>
                             <ul class="role-features">
                                 <li><x-icon name="check-circle" /> Direct-to-Finance submissions</li>
                                 <li><x-icon name="check-circle" /> Secure individual validation</li>
@@ -353,7 +313,7 @@
                             </ul>
                         </div>
                         <div class="role-visual">
-                            <img src="{{ asset('images/atasan.png') }}" alt="Atasan View" class="floating-dashboard" loading="lazy" decoding="async">
+                            <img src="{{ asset('images/atasan.png') }}" alt="Manager approval dashboard view" class="floating-dashboard" loading="lazy" width="1920" height="1536" sizes="(max-width: 1024px) 100vw, 44vw" decoding="async">
                         </div>
                     </div>
 
@@ -361,7 +321,7 @@
                     <div id="role-finance" class="role-panel">
                         <div class="role-info">
                             <h3>Accurate Integration</h3>
-                            <p>Finance teams sync seamlessly with Accurate Online for smart reporting and one-by-one integrity checks.</p>
+                            <p>Finance teams close requests with confidence and sync validated records to Accurate Online.</p>
                             <ul class="role-features">
                                 <li><x-icon name="check-circle" /> Accurate Online integration</li>
                                 <li><x-icon name="check-circle" /> Security-first 1-by-1 validation</li>
@@ -369,10 +329,52 @@
                             </ul>
                         </div>
                         <div class="role-visual">
-                            <img src="{{ asset('images/finance.png') }}" alt="Finance View" class="floating-dashboard" loading="lazy" decoding="async">
+                            <img src="{{ asset('images/finance.png') }}" alt="Finance control dashboard view" class="floating-dashboard" loading="lazy" width="1920" height="1536" sizes="(max-width: 1024px) 100vw, 44vw" decoding="async">
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="process-section" id="how-it-works">
+        <div class="container">
+            <div class="section-header section-split" data-aos="fade-up">
+                <h2>From Receipt to Reimbursement in 3 Steps</h2>
+                <p>A simple flow that keeps submissions fast and finance validation consistently accurate.</p>
+            </div>
+
+            <div class="process-grid">
+                <article class="process-card" data-aos="fade-up" data-aos-delay="0">
+                    <div class="process-top">
+                        <span class="process-index">01</span>
+                        <span class="process-line"></span>
+                    </div>
+                    <div class="process-icon"><x-icon name="cpu" /></div>
+                    <h3>Submit with AI OCR</h3>
+                    <p>Upload once, then AI validates core fields so every request starts with cleaner data.</p>
+                </article>
+
+                <article class="process-card" data-aos="fade-up" data-aos-delay="120">
+                    <div class="process-top">
+                        <span class="process-index">02</span>
+                        <span class="process-line"></span>
+                    </div>
+                    <div class="process-icon"><x-icon name="shield" /></div>
+                    <h3>Review with Control</h3>
+                    <p>Manager and Finance review with duplicate checks and policy guardrails.</p>
+                </article>
+
+                <article class="process-card" data-aos="fade-up" data-aos-delay="240">
+                    <div class="process-top">
+                        <span class="process-index">03</span>
+                        <span class="process-line"></span>
+                    </div>
+                    <div class="process-icon"><x-icon name="git-branch" /></div>
+                    <h3>Sync and Close</h3>
+                    <p>Approved claims sync to financial records for traceable and aligned reporting.</p>
+                </article>
             </div>
         </div>
     </section>
@@ -382,13 +384,13 @@
         <div class="container">
             <h2 data-aos="fade-up" data-aos-duration="800">Smart FAQ</h2>
             <div class="faq-grid">
-                <div class="faq-item" data-aos="fade-up" data-aos-duration="800" data-aos-delay="50">
+                <div class="faq-item active" data-aos="fade-up" data-aos-duration="800" data-aos-delay="50">
                     <div class="faq-header">
                         <h3>How does AI OCR work?</h3>
                         <span class="faq-toggle">+</span>
                     </div>
                     <div class="faq-content">
-                        <p>Our ultra-smart AI reads your receipt image, identifies the vendor, date, and amount, then fills the form for you automatically. Smart and accurate.</p>
+                        <p>AI reads receipt images, extracts vendor, date, and amount, then pre-fills data for faster submission.</p>
                     </div>
                 </div>
 
@@ -398,7 +400,7 @@
                         <span class="faq-toggle">+</span>
                     </div>
                     <div class="faq-content">
-                        <p>The system will catch it instantly! It compares names, dates, and amounts against your history to ensure everything is unique and valid.</p>
+                        <p>The system flags it instantly by matching key fields against previous requests.</p>
                     </div>
                 </div>
 
@@ -408,7 +410,7 @@
                         <span class="faq-toggle">+</span>
                     </div>
                     <div class="faq-content">
-                        <p>Your department's Atasan will review it first. Once approved, it moves automatically to Finance for final processing and payment.</p>
+                        <p>Your manager reviews first, then approved requests move automatically to Finance.</p>
                     </div>
                 </div>
             </div>
@@ -419,7 +421,7 @@
     <section class="cta-section" id="contact">
         <div class="container">
             <h2 data-aos="fade-up" data-aos-duration="800">Work Smarter. Approve Faster.</h2>
-            <p data-aos="fade-up" data-aos-duration="800" data-aos-delay="100">Auto-validate receipts with AI, prevent duplicates, and keep finance in sync — all in one clean, modern workflow.</p>
+            <p data-aos="fade-up" data-aos-duration="800" data-aos-delay="100">Validate with AI, block duplicates, and keep Finance in sync inside one clean operational workflow.</p>
 
             <div class="cta-highlights" data-aos="fade-up" data-aos-duration="800" data-aos-delay="120">
                 <div class="cta-chip">
@@ -445,7 +447,9 @@
                 @else
                     <a href="{{ route('login') }}" class="btn btn-primary btn-lg" data-external data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">Get Started Now</a>
                 @endauth
+                <a href="#features" class="btn btn-secondary btn-lg">Explore Features</a>
             </div>
+            <p class="cta-proof">Trusted by 350+ active teams with 98% finance satisfaction.</p>
         </div>
     </section>
 
@@ -540,23 +544,86 @@
             }, 2800);
         })();
 
+        let roleTransitionLock = false;
+        function getRoleWrapper() {
+            return document.querySelector('.role-content-wrapper');
+        }
+
+        function getRoleTargetHeight(panel, wrapper) {
+            if (!panel || !wrapper) return 0;
+            const styles = window.getComputedStyle(wrapper);
+            const padTop = parseFloat(styles.paddingTop) || 0;
+            const padBottom = parseFloat(styles.paddingBottom) || 0;
+            return panel.offsetHeight + padTop + padBottom;
+        }
+
+        function syncRoleWrapperHeight(immediate = false) {
+            const wrapper = getRoleWrapper();
+            const active = document.querySelector('.role-panel.active');
+            if (!wrapper || !active) return;
+            const nextHeight = getRoleTargetHeight(active, wrapper);
+            if (!nextHeight) return;
+            if (immediate) {
+                const prevTransition = wrapper.style.transition;
+                wrapper.style.transition = 'none';
+                wrapper.style.height = `${nextHeight}px`;
+                void wrapper.offsetHeight;
+                wrapper.style.transition = prevTransition;
+            } else {
+                wrapper.style.height = `${nextHeight}px`;
+            }
+        }
+
         function switchRole(el, roleId) {
+            if (roleTransitionLock) return;
+
+            const nextPanel = document.getElementById('role-' + roleId);
+            const currentPanel = document.querySelector('.role-panel.active');
+            if (!nextPanel || currentPanel === nextPanel) return;
+
+            roleTransitionLock = true;
+
             // Update tabs
-            document.querySelectorAll('.role-tab').forEach(tab => {
+            document.querySelectorAll('.role-tab').forEach((tab) => {
                 tab.classList.remove('active');
             });
             if (el) el.classList.add('active');
 
-            // Update panels
-            document.querySelectorAll('.role-panel').forEach(panel => {
-                panel.classList.remove('active');
+            // Crossfade + slide transition between panels
+            const wrapper = getRoleWrapper();
+            if (!currentPanel) {
+                nextPanel.classList.add('active');
+                if (wrapper) wrapper.style.height = 'auto';
+                roleTransitionLock = false;
+                return;
+            }
+
+            if (wrapper) {
+                wrapper.style.height = `${wrapper.offsetHeight}px`;
+            }
+
+            currentPanel.classList.add('is-exiting');
+            nextPanel.classList.add('active', 'is-entering');
+
+            requestAnimationFrame(() => {
+                if (wrapper) {
+                    const nextHeight = getRoleTargetHeight(nextPanel, wrapper);
+                    if (nextHeight) wrapper.style.height = `${nextHeight}px`;
+                }
+                nextPanel.classList.remove('is-entering');
             });
-            document.getElementById('role-' + roleId).classList.add('active');
+
+            setTimeout(() => {
+                currentPanel.classList.remove('active', 'is-exiting');
+                if (wrapper) wrapper.style.height = 'auto';
+                roleTransitionLock = false;
+            }, 360);
         }
 
 
         document.addEventListener('DOMContentLoaded', function() {
             const loader = document.getElementById('global-loader');
+            const scrollProgress = document.getElementById('scrollProgress');
             
             // Function to hide loader
             const hideLoader = () => {
@@ -581,6 +648,116 @@
 
             // Hide initially
             setTimeout(hideLoader, 100); 
+
+            // Ensure role wrapper follows active panel height
+            syncRoleWrapperHeight(true);
+            const roleWrapper = getRoleWrapper();
+            if (roleWrapper) roleWrapper.style.height = 'auto';
+            window.addEventListener('resize', () => {
+                if (!roleTransitionLock) {
+                    syncRoleWrapperHeight(true);
+                    const currentRoleWrapper = getRoleWrapper();
+                    if (currentRoleWrapper) currentRoleWrapper.style.height = 'auto';
+                }
+            });
+
+            // Scroll progress indicator
+            const updateScrollProgress = () => {
+                if (!scrollProgress) return;
+                const doc = document.documentElement;
+                const maxScroll = doc.scrollHeight - window.innerHeight;
+                const progress = maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0;
+                scrollProgress.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+            };
+
+            let scrollTicking = false;
+            const onScrollProgress = () => {
+                if (scrollTicking) return;
+                scrollTicking = true;
+                requestAnimationFrame(() => {
+                    updateScrollProgress();
+                    scrollTicking = false;
+                });
+            };
+            window.addEventListener('scroll', onScrollProgress, { passive: true });
+            window.addEventListener('resize', updateScrollProgress);
+            updateScrollProgress();
+
+            // Step reveal animation for process section
+            const processCards = document.querySelectorAll('.process-card');
+            if (processCards.length && 'IntersectionObserver' in window) {
+                const processObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('in-view');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.28 });
+                processCards.forEach((card) => processObserver.observe(card));
+            }
+
+            // Subtle desktop tilt interactions
+            const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+            const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
+            if (supportsHover) {
+                const tiltCards = document.querySelectorAll('.process-card, .stat-item, .bento-item');
+                tiltCards.forEach((card) => {
+                    card.classList.add('interactive-tilt');
+                    card.addEventListener('mousemove', (e) => {
+                        const rect = card.getBoundingClientRect();
+                        const x = (e.clientX - rect.left) / rect.width;
+                        const y = (e.clientY - rect.top) / rect.height;
+                        const rotateY = (x - 0.5) * 2.6;
+                        const rotateX = (0.5 - y) * 1.9;
+                        card.style.transform = `translateY(-3px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                    });
+                    card.addEventListener('mouseleave', () => {
+                        card.style.transform = '';
+                    });
+                });
+            }
+
+            // Framer-like subtle reveal motion (staggered)
+            const revealTargets = document.querySelectorAll(
+                '.proof-head, .proof-item, .stats-head, .stat-item, .about .container > div, .section-header, .bento-item, .roles-container, .process-card, .faq-section h2, .faq-item, .cta-section, .footer-top-band, .footer-content, .footer-bottom'
+            );
+            const revealStep = isMobileViewport ? 30 : 55;
+            revealTargets.forEach((el, index) => {
+                el.classList.add('wow-reveal');
+                el.style.setProperty('--reveal-delay', `${(index % 6) * revealStep}ms`);
+            });
+
+            if ('IntersectionObserver' in window) {
+                const revealObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.16, rootMargin: '0px 0px -8% 0px' });
+
+                revealTargets.forEach((el) => revealObserver.observe(el));
+            } else {
+                revealTargets.forEach((el) => el.classList.add('is-visible'));
+            }
+
+            // Gentle magnetic interaction for CTA/header buttons
+            if (supportsHover) {
+                const magneticButtons = document.querySelectorAll('.hero-buttons .btn-primary, .cta-buttons .btn-primary, .cta-buttons .btn-secondary');
+                magneticButtons.forEach((btn) => {
+                    btn.addEventListener('mousemove', (e) => {
+                        const rect = btn.getBoundingClientRect();
+                        const x = (e.clientX - rect.left) / rect.width - 0.5;
+                        const y = (e.clientY - rect.top) / rect.height - 0.5;
+                        btn.style.transform = `translate(${x * 2}px, ${y * 1.5}px)`;
+                    });
+                    btn.addEventListener('mouseleave', () => {
+                        btn.style.transform = '';
+                    });
+                });
+            }
 
             // Intercept links
             document.addEventListener('click', function(e) {

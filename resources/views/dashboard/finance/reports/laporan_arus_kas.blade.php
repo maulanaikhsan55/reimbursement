@@ -107,8 +107,8 @@
     <div class="dashboard-container">
         <x-page-header title="Laporan Arus Kas" subtitle="Laporan transaksi kas dan bank periode terpilih" :showNotification="true" :showProfile="true" />
 
-        <div class="dashboard-content">
-        <div class="stats-grid">
+        <div class="dashboard-content reports-clean-content">
+        <div class="stats-grid report-stats-grid">
             <div class="stat-card modern">
                 <div class="stat-left">
                     <div class="stat-value">Rp {{ number_format($totalInflow, 0, ',', '.') }}</div>
@@ -160,10 +160,10 @@
         </div>
 
         <section class="modern-section report-section">
-            <div class="section-header" style="justify-content: flex-start !important; align-items: flex-start !important; gap: 2rem;">
-                <div style="text-align: left !important; flex: 1;">
-                    <h2 class="section-title" style="text-align: left !important; margin: 0;">Arus Kas Berdasarkan Aktivitas</h2>
-                    <p class="section-subtitle" style="text-align: left !important; margin-top: 4px;">Menampilkan total <strong>{{ $totalEntries }}</strong> baris transaksi kas</p>
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Arus Kas Berdasarkan Aktivitas</h2>
+                    <p class="section-subtitle">Menampilkan total <strong>{{ $totalEntries }}</strong> baris transaksi kas</p>
                 </div>
                 <div class="header-actions">
                     <div class="export-actions">
@@ -176,6 +176,16 @@
                                 <polyline points="10 9 9 9 8 9"></polyline>
                             </svg>
                             CSV
+                        </a>
+                        <a href="{{ route('finance.report.laporan_arus_kas.export_xlsx', request()->query()) }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M8 13l3 4"></path>
+                                <path d="M11 13l-3 4"></path>
+                                <path d="M14 17h4"></path>
+                            </svg>
+                            XLSX
                         </a>
                         <a href="{{ route('finance.report.laporan_arus_kas.export_pdf', request()->query()) }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">

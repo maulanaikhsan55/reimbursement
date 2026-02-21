@@ -114,7 +114,7 @@ return [
     |
     */
 
-    'inject_assets' => true,
+    'inject_assets' => false,
 
     /*
     |---------------------------------------------------------------------------
@@ -128,7 +128,7 @@ return [
     */
 
     'navigate' => [
-        'show_progress_bar' => false, // Disabled - we use custom modern progress bar
+        'show_progress_bar' => true, // Keep enabled to avoid Alpine.navigate early-init conflict
         'progress_bar_color' => '#2299dd',
     ],
 

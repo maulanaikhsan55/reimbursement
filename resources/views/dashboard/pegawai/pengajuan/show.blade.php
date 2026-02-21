@@ -12,7 +12,7 @@
         :showProfile="true" 
     />
 
-    <div class="dashboard-content">
+    <div class="dashboard-content detail-single-content">
         <!-- Status Section -->
         <section class="modern-section">
             <div class="section-header">

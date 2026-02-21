@@ -1,7 +1,3 @@
-<?php
-use App\Models\Notifikasi;
-$unreadNotifCount = Notifikasi::where('user_id', auth()->id())->where('is_read', false)->count();
-?>
 <aside class="pegawai-sidebar" wire:persist="sidebar">
     <!-- Logo Section -->
     <div class="sidebar-header">
@@ -40,47 +36,42 @@ $unreadNotifCount = Notifikasi::where('user_id', auth()->id())->where('is_read',
         </a>
 
         <a href="{{ route('pegawai.notifikasi') }}" wire:navigate.hover class="menu-item notifikasi-menu {{ request()->routeIs('pegawai.notifikasi*') ? 'active' : '' }}" x-data="{
-            unreadCount: {{ $unreadNotifCount }}
+            unreadCount: 0
         }" x-init="
-            // Listen for notification events
-            window.addEventListener('refresh-notif-badges', () => {
+            const updateNotifCount = () => {
                 fetch('{{ route('pegawai.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                     .then(r => r.json())
                     .then(data => {
-                        unreadCount = data.unread_count;
-                    });
-            });
+                        unreadCount = Number(data.unread_count || 0);
+                    })
+                    .catch(() => {});
+            };
+
+            // Listen for notification events
+            window.addEventListener('refresh-notif-badges', updateNotifCount);
             
             // Also listen for Livewire event
             if (typeof Livewire !== 'undefined') {
                 Livewire.on('notifikasi-baru', () => {
-                    setTimeout(() => {
-                        fetch('{{ route('pegawai.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                            .then(r => r.json())
-                            .then(data => {
-                                unreadCount = data.unread_count;
-                            });
-                    }, 500);
+                    setTimeout(updateNotifCount, 300);
                 });
+            }
+
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(updateNotifCount, { timeout: 1200 });
+            } else {
+                setTimeout(updateNotifCount, 120);
             }
             
             // Fallback polling every 30 seconds
-            setInterval(() => {
-                fetch('{{ route('pegawai.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.unread_count !== unreadCount) {
-                            unreadCount = data.unread_count;
-                        }
-                    });
-            }, 30000);
+            setInterval(updateNotifCount, 30000);
         ">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
             <span class="menu-text">Notifikasi</span>
-            <span class="notif-badge-sidebar" x-show="unreadCount > 0" x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
+            <span class="notif-badge-sidebar" x-show="unreadCount > 0" x-cloak x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
         </a>
 
         <!-- ACCOUNT Section -->
@@ -157,7 +148,8 @@ $unreadNotifCount = Notifikasi::where('user_id', auth()->id())->where('is_read',
     }
 
     .logo-wrapper {
-        background: #f4f7fa;
+        background: linear-gradient(180deg, #f7f9fd 0%, #f1f5fb 100%);
+        border: 1px solid rgba(66, 93, 135, 0.1);
         padding: 0.75rem;
         border-radius: 1rem;
         display: flex;
@@ -177,71 +169,29 @@ $unreadNotifCount = Notifikasi::where('user_id', auth()->id())->where('is_read',
     /* Menu Section */
     .sidebar-menu {
         flex: 1;
-        padding: 0.5rem 0 5rem 0;
+        padding: 0.5rem 0 0.75rem 0;
         overflow-y: auto;
         overflow-x: hidden;
+        scrollbar-gutter: stable both-edges;
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
         position: relative;
     }
 
-    /* Sliding Indicator - INSTANT with GLOW */
+    /* Sliding Indicator */
     .menu-sliding-bg {
         position: absolute;
         left: 0;
         width: 100%;
-        background: linear-gradient(135deg, #425d87 0%, #5575a2 50%, #6b8cb8 100%);
-        background-size: 200% 100%;
+        background: linear-gradient(135deg, #425d87 0%, #344d74 100%);
         border-radius: 1.5rem;
-        transition: none !important;
+        transition: top 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.24s ease, opacity 0.2s ease;
         z-index: 0;
-        box-shadow: 0 4px 20px rgba(66, 93, 135, 0.5), 0 0 30px rgba(66, 93, 135, 0.2);
+        box-shadow: 0 10px 22px rgba(66, 93, 135, 0.32);
         opacity: 0;
         pointer-events: none;
         will-change: top, height, opacity;
-        animation: indicator-glow 2s ease-in-out infinite;
-    }
-
-    @keyframes indicator-glow {
-        0%, 100% { box-shadow: 0 4px 20px rgba(66, 93, 135, 0.5), 0 0 30px rgba(66, 93, 135, 0.2); }
-        50% { box-shadow: 0 4px 25px rgba(66, 93, 135, 0.7), 0 0 40px rgba(66, 93, 135, 0.3); }
-    }
-
-    /* Interactive Menu Item - SHINE EFFECT */
-    .menu-item {
-        position: relative;
-        overflow: hidden;
-        transition: transform 0.2s ease, text-shadow 0.2s ease;
-    }
-
-    .menu-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg,
-            transparent 0%,
-            rgba(255,255,255,0.3) 50%,
-            transparent 100%);
-        transform: skewX(-15deg);
-        transition: left 0.4s ease;
-    }
-
-    .menu-item:hover {
-        text-shadow: 0 0 15px rgba(66, 93, 135, 0.4);
-        transform: translateX(6px);
-    }
-
-    .menu-item:hover::before {
-        left: 150%;
-    }
-
-    /* Active menu icon glow */
-    .menu-item.active .menu-icon {
-        filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
     }
 
     .menu-item {
@@ -254,7 +204,7 @@ $unreadNotifCount = Notifikasi::where('user_id', auth()->id())->where('is_read',
         font-weight: 500;
         color: #1a1a1a;
         text-decoration: none;
-        transition: background-color 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+        transition: background-color 0.26s ease, color 0.26s ease, transform 0.22s ease, box-shadow 0.26s ease;
         position: relative;
         background: transparent;
         border: none;
@@ -265,11 +215,16 @@ $unreadNotifCount = Notifikasi::where('user_id', auth()->id())->where('is_read',
     .menu-item:hover {
         background: linear-gradient(135deg, rgba(85, 117, 162, 0.08) 0%, rgba(60, 83, 121, 0.08) 100%);
         color: #5575a2;
-        transform: translateX(4px);
+        transform: translateX(2px);
     }
 
     .menu-item:active {
-        transform: scale(0.92) translateX(4px);
+        transform: scale(0.98) translateX(2px);
+    }
+
+    .menu-item:focus-visible {
+        outline: 2px solid rgba(66, 93, 135, 0.35);
+        outline-offset: 2px;
     }
 
     .menu-item.active {
@@ -337,14 +292,13 @@ $unreadNotifCount = Notifikasi::where('user_id', auth()->id())->where('is_read',
 
     /* Logout Section - Fixed at bottom */
     .logout-section {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        margin-top: auto;
+        position: relative;
         padding: 1rem 1.5rem 1.5rem;
-        border-top: 0.1px solid #f0f3f8;
-        background: linear-gradient(to top, #ffffff, #fafbfc);
+        border-top: 1px solid rgba(66, 93, 135, 0.1);
+        background: #ffffff;
         border-radius: 0 0 2.5rem 0;
+        z-index: 2;
     }
 
     .logout-section form {

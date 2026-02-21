@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Finance\MasterData;
 
-use App\Events\NotifikasiPengajuan;
 use App\Http\Controllers\Controller;
 use App\Models\COA;
 use App\Models\KasBank;
@@ -96,12 +95,6 @@ class COAController extends Controller
                     'is_read' => false,
                 ]);
 
-                try {
-                    event(new NotifikasiPengajuan(auth()->id(), 'Sinkronisasi COA Gagal', $errorMsg, 'error'));
-                } catch (\Exception $e) {
-                    \Log::warning('Gagal mengirim broadcast sinkronisasi COA gagal: '.$e->getMessage());
-                }
-
                 return redirect()->route('finance.masterdata.coa.index')
                     ->with('error', $errorMsg);
             }
@@ -118,12 +111,6 @@ class COAController extends Controller
                     'pesan' => $infoMsg,
                     'is_read' => false,
                 ]);
-
-                try {
-                    event(new NotifikasiPengajuan(auth()->id(), 'Sinkronisasi COA Selesai', $infoMsg, 'info'));
-                } catch (\Exception $e) {
-                    \Log::warning('Gagal mengirim broadcast sinkronisasi COA selesai: '.$e->getMessage());
-                }
 
                 return redirect()->route('finance.masterdata.coa.index')
                     ->with('info', $infoMsg);
@@ -276,12 +263,6 @@ class COAController extends Controller
                 'is_read' => false,
             ]);
 
-            try {
-                event(new NotifikasiPengajuan(auth()->id(), 'Sinkronisasi COA Berhasil', $successMsg, 'success'));
-            } catch (\Exception $e) {
-                \Log::warning('Gagal mengirim broadcast sinkronisasi COA berhasil: '.$e->getMessage());
-            }
-
             return redirect()->route('finance.masterdata.coa.index')
                 ->with('success', $successMsg);
         } catch (\Exception $e) {
@@ -294,12 +275,6 @@ class COAController extends Controller
                 'pesan' => $errorMsg,
                 'is_read' => false,
             ]);
-
-            try {
-                event(new NotifikasiPengajuan(auth()->id(), 'Kesalahan Sinkronisasi COA', $errorMsg, 'error'));
-            } catch (\Exception $e) {
-                \Log::warning('Gagal mengirim broadcast kesalahan sinkronisasi COA: '.$e->getMessage());
-            }
 
             return redirect()->route('finance.masterdata.coa.index')
                 ->with('error', $errorMsg);

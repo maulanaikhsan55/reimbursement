@@ -21,13 +21,12 @@ class TesseractOCR {
         if (this.initialized) return;
         
         try {
-            // In v5, createWorker is async and accepts language/OEM directly
-            // Using ind+eng for better accuracy with currency symbols and numbers
+           
             this.worker = await Tesseract.createWorker('ind+eng');
             
-            // Set parameters separately in v5
+           
             await this.worker.setParameters({
-                tessedit_pageseg_mode: 3, // Fully automatic page segmentation, but no OSD
+                tessedit_pageseg_mode: 3, 
                 preserve_interword_spaces: '1',
             });
             

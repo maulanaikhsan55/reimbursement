@@ -11,6 +11,7 @@ use App\Services\ReportExportService;
 use App\Traits\FiltersPengajuan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ApprovalController extends Controller
@@ -57,10 +58,19 @@ class ApprovalController extends Controller
 
     public function getCount()
     {
-        $subordinateIds = User::where('atasan_id', auth()->id())->pluck('id')->toArray();
-        $count = Pengajuan::where('status', PengajuanStatus::MENUNGGU_ATASAN)
-            ->whereIn('user_id', $subordinateIds)
-            ->count();
+        $userId = auth()->id();
+
+        $count = Cache::remember('atasan_approval_pending_count_user_'.$userId, 10, function () use ($userId) {
+            $subordinateIds = User::where('atasan_id', $userId)->pluck('id');
+
+            if ($subordinateIds->isEmpty()) {
+                return 0;
+            }
+
+            return Pengajuan::where('status', PengajuanStatus::MENUNGGU_ATASAN)
+                ->whereIn('user_id', $subordinateIds)
+                ->count();
+        });
 
         return response()->json(['pending_count' => $count]);
     }
@@ -78,7 +88,8 @@ class ApprovalController extends Controller
                 'pengajuanList' => $pengajuanList,
                 'user' => $user->load('departemen'),
                 'title' => 'Laporan Persetujuan Pengajuan',
-            ]
+            ],
+            ['orientation' => 'landscape']
         );
     }
 
@@ -94,6 +105,22 @@ class ApprovalController extends Controller
             'laporan_persetujuan_'.date('Y-m-d_His').'.csv',
             $headers,
             $data
+        );
+    }
+
+    public function exportXlsx(Request $request)
+    {
+        $query = $this->applyApprovalFilters(Pengajuan::query(), $request);
+        $pengajuanList = $query->with(['user', 'kategori', 'departemen'])->get();
+
+        $headers = $this->getPengajuanCsvHeaders('approval');
+        $data = $this->mapPengajuanForCsv($pengajuanList, 'approval');
+
+        return $this->exportService->exportToXlsx(
+            'laporan_persetujuan_'.date('Y-m-d_His').'.xlsx',
+            $headers,
+            $data,
+            ['sheet_name' => 'Persetujuan Atasan']
         );
     }
 
@@ -153,6 +180,8 @@ class ApprovalController extends Controller
                 $this->notifikasiService->notifyNewPengajuanToFinance($pengajuan);
             });
 
+            Cache::forget('atasan_approval_pending_count_user_'.$user->id);
+
             return redirect()->route('atasan.approval.index')
                 ->with('success', 'Pengajuan berhasil disetujui dan dikirim ke Finance.');
         } catch (\Exception $e) {
@@ -191,6 +220,8 @@ class ApprovalController extends Controller
 
                 $this->notifikasiService->notifyRejectedByAtasan($pengajuan);
             });
+
+            Cache::forget('atasan_approval_pending_count_user_'.$user->id);
 
             return redirect()->route('atasan.approval.index')
                 ->with('success', 'Pengajuan berhasil ditolak.');

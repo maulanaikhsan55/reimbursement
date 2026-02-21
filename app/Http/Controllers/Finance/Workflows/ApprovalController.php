@@ -33,15 +33,14 @@ class ApprovalController extends Controller
 
     public function index(Request $request)
     {
-        $query = $this->applyFinanceFilters(
+        $query = $this->applyPendingApprovalFilters(
             Pengajuan::query()->with([
                 'user:id,name',
                 'departemen:departemen_id,nama_departemen',
                 'kategori:kategori_id,nama_kategori',
                 'validasiAi',
             ]),
-            $request,
-            PengajuanStatus::MENUNGGU_FINANCE->value
+            $request
         );
 
         $pengajuans = $query->paginate(config('app.pagination.approval'));
@@ -60,14 +59,14 @@ class ApprovalController extends Controller
             return Departemen::orderBy('nama_departemen')->get(['departemen_id', 'nama_departemen']);
         });
 
-        $currentStatus = $request->input('status', PengajuanStatus::MENUNGGU_FINANCE->value);
-
-        return view('dashboard.finance.approval.index', compact('pengajuans', 'totalPending', 'totalNominalPending', 'departemens', 'currentStatus'));
+        return view('dashboard.finance.approval.index', compact('pengajuans', 'totalPending', 'totalNominalPending', 'departemens'));
     }
 
     public function getCount()
     {
-        $count = Pengajuan::where('status', PengajuanStatus::MENUNGGU_FINANCE->value)->count();
+        $count = Cache::remember('finance_approval_pending_count', 10, function () {
+            return Pengajuan::where('status', PengajuanStatus::MENUNGGU_FINANCE->value)->count();
+        });
 
         return response()->json(['pending_count' => $count]);
     }
@@ -186,6 +185,8 @@ class ApprovalController extends Controller
 
     public function send(Request $request, Pengajuan $pengajuan)
     {
+        Cache::forget('finance_approval_pending_count');
+
         if ($pengajuan->status !== PengajuanStatus::MENUNGGU_FINANCE) {
             return back()->with('error', 'Pengajuan tidak dalam status menunggu finance');
         }
@@ -273,6 +274,8 @@ class ApprovalController extends Controller
 
     public function retry(Pengajuan $pengajuan)
     {
+        Cache::forget('finance_approval_pending_count');
+
         if ($pengajuan->status !== PengajuanStatus::MENUNGGU_FINANCE) {
             return back()->with('error', 'Pengajuan tidak dapat di-retry');
         }
@@ -370,6 +373,8 @@ class ApprovalController extends Controller
 
     public function reject(Request $request, Pengajuan $pengajuan)
     {
+        Cache::forget('finance_approval_pending_count');
+
         if ($pengajuan->status !== PengajuanStatus::MENUNGGU_FINANCE) {
             return back()->with('error', 'Pengajuan tidak dalam status menunggu finance');
         }
@@ -392,10 +397,9 @@ class ApprovalController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $query = $this->applyFinanceFilters(
+        $query = $this->applyPendingApprovalFilters(
             Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request,
-            'menunggu_finance'
+            $request
         );
 
         $pengajuans = $query->get();
@@ -410,12 +414,30 @@ class ApprovalController extends Controller
         );
     }
 
+    public function exportXlsx(Request $request)
+    {
+        $query = $this->applyPendingApprovalFilters(
+            Pengajuan::query()->with('user', 'departemen', 'kategori'),
+            $request
+        );
+
+        $pengajuans = $query->get();
+        $headers = $this->getPengajuanCsvHeaders('finance');
+        $data = $this->mapPengajuanForCsv($pengajuans, 'finance');
+
+        return $this->exportService->exportToXlsx(
+            'verifikasi_pengajuan_'.date('Y-m-d').'.xlsx',
+            $headers,
+            $data,
+            ['sheet_name' => 'Verifikasi Finance']
+        );
+    }
+
     public function exportPdf(Request $request)
     {
-        $query = $this->applyFinanceFilters(
+        $query = $this->applyPendingApprovalFilters(
             Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request,
-            'menunggu_finance'
+            $request
         );
 
         $pengajuans = $query->get();
@@ -424,8 +446,181 @@ class ApprovalController extends Controller
         return $this->exportService->exportToPDF(
             'verifikasi_pengajuan_'.date('Y-m-d').'.pdf',
             'dashboard.finance.approval.pdf.approval-report',
-            compact('pengajuans', 'totalNominal')
+            compact('pengajuans', 'totalNominal'),
+            ['orientation' => 'landscape']
         );
+    }
+
+    public function history(Request $request)
+    {
+        $startDate = $request->start_date ? \Carbon\Carbon::parse($request->start_date) : \Carbon\Carbon::now()->subMonths(1);
+        $endDate = $request->end_date ? \Carbon\Carbon::parse($request->end_date) : \Carbon\Carbon::now();
+
+        $query = $this->applyApprovalHistoryFilters(
+            Pengajuan::query()->with([
+                'user:id,name',
+                'departemen:departemen_id,nama_departemen',
+                'kategori:kategori_id,nama_kategori',
+                'validasiAi',
+            ]),
+            $request
+        );
+
+        $pengajuans = $query->paginate(config('app.pagination.approval'));
+
+        $approvedStatuses = [
+            PengajuanStatus::TERKIRIM_ACCURATE->value,
+            PengajuanStatus::DICAIRKAN->value,
+            PengajuanStatus::SELESAI->value,
+        ];
+
+        $totalNominal = $query->clone()->sum('nominal');
+        $totalProcessed = $query->clone()->count();
+        $totalApproved = $query->clone()->whereIn('pengajuan.status', $approvedStatuses)->count();
+        $totalRejected = $query->clone()->where('pengajuan.status', PengajuanStatus::DITOLAK_FINANCE->value)->count();
+
+        $departemens = Departemen::orderBy('nama_departemen')->get(['departemen_id', 'nama_departemen']);
+
+        return view('dashboard.finance.approval.history', compact(
+            'pengajuans',
+            'startDate',
+            'endDate',
+            'totalNominal',
+            'totalProcessed',
+            'totalApproved',
+            'totalRejected',
+            'departemens'
+        ));
+    }
+
+    public function historyExportCsv(Request $request)
+    {
+        $query = $this->applyApprovalHistoryFilters(
+            Pengajuan::query()->with('user', 'departemen', 'kategori'),
+            $request
+        );
+
+        $pengajuans = $query->get();
+
+        $headers = $this->getPengajuanCsvHeaders('finance');
+        $data = $this->mapPengajuanForCsv($pengajuans, 'finance');
+
+        return $this->exportService->exportToCSV(
+            'riwayat_approval_finance_'.date('Y-m-d').'.csv',
+            $headers,
+            $data
+        );
+    }
+
+    public function historyExportXlsx(Request $request)
+    {
+        $query = $this->applyApprovalHistoryFilters(
+            Pengajuan::query()->with('user', 'departemen', 'kategori'),
+            $request
+        );
+
+        $pengajuans = $query->get();
+        $headers = $this->getPengajuanCsvHeaders('finance');
+        $data = $this->mapPengajuanForCsv($pengajuans, 'finance');
+
+        return $this->exportService->exportToXlsx(
+            'riwayat_approval_finance_'.date('Y-m-d').'.xlsx',
+            $headers,
+            $data,
+            ['sheet_name' => 'Riwayat Approval']
+        );
+    }
+
+    public function historyExportPdf(Request $request)
+    {
+        $startDate = $request->start_date ? \Carbon\Carbon::parse($request->start_date) : \Carbon\Carbon::now()->subMonths(1);
+        $endDate = $request->end_date ? \Carbon\Carbon::parse($request->end_date) : \Carbon\Carbon::now();
+
+        $query = $this->applyApprovalHistoryFilters(
+            Pengajuan::query()->with('user', 'departemen', 'kategori'),
+            $request
+        );
+
+        $pengajuans = $query->get();
+        $totalNominal = $pengajuans->sum('nominal');
+
+        return $this->exportService->exportToPDF(
+            'riwayat_approval_finance_'.date('Y-m-d').'.pdf',
+            'dashboard.finance.approval.pdf.approval-history',
+            compact('pengajuans', 'startDate', 'endDate', 'totalNominal'),
+            ['orientation' => 'landscape']
+        );
+    }
+
+    private function applyPendingApprovalFilters($query, Request $request)
+    {
+        $query->where('pengajuan.status', PengajuanStatus::MENUNGGU_FINANCE->value);
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->leftJoin('users', 'pengajuan.user_id', '=', 'users.id')
+                ->select('pengajuan.*')
+                ->where(function ($q) use ($search) {
+                    $q->where('pengajuan.nomor_pengajuan', 'like', "%{$search}%")
+                        ->orWhere('pengajuan.nama_vendor', 'like', "%{$search}%")
+                        ->orWhere('users.name', 'like', "%{$search}%");
+                });
+        }
+
+        if ($request->filled('departemen_id')) {
+            $query->where('pengajuan.departemen_id', $request->input('departemen_id'));
+        }
+
+        $startDateParam = $request->filled('start_date') ? 'start_date' : 'tanggal_from';
+        $endDateParam = $request->filled('end_date') ? 'end_date' : 'tanggal_to';
+
+        if ($request->filled($startDateParam)) {
+            $query->whereDate('pengajuan.tanggal_pengajuan', '>=', $request->input($startDateParam));
+        }
+
+        if ($request->filled($endDateParam)) {
+            $query->whereDate('pengajuan.tanggal_pengajuan', '<=', $request->input($endDateParam));
+        }
+
+        return $query->orderBy('pengajuan.tanggal_pengajuan', 'desc');
+    }
+
+    private function applyApprovalHistoryFilters($query, Request $request)
+    {
+        $query->whereIn('pengajuan.status', [
+            PengajuanStatus::TERKIRIM_ACCURATE->value,
+            PengajuanStatus::DICAIRKAN->value,
+            PengajuanStatus::SELESAI->value,
+            PengajuanStatus::DITOLAK_FINANCE->value,
+        ]);
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->join('users', 'pengajuan.user_id', '=', 'users.id')
+                ->select('pengajuan.*')
+                ->where(function ($q) use ($search) {
+                    $q->where('pengajuan.nomor_pengajuan', 'like', "%{$search}%")
+                        ->orWhere('pengajuan.nama_vendor', 'like', "%{$search}%")
+                        ->orWhere('users.name', 'like', "%{$search}%");
+                });
+        }
+
+        if ($request->filled('departemen_id')) {
+            $query->where('pengajuan.departemen_id', $request->input('departemen_id'));
+        }
+
+        $startDateParam = $request->filled('start_date') ? 'start_date' : 'tanggal_from';
+        $endDateParam = $request->filled('end_date') ? 'end_date' : 'tanggal_to';
+
+        if ($request->filled($startDateParam)) {
+            $query->whereDate(DB::raw('COALESCE(pengajuan.tanggal_disetujui_finance, pengajuan.created_at)'), '>=', $request->input($startDateParam));
+        }
+
+        if ($request->filled($endDateParam)) {
+            $query->whereDate(DB::raw('COALESCE(pengajuan.tanggal_disetujui_finance, pengajuan.created_at)'), '<=', $request->input($endDateParam));
+        }
+
+        return $query->orderByRaw('COALESCE(pengajuan.tanggal_disetujui_finance, pengajuan.created_at) DESC');
     }
 
     /**

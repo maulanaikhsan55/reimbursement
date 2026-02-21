@@ -46,7 +46,9 @@ class Notifikasi extends Model
                         $notifikasi->user_id,
                         $notifikasi->judul,
                         $notifikasi->pesan,
-                        self::mapTypeToEventStyle($notifikasi->tipe)
+                        self::mapTypeToEventStyle($notifikasi->tipe),
+                        $notifikasi->notifikasi_id,
+                        $notifikasi->pengajuan_id
                     ));
                 } catch (\Exception $e) {
                     // Ignore broadcast failures if Reverb is down
@@ -70,10 +72,16 @@ class Notifikasi extends Model
 
     private static function mapTypeToEventStyle($type)
     {
-        if (str_contains($type, 'disetujui') || str_contains($type, 'dicairkan') || str_contains($type, 'terkirim')) {
+        $normalizedType = strtolower((string) $type);
+
+        if (in_array($normalizedType, ['success', 'error', 'warning', 'info'], true)) {
+            return $normalizedType;
+        }
+
+        if (str_contains($normalizedType, 'disetujui') || str_contains($normalizedType, 'dicairkan') || str_contains($normalizedType, 'terkirim')) {
             return 'success';
         }
-        if (str_contains($type, 'ditolak') || str_contains($type, 'gagal')) {
+        if (str_contains($normalizedType, 'ditolak') || str_contains($normalizedType, 'gagal')) {
             return 'error';
         }
 

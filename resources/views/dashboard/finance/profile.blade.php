@@ -7,10 +7,10 @@
     <div class="dashboard-container">
         <x-page-header title="Profil Saya" subtitle="Kelola informasi profil dan pengaturan akun Anda" :showNotification="true" :showProfile="true" />
 
-        <div class="dashboard-content">
-        <div class="tabs-container">
-            <div class="tabs-header">
-                <div class="tabs-nav">
+        <div class="dashboard-content profile-page-content">
+        <div class="tabs-container profile-tabs-container">
+            <div class="tabs-header profile-tabs-header">
+                <div class="tabs-nav profile-tabs-nav">
                     <button type="button" class="tab-btn active" data-tab="informasi">
                         <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -27,8 +27,8 @@
                 </div>
             </div>
 
-            <div id="informasi" class="tab-content active">
-            <div class="modern-section">
+            <div id="informasi" class="tab-content active profile-tab-content">
+            <div class="modern-section profile-modern-section">
                 <div class="section-header">
                     <div>
                         <h2 class="section-title">Informasi Pribadi</h2>
@@ -124,8 +124,8 @@
             </div>
         </div>
 
-        <div id="keamanan" class="tab-content">
-            <div class="modern-section">
+        <div id="keamanan" class="tab-content profile-tab-content">
+            <div class="modern-section profile-modern-section">
                 <div class="section-header">
                     <div>
                         <h2 class="section-title">Ubah Password</h2>
@@ -221,6 +221,14 @@
 
 @push('styles')
 <style>
+    :root {
+        --profile-primary: #425d87;
+        --profile-primary-700: #344d74;
+        --profile-ink: #1d2d48;
+        --profile-muted: #64748b;
+        --profile-border: rgba(66, 93, 135, 0.15);
+    }
+
     .dashboard-wrapper {
         padding: 1rem;
         background: linear-gradient(135deg, #f5f7fa 0%, #eef1f8 100%);
@@ -228,8 +236,8 @@
     }
 
     .dashboard-container {
-        max-width: 1400px;
-        margin: 0 auto;
+        max-width: 100%;
+        margin: 0;
         width: 100%;
     }
 
@@ -243,26 +251,30 @@
         display: flex;
         flex-direction: column;
         gap: 0;
+        background: #fff;
+        border: 1px solid var(--profile-border);
+        border-radius: 1.5rem;
+        box-shadow: 0 14px 28px rgba(22, 37, 62, 0.08);
+        overflow: hidden;
     }
 
     .alert {
-        padding: 1rem 1.25rem;
-        border-radius: 1rem;
+        padding: 0.75rem 0.95rem;
+        border-radius: 0.75rem;
         margin-bottom: 1rem;
-        border-left: 4px solid;
-        animation: slideDown 0.3s ease;
+        border: 1px solid;
     }
 
     .alert-success {
-        background: rgba(34, 197, 94, 0.1);
+        background: #ecfdf3;
         color: #166534;
-        border-left-color: #22c55e;
+        border-color: #bbf7d0;
     }
 
     .alert-danger {
-        background: rgba(239, 68, 68, 0.1);
+        background: #fef2f2;
         color: #991b1b;
-        border-left-color: #ef4444;
+        border-color: #fecaca;
     }
 
     .alert ul {
@@ -276,54 +288,51 @@
     }
 
     .tabs-header {
-        display: flex;
+        display: block;
         gap: 0;
-        background: white;
-        border-radius: 1.75rem 1.75rem 0 0;
+        background: #fff;
         padding: 0;
-        border: 1px solid #e5eaf2;
-        border-bottom: 2px solid #e5eaf2;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        overflow: hidden;
     }
 
     .tabs-nav {
         display: flex;
-        gap: 0;
+        gap: 0.5rem;
+        padding: 0.95rem 1.25rem 0.85rem;
+        border-bottom: 1px solid rgba(66, 93, 135, 0.1);
     }
 
     .tab-btn {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.6rem;
-        padding: 1.25rem 2rem;
-        background: none;
-        border: none;
-        border-bottom: 3px solid transparent;
-        font-size: 0.9rem;
+        gap: 0.45rem;
+        padding: 0.6rem 0.95rem;
+        background: #fff;
+        border: 1px solid rgba(66, 93, 135, 0.2);
+        border-radius: 999px;
+        font-size: 0.82rem;
         font-weight: 600;
-        color: #64748b;
+        color: var(--profile-muted);
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: all 0.2s ease;
         position: relative;
     }
 
     .tab-btn:hover {
-        color: #425d87;
-        background: rgba(66, 93, 135, 0.02);
+        color: var(--profile-primary);
+        border-color: rgba(66, 93, 135, 0.35);
     }
 
     .tab-btn.active {
-        color: #425d87;
-        background: white;
-        border-bottom: 3px solid #425d87;
-        margin-bottom: -1px; /* Menutupi border bawah header agar menyatu */
+        color: #fff;
+        background: linear-gradient(135deg, var(--profile-primary), var(--profile-primary-700));
+        border-color: transparent;
+        box-shadow: 0 10px 18px rgba(66, 93, 135, 0.22);
     }
 
     .tab-icon {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
     }
 
     .tab-content {
@@ -335,13 +344,11 @@
     }
 
     .modern-section {
-        background: white;
-        border-radius: 0 0 1.75rem 1.75rem;
-        padding: 2rem;
-        border: 1px solid #e5eaf2;
-        border-top: none;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-        transition: all 0.3s ease;
+        background: transparent;
+        border-radius: 0;
+        padding: 1rem 1.25rem 1.25rem;
+        border: none;
+        box-shadow: none;
     }
 
     .section-header {
@@ -355,15 +362,15 @@
     }
 
     .section-title {
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 700;
-        color: #2c394e;
+        color: var(--profile-ink);
         margin: 0;
     }
 
     .section-subtitle {
-        font-size: 0.85rem;
-        color: #64748b;
+        font-size: 0.8rem;
+        color: var(--profile-muted);
         margin: 0;
         font-weight: 500;
     }
@@ -371,8 +378,8 @@
     .form-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-        margin-bottom: 1rem;
+        gap: 0.85rem;
+        margin-bottom: 0.85rem;
     }
 
     .form-group {
@@ -382,17 +389,17 @@
     }
 
     .form-group label {
-        font-size: 0.9rem;
+        font-size: 0.82rem;
         font-weight: 600;
-        color: #2c394e;
+        color: var(--profile-ink);
     }
 
     .form-control {
         width: 100%;
-        padding: 0.75rem 1rem;
-        border: 1px solid #d9e0ed;
-        border-radius: 0.75rem;
-        font-size: 0.95rem;
+        padding: 0.68rem 0.85rem;
+        border: 1px solid rgba(66, 93, 135, 0.2);
+        border-radius: 0.72rem;
+        font-size: 0.86rem;
         font-family: inherit;
         transition: all 0.2s ease;
         background: white;
@@ -401,39 +408,39 @@
 
     .form-control:focus {
         outline: none;
-        border-color: #425d87;
-        box-shadow: 0 0 0 3px rgba(66, 93, 135, 0.08);
+        border-color: var(--profile-primary);
+        box-shadow: 0 0 0 3px rgba(66, 93, 135, 0.12);
         background: #f8faff;
     }
 
     .form-display {
         width: 100%;
-        padding: 0.75rem 1rem;
-        border: 1px solid #d9e0ed;
-        border-radius: 0.75rem;
-        font-size: 0.95rem;
-        background: #f1f5f9;
+        padding: 0.68rem 0.85rem;
+        border: 1px solid rgba(66, 93, 135, 0.15);
+        border-radius: 0.72rem;
+        font-size: 0.86rem;
+        background: #f8fbff;
         color: #475569;
         font-weight: 500;
     }
 
     .form-section {
-        margin-top: 2rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid #e5eaf2;
+        margin-top: 1.1rem;
+        padding-top: 0.95rem;
+        border-top: 1px solid rgba(66, 93, 135, 0.12);
     }
 
     .form-section-title {
-        font-size: 0.95rem;
+        font-size: 0.76rem;
         font-weight: 700;
-        color: #64748b;
-        margin-bottom: 1.25rem;
+        color: var(--profile-muted);
+        margin-bottom: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
 
     .form-actions {
-        margin-top: 2rem;
+        margin-top: 1rem;
         display: flex;
         justify-content: flex-end;
     }
@@ -442,10 +449,10 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 0.8rem 2rem;
-        border-radius: 0.8rem;
+        padding: 0.7rem 1.2rem;
+        border-radius: 999px;
         font-weight: 600;
-        font-size: 0.95rem;
+        font-size: 0.84rem;
         cursor: pointer;
         transition: all 0.3s ease;
         border: none;
@@ -453,15 +460,14 @@
     }
 
     .btn-modern-primary {
-        background: #425d87;
+        background: linear-gradient(135deg, var(--profile-primary), var(--profile-primary-700));
         color: white;
-        box-shadow: 0 4px 12px rgba(66, 93, 135, 0.25);
+        box-shadow: 0 10px 18px rgba(66, 93, 135, 0.22);
     }
 
     .btn-modern-primary:hover {
-        background: #364b6e;
         transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(66, 93, 135, 0.35);
+        box-shadow: 0 14px 22px rgba(66, 93, 135, 0.27);
     }
 
     .password-input-wrapper {
@@ -495,31 +501,31 @@
     .password-note {
         display: flex;
         gap: 1rem;
-        background: #f8faff;
-        border: 1px solid #e0e7ff;
-        border-radius: 1rem;
-        padding: 1.25rem;
-        margin-bottom: 2rem;
+        background: #f3f7fd;
+        border: 1px solid rgba(66, 93, 135, 0.16);
+        border-radius: 0.8rem;
+        padding: 0.8rem 0.9rem;
+        margin-bottom: 1rem;
     }
 
     .note-icon {
-        width: 1.5rem;
-        height: 1.5rem;
-        color: #425d87;
+        width: 1.1rem;
+        height: 1.1rem;
+        color: var(--profile-primary);
         flex-shrink: 0;
     }
 
     .password-note p {
-        margin: 0 0 0.5rem 0;
-        font-size: 0.9rem;
-        color: #1e293b;
+        margin: 0 0 0.35rem 0;
+        font-size: 0.82rem;
+        color: #334155;
     }
 
     .password-note ul {
         margin: 0;
         padding-left: 1.25rem;
-        font-size: 0.85rem;
-        color: #64748b;
+        font-size: 0.78rem;
+        color: var(--profile-muted);
     }
 
     .password-note li {
@@ -527,8 +533,8 @@
     }
 
     .form-error {
-        color: #ef4444;
-        font-size: 0.8rem;
+        color: #dc2626;
+        font-size: 0.75rem;
         font-weight: 500;
         margin-top: 0.25rem;
     }
@@ -538,13 +544,17 @@
             grid-template-columns: 1fr;
         }
 
+        .tabs-nav {
+            padding: 0.7rem 1rem;
+        }
+
         .tab-btn {
-            padding: 1rem;
+            padding: 0.58rem 0.85rem;
             flex: 1;
         }
 
-        .tab-btn span {
-            display: none;
+        .modern-section {
+            padding: 0.9rem 1rem 1.05rem;
         }
     }
 </style>
@@ -552,9 +562,26 @@
 
 @push('scripts')
 <script>
+    function initFinanceProfileTabs() {
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            if (button.dataset.bound === '1') return;
+            button.dataset.bound = '1';
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                button.classList.add('active');
+                const target = document.getElementById(tabId);
+                if (target) target.classList.add('active');
+            });
+        });
+    }
+
     function togglePasswordVisibility(inputId) {
         const input = document.getElementById(inputId);
+        if (!input || !input.nextElementSibling) return;
         const icon = input.nextElementSibling.querySelector('svg');
+        if (!icon) return;
         
         if (input.type === 'password') {
             input.type = 'text';
@@ -565,19 +592,8 @@
         }
     }
 
-    document.querySelectorAll('.tab-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            const tabId = button.getAttribute('data-tab');
-            
-            // Remove active classes
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            // Add active classes
-            button.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-        });
-    });
+    document.addEventListener('DOMContentLoaded', initFinanceProfileTabs);
+    document.addEventListener('livewire:navigated', initFinanceProfileTabs);
 </script>
 @endpush
 @endsection

@@ -70,6 +70,66 @@
         font-weight: 600;
         margin-top: 2px;
     }
+
+    .pengajuan-index-shell {
+        padding: 1.08rem 1.16rem 1.14rem !important;
+    }
+
+    .pengajuan-index-shell .section-header {
+        margin-bottom: 0.8rem !important;
+        padding-bottom: 0.62rem !important;
+    }
+
+    .pengajuan-index-shell .filter-container {
+        margin-top: 0.3rem;
+    }
+
+    .pengajuan-index-shell .data-table-wrapper {
+        margin-top: 0.8rem !important;
+        border: 1px solid #e4edf8;
+        border-radius: 1rem;
+        box-shadow: 0 10px 24px rgba(37, 64, 97, 0.08);
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+    .pengajuan-index-shell .data-table tbody tr {
+        transition: background-color 0.16s ease;
+    }
+
+    .pengajuan-index-shell .data-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .vendor-name {
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .amount-text-strong {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .btn-action-icon-duplicate {
+        background: #eef5ff;
+        color: #3b82f6;
+        border-color: #dbeafe;
+    }
+
+    .btn-action-icon-duplicate:hover {
+        background: #dbeafe;
+        color: #1d4ed8;
+        border-color: #bfdbfe;
+    }
+
+    .inline-action-form {
+        display: inline;
+    }
+
+    .empty-state-actions {
+        margin-top: 1.2rem;
+    }
 </style>
 @endpush
 
@@ -90,7 +150,7 @@
         </div>
 
         <!-- Pengajuan List Section -->
-        <section class="modern-section">
+        <section class="modern-section pengajuan-index-shell">
             <div class="section-header">
                 <div>
                     <h2 class="section-title">Daftar Pengajuan</h2>
@@ -107,6 +167,17 @@
                                 <polyline points="10 9 9 9 8 9"></polyline>
                             </svg>
                             CSV
+                        </a>
+
+                        <a href="#" onclick="exportXlsx(event)" data-url="{{ route('atasan.pengajuan.export-xlsx') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M8 13l3 4"></path>
+                                <path d="M11 13l-3 4"></path>
+                                <path d="M14 17h4"></path>
+                            </svg>
+                            XLSX
                         </a>
 
                         <a href="#" onclick="exportPdf(event)" data-url="{{ route('atasan.pengajuan.export-pdf') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
@@ -191,28 +262,36 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Listener for real-time refresh
-        window.addEventListener('refresh-pengajuan-table', function() {
-            refreshTable();
-        });
-
-        function refreshTable() {
+        const refreshTable = function() {
+            if (window.__atasanPengajuanRefreshBusy) return;
             const form = document.getElementById('filterForm');
+            if (!form) return;
+
+            window.__atasanPengajuanRefreshBusy = true;
             const url = new URL(form.action);
             const params = new URLSearchParams(new FormData(form));
             
             fetch(`${url.pathname}?${params.toString()}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                credentials: 'same-origin',
             })
             .then(response => response.json())
             .then(data => {
                 document.getElementById('tableContainer').innerHTML = data.table;
                 document.getElementById('statsContainer').innerHTML = data.stats;
             })
-            .catch(error => console.error('Error refreshing table:', error));
-        }
+            .catch(error => console.error('Error refreshing table:', error))
+            .finally(() => {
+                window.__atasanPengajuanRefreshBusy = false;
+            });
+        };
+
+        // Listener for real-time refresh
+        window.removeEventListener('refresh-pengajuan-table', window.__atasanPengajuanRefreshHandler);
+        window.__atasanPengajuanRefreshHandler = refreshTable;
+        window.addEventListener('refresh-pengajuan-table', window.__atasanPengajuanRefreshHandler);
     });
 </script>
 <script src="{{ asset('js/pages/pegawai/pengajuan.js') }}"></script>

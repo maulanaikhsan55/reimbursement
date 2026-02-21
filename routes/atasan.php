@@ -27,6 +27,7 @@ Route::group([], function () {
     Route::get('/approval/count', [ApprovalController::class, 'getCount'])->name('approval.count');
     Route::post('/approval/export/pdf', [ApprovalController::class, 'exportPdf'])->name('approval.export-pdf');
     Route::post('/approval/export/csv', [ApprovalController::class, 'exportCsv'])->name('approval.export-csv');
+    Route::post('/approval/export/xlsx', [ApprovalController::class, 'exportXlsx'])->name('approval.export-xlsx');
     Route::get('/approval/{pengajuan}', [ApprovalController::class, 'show'])->name('approval.show');
     Route::post('/approval/{pengajuan}/approve', [ApprovalController::class, 'approve'])->name('approval.approve');
     Route::post('/approval/{pengajuan}/reject', [ApprovalController::class, 'reject'])->name('approval.reject');
@@ -34,6 +35,7 @@ Route::group([], function () {
     Route::resource('pengajuan', PengajuanController::class, ['except' => ['edit', 'update']]);
     Route::post('/pengajuan/export/pdf', [PengajuanController::class, 'exportPdf'])->name('pengajuan.export-pdf');
     Route::post('/pengajuan/export/csv', [PengajuanController::class, 'exportCsv'])->name('pengajuan.export-csv');
+    Route::post('/pengajuan/export/xlsx', [PengajuanController::class, 'exportXlsx'])->name('pengajuan.export-xlsx');
 
     Route::post('/validasi-ai/process-file', [ValidasiAIController::class, 'processFile'])
         ->name('validasi-ai.process-file')

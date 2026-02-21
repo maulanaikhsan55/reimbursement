@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Finance\MasterData;
 
-use App\Events\NotifikasiPengajuan;
 use App\Http\Controllers\Controller;
 use App\Models\Departemen;
 use App\Models\Notifikasi;
@@ -88,12 +87,6 @@ class DepartemenController extends Controller
                     'pesan' => $errorMsg,
                     'is_read' => false,
                 ]);
-
-                try {
-                    event(new NotifikasiPengajuan(auth()->id(), 'Sinkronisasi Departemen Gagal', $errorMsg, 'error'));
-                } catch (\Exception $e) {
-                    \Log::warning('Gagal mengirim broadcast sinkronisasi gagal: '.$e->getMessage());
-                }
 
                 return redirect()->route('finance.masterdata.departemen.index')
                     ->with('error', $errorMsg);
@@ -204,12 +197,6 @@ class DepartemenController extends Controller
                 'pesan' => $successMsg,
                 'is_read' => false,
             ]);
-
-            try {
-                event(new NotifikasiPengajuan(auth()->id(), 'Sinkronisasi Departemen Berhasil', $successMsg, 'success'));
-            } catch (\Exception $e) {
-                \Log::warning('Gagal mengirim broadcast notifikasi: '.$e->getMessage());
-            }
 
             return redirect()->route('finance.masterdata.departemen.index')
                 ->with('success', $successMsg);

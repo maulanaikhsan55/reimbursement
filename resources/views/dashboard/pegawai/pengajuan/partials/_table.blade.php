@@ -8,7 +8,7 @@
         </div>
         <div class="empty-state-title">Belum ada pengajuan</div>
         <p>Mulai dengan membuat pengajuan reimbursement baru</p>
-        <div style="margin-top: 20px;">
+        <div class="empty-state-actions">
             <a href="{{ route('pegawai.pengajuan.create') }}" class="btn-modern btn-modern-primary">
                 Buat Pengajuan Baru
             </a>
@@ -48,13 +48,13 @@
                             </span>
                         </td>
                         <td data-label="Vendor">
-                            <div style="font-weight: 600; color: #334155;">{{ $pengajuan->nama_vendor }}</div>
+                            <div class="vendor-name">{{ $pengajuan->nama_vendor }}</div>
                         </td>
                         <td data-label="Tanggal" class="col-tanggal">
                             <span class="text-secondary">{{ $pengajuan->tanggal_pengajuan->format('d M Y') }}</span>
                         </td>
                         <td data-label="Nominal" class="col-nominal">
-                            <span class="amount-text" style="font-weight: 700; color: #0f172a;">{{ format_rupiah($pengajuan->nominal) }}</span>
+                            <span class="amount-text amount-text-strong">{{ format_rupiah($pengajuan->nominal) }}</span>
                         </td>
                         <td data-label="Status" class="col-status">
                             @if($pengajuan->status->value == 'validasi_ai')
@@ -72,11 +72,11 @@
                                 <a href="{{ route('pegawai.pengajuan.show', $pengajuan->pengajuan_id) }}" class="btn-action-icon" title="Lihat detail">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                 </a>
-                                <a href="{{ route('pegawai.pengajuan.create', ['duplicate_id' => $pengajuan->pengajuan_id]) }}" class="btn-action-icon" style="background: #f0f7ff; color: #3b82f6;" title="Ajukan lagi (Duplikat)">
+                                <a href="{{ route('pegawai.pengajuan.create', ['duplicate_id' => $pengajuan->pengajuan_id]) }}" class="btn-action-icon btn-action-icon-duplicate" title="Ajukan lagi (Duplikat)">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                 </a>
                                 @if(in_array($pengajuan->status->value, ['validasi_ai', 'menunggu_atasan', 'ditolak_atasan', 'ditolak_finance']))
-                                <form action="{{ route('pegawai.pengajuan.destroy', $pengajuan->pengajuan_id) }}" method="POST" style="display:inline;">
+                                <form action="{{ route('pegawai.pengajuan.destroy', $pengajuan->pengajuan_id) }}" method="POST" class="inline-action-form">
                                     @csrf @method('DELETE')
                                     <button type="button" class="btn-action-icon btn-action-delete" title="Batalkan pengajuan" onclick="openConfirmModal(() => this.closest('form').submit(), 'Batalkan Pengajuan', 'Yakin ingin membatalkan pengajuan ini?')">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>

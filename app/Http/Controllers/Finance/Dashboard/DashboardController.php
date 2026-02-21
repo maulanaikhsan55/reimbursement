@@ -230,7 +230,7 @@ class DashboardController extends Controller
         $recentRequests = Pengajuan::with(['user', 'departemen', 'kategori'])
             ->whereNotIn('status', ['menunggu_atasan', 'ditolak_atasan'])
             ->latest()
-            ->limit(5)
+            ->limit(12)
             ->get();
 
         // 10. MANAGEMENT COUNTS

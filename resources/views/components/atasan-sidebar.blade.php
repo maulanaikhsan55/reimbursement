@@ -36,69 +36,64 @@
         </a>
 
         <!-- Persetujuan Pengajuan -->
-        @php
-            $subordinateIds = \App\Models\User::where('atasan_id', auth()->id())->pluck('id')->toArray();
-            $pendingApprovalsCount = \App\Models\Pengajuan::where('status', 'menunggu_atasan')
-                ->whereIn('user_id', $subordinateIds)
-                ->count();
-        @endphp
         <a href="{{ route('atasan.approval.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('atasan.approval.*') ? 'active' : '' }}">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 11l3 3L22 4"></path>
                 <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <span class="menu-text">Persetujuan</span>
-            <span class="badge-sidebar badge-approval-atasan" x-data="{ count: {{ $pendingApprovalsCount }} }" x-init="
-                window.addEventListener('refresh-notif-badges', () => {
+            <span class="badge-sidebar badge-approval-atasan" x-data="{ count: 0 }" x-init="
+                const updateApprovalCount = () => {
                     fetch('{{ route('atasan.approval.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                         .then(r => r.json())
-                        .then(data => { count = data.pending_count; });
-                });
-                setInterval(() => {
-                    fetch('{{ route('atasan.approval.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                        .then(r => r.json())
-                        .then(data => { count = data.pending_count; });
-                }, 10000);
+                        .then(data => { count = Number(data.pending_count || 0); })
+                        .catch(() => {});
+                };
+                window.addEventListener('refresh-notif-badges', updateApprovalCount);
+                if (typeof Livewire !== 'undefined') {
+                    Livewire.on('notifikasi-baru', () => setTimeout(updateApprovalCount, 250));
+                }
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(updateApprovalCount, { timeout: 1200 });
+                } else {
+                    setTimeout(updateApprovalCount, 120);
+                }
+                setInterval(updateApprovalCount, 30000);
             " x-show="count > 0" x-cloak x-text="count > 99 ? '99+' : count">
             </span>
         </a>
 
         <!-- Notifikasi -->
         <a href="{{ route('atasan.notifikasi') }}" wire:navigate.hover class="menu-item notifikasi-menu {{ request()->routeIs('atasan.notifikasi*') ? 'active' : '' }}" x-data="{
-            unreadCount: {{ \App\Models\Notifikasi::where('user_id', auth()->id())->where('is_read', false)->count() }}
+            unreadCount: 0
         }" x-init="
-            // Listen for notification events
-            window.addEventListener('refresh-notif-badges', () => {
+            const updateNotifCount = () => {
                 fetch('{{ route('atasan.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                     .then(r => r.json())
                     .then(data => {
-                        unreadCount = data.unread_count;
-                    });
-            });
+                        unreadCount = Number(data.unread_count || 0);
+                    })
+                    .catch(() => {});
+            };
+
+            // Listen for notification events
+            window.addEventListener('refresh-notif-badges', updateNotifCount);
             
             // Also listen for Livewire event
             if (typeof Livewire !== 'undefined') {
                 Livewire.on('notifikasi-baru', () => {
-                    setTimeout(() => {
-                        fetch('{{ route('atasan.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                            .then(r => r.json())
-                            .then(data => {
-                                unreadCount = data.unread_count;
-                            });
-                    }, 500);
+                    setTimeout(updateNotifCount, 300);
                 });
+            }
+
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(updateNotifCount, { timeout: 1200 });
+            } else {
+                setTimeout(updateNotifCount, 180);
             }
             
             // Fallback polling every 30 seconds
-            setInterval(() => {
-                fetch('{{ route('atasan.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.unread_count !== unreadCount) {
-                            unreadCount = data.unread_count;
-                        }
-                    });
-            }, 30000);
+            setInterval(updateNotifCount, 30000);
         ">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -238,7 +233,8 @@
     }
 
     .logo-wrapper {
-        background: #f4f7fa;
+        background: linear-gradient(180deg, #f7f9fd 0%, #f1f5fb 100%);
+        border: 1px solid rgba(66, 93, 135, 0.1);
         padding: 0.75rem;
         border-radius: 1rem;
         display: flex;
@@ -258,71 +254,29 @@
     /* Menu Section */
     .sidebar-menu {
         flex: 1;
-        padding: 0.5rem 0 5rem 0;
+        padding: 0.5rem 0 0.75rem 0;
         overflow-y: auto;
         overflow-x: hidden;
+        scrollbar-gutter: stable both-edges;
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
         position: relative;
     }
 
-    /* Sliding Indicator - INSTANT with GLOW */
+    /* Sliding Indicator */
     .menu-sliding-bg {
         position: absolute;
         left: 0;
         width: 100%;
-        background: linear-gradient(135deg, #425d87 0%, #5575a2 50%, #6b8cb8 100%);
-        background-size: 200% 100%;
+        background: linear-gradient(135deg, #425d87 0%, #344d74 100%);
         border-radius: 1.5rem;
-        transition: none !important;
+        transition: top 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.24s ease, opacity 0.2s ease;
         z-index: 0;
-        box-shadow: 0 4px 20px rgba(66, 93, 135, 0.5), 0 0 30px rgba(66, 93, 135, 0.2);
+        box-shadow: 0 10px 22px rgba(66, 93, 135, 0.32);
         opacity: 0;
         pointer-events: none;
         will-change: top, height, opacity;
-        animation: indicator-glow 2s ease-in-out infinite;
-    }
-
-    @keyframes indicator-glow {
-        0%, 100% { box-shadow: 0 4px 20px rgba(66, 93, 135, 0.5), 0 0 30px rgba(66, 93, 135, 0.2); }
-        50% { box-shadow: 0 4px 25px rgba(66, 93, 135, 0.7), 0 0 40px rgba(66, 93, 135, 0.3); }
-    }
-
-    /* Interactive Menu Item - SHINE EFFECT */
-    .menu-item {
-        position: relative;
-        overflow: hidden;
-        transition: transform 0.2s ease, text-shadow 0.2s ease;
-    }
-
-    .menu-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg,
-            transparent 0%,
-            rgba(255,255,255,0.3) 50%,
-            transparent 100%);
-        transform: skewX(-15deg);
-        transition: left 0.4s ease;
-    }
-
-    .menu-item:hover {
-        text-shadow: 0 0 15px rgba(66, 93, 135, 0.4);
-        transform: translateX(6px);
-    }
-
-    .menu-item:hover::before {
-        left: 150%;
-    }
-
-    /* Active menu icon glow */
-    .menu-item.active .menu-icon {
-        filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
     }
 
     .menu-item {
@@ -335,7 +289,7 @@
         font-weight: 500;
         color: #1a1a1a;
         text-decoration: none;
-        transition: background-color 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+        transition: background-color 0.26s ease, color 0.26s ease, transform 0.22s ease, box-shadow 0.26s ease;
         position: relative;
         background: transparent;
         border: none;
@@ -346,11 +300,16 @@
     .menu-item:hover {
         background: linear-gradient(135deg, rgba(85, 117, 162, 0.08) 0%, rgba(60, 83, 121, 0.08) 100%);
         color: #5575a2;
-        transform: translateX(4px);
+        transform: translateX(2px);
     }
 
     .menu-item:active {
-        transform: scale(0.92) translateX(4px);
+        transform: scale(0.98) translateX(2px);
+    }
+
+    .menu-item:focus-visible {
+        outline: 2px solid rgba(66, 93, 135, 0.35);
+        outline-offset: 2px;
     }
 
     .menu-item.active {
@@ -418,14 +377,13 @@
 
     /* Logout Section - Fixed at bottom */
     .logout-section {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        margin-top: auto;
+        position: relative;
         padding: 1rem 1.5rem 1.5rem;
-        border-top: 0.1px solid #f0f3f8;
-        background: linear-gradient(to top, #ffffff, #fafbfc);
+        border-top: 1px solid rgba(66, 93, 135, 0.1);
+        background: #ffffff;
         border-radius: 0 0 2.5rem 0;
+        z-index: 2;
     }
 
     .logout-section form {
@@ -483,7 +441,7 @@
     }
 </style>
 
-<script>
+<script data-navigate-once>
     function toggleSidebar() {
         const sidebar = document.getElementById('atasanSidebar');
         const overlay = document.getElementById('sidebarOverlay');
@@ -494,6 +452,8 @@
 
     // Close sidebar when clicking a menu item on mobile
     document.querySelectorAll('.atasan-sidebar .menu-item').forEach(item => {
+        if (item.dataset.mobileCloseBound === 'true') return;
+        item.dataset.mobileCloseBound = 'true';
         item.addEventListener('click', () => {
             if (window.innerWidth <= 768) {
                 toggleSidebar();

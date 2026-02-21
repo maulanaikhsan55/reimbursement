@@ -3,61 +3,23 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import './form-loading-states'; // Smart form loading states
 
-// Alpine.js - Import and initialize for Livewire 3 compatibility
-import Alpine from 'alpinejs';
-import collapse from '@alpinejs/collapse';
-import focus from '@alpinejs/focus';
-import intersect from '@alpinejs/intersect';
-import mask from '@alpinejs/mask';
-import persist from '@alpinejs/persist';
+let headerScrollBound = false;
+let parallaxScrollBound = false;
+let mobileMenuDocBound = false;
+let buttonInteractionBound = false;
+let parallaxElements = [];
 
-// Register Alpine plugins
-Alpine.plugin(collapse);
-Alpine.plugin(focus);
-Alpine.plugin(intersect);
-Alpine.plugin(mask);
-Alpine.plugin(persist);
+const AOS_OPTIONS = {
+    duration: 900,
+    easing: 'ease-out-cubic',
+    offset: 80,
+    once: false,
+    disable: false,
+    mirror: true,
+    anchorPlacement: 'top-bottom'
+};
 
-// Expose Alpine globally for Livewire
-window.Alpine = Alpine;
-
-/**
- * Alpine.js & Livewire 3 Initialization Logic
- * 
- * In Livewire 3, Alpine is usually started by Livewire.
- * If we call Alpine.start() and Livewire also calls it, we get:
- * "Uncaught TypeError: directiveStorageMap[stage] is not a function"
- */
-function startAlpine() {
-    if (window.Alpine && !window.Alpine.initialized) {
-        if (!window.Livewire) {
-            console.log('[Alpine] Manual Start (Livewire not detected)');
-            window.Alpine.start();
-        } else {
-            console.log('[Alpine] Skip Manual Start (Livewire will handle it)');
-        }
-        window.Alpine.initialized = true;
-    }
-}
-
-// Initial start attempt
-startAlpine();
-
-// Secondary attempt on window load to ensure Livewire detection is accurate
-window.addEventListener('load', startAlpine);
-
-// Use livewire:navigated to support wire:navigate (SPA mode)
-document.addEventListener('livewire:navigated', () => {
-    AOS.init({
-        duration: 900,
-        easing: 'ease-out-cubic',
-        offset: 80,
-        once: false,
-        disable: false,
-        mirror: true,
-        anchorPlacement: 'top-bottom'
-    });
-
+function initPageEnhancements() {
     initMobileMenu();
     initSmoothScroll();
     initHeaderScroll();
@@ -65,79 +27,87 @@ document.addEventListener('livewire:navigated', () => {
     initButtonInteractions();
     initFaqAccordion();
     initAutoDismissAlerts();
+}
+
+// Use livewire:navigated to support wire:navigate (SPA mode)
+document.addEventListener('livewire:navigated', () => {
+    AOS.init(AOS_OPTIONS);
+    initPageEnhancements();
 });
 
 // For compatibility with non-livewire pages
 document.addEventListener('DOMContentLoaded', () => {
     if (!window.Livewire) {
-        AOS.init({
-            duration: 900,
-            easing: 'ease-out-cubic',
-            offset: 80,
-            once: false,
-            disable: false,
-            mirror: true,
-            anchorPlacement: 'top-bottom'
-        });
-
-        initMobileMenu();
-        initSmoothScroll();
-        initHeaderScroll();
-        initScrollParallax();
-        initButtonInteractions();
-        initFaqAccordion();
-        initAutoDismissAlerts();
+        AOS.init(AOS_OPTIONS);
     }
+    initPageEnhancements();
 });
 
 function initAutoDismissAlerts() {
-    const alerts = document.querySelectorAll('.alert');
+    const alerts = Array.from(document.querySelectorAll('.alert')).filter((alert) => alert.dataset.autoDismissBound !== '1');
 
-    if (alerts.length > 0) {
-        setTimeout(() => {
-            alerts.forEach(alert => {
-                // Add fade out class
-                alert.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                alert.style.opacity = '0';
-                alert.style.transform = 'translateY(-10px)';
+    if (alerts.length === 0) return;
 
-                // Remove from DOM after animation
-                setTimeout(() => {
+    alerts.forEach((alert) => {
+        alert.dataset.autoDismissBound = '1';
+    });
+
+    setTimeout(() => {
+        alerts.forEach((alert) => {
+            if (!alert.isConnected) return;
+
+            alert.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-10px)';
+
+            setTimeout(() => {
+                if (alert.isConnected) {
                     alert.remove();
-                }, 500);
-            });
-        }, 5000); // 5 seconds
-    }
+                }
+            }, 500);
+        });
+    }, 5000); // 5 seconds
 }
 
 function initMobileMenu() {
     const menuToggle = document.getElementById('menuToggle');
     const navMenu = document.querySelector('.nav-menu');
 
-    if (!menuToggle) return;
+    if (!menuToggle || !navMenu) return;
 
-    menuToggle.addEventListener('click', () => {
-        navMenu.classList.toggle('active');
-        animateHamburger(menuToggle);
-    });
+    if (menuToggle.dataset.menuToggleBound !== '1') {
+        menuToggle.dataset.menuToggleBound = '1';
+        menuToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            animateHamburger(menuToggle, navMenu);
+        });
+    }
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.header-container')) {
-            navMenu.classList.remove('active');
-        }
-    });
+    if (!mobileMenuDocBound) {
+        mobileMenuDocBound = true;
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.header-container')) {
+                document.querySelector('.nav-menu')?.classList.remove('active');
+            }
+        });
+    }
 
     const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
+    navLinks.forEach((link) => {
+        if (link.dataset.navLinkBound === '1') return;
+
+        link.dataset.navLinkBound = '1';
         link.addEventListener('click', () => {
             navMenu.classList.remove('active');
         });
     });
 }
 
-function animateHamburger(toggle) {
+function animateHamburger(toggle, navMenu) {
     const spans = toggle.querySelectorAll('span');
-    if (toggle.querySelector('.nav-menu').classList.contains('active')) {
+    if (spans.length < 3) return;
+
+    if (navMenu.classList.contains('active')) {
         spans[0].style.transform = 'rotate(45deg) translateY(15px)';
         spans[1].style.opacity = '0';
         spans[2].style.transform = 'rotate(-45deg) translateY(-15px)';
@@ -151,13 +121,16 @@ function animateHamburger(toggle) {
 function initSmoothScroll() {
     const links = document.querySelectorAll('a[href^="#"]');
 
-    links.forEach(link => {
+    links.forEach((link) => {
+        if (link.dataset.smoothScrollBound === '1') return;
+
         const href = link.getAttribute('href');
 
         if (link.hasAttribute('data-external') || href === '#' || href === '#home') {
             return;
         }
 
+        link.dataset.smoothScrollBound = '1';
         link.addEventListener('click', (e) => {
             const target = document.querySelector(href);
             if (target) {
@@ -172,13 +145,16 @@ function initSmoothScroll() {
 }
 
 function initHeaderScroll() {
-    const header = document.querySelector('.landing-header');
-    if (!header) return;
+    if (headerScrollBound) return;
 
+    headerScrollBound = true;
     let ticking = false;
     let lastScroll = 0;
 
     window.addEventListener('scroll', () => {
+        const header = document.querySelector('.landing-header');
+        if (!header) return;
+
         lastScroll = window.pageYOffset;
 
         if (!ticking) {
@@ -196,13 +172,18 @@ function initHeaderScroll() {
 }
 
 function initScrollParallax() {
-    const elements = document.querySelectorAll('[data-parallax]');
+    parallaxElements = Array.from(document.querySelectorAll('[data-parallax]'));
+    if (parallaxElements.length === 0) return;
+
+    if (parallaxScrollBound) return;
+    parallaxScrollBound = true;
+
     let ticking = false;
 
     const handleScroll = () => {
         if (!ticking) {
             window.requestAnimationFrame(() => {
-                elements.forEach(el => {
+                parallaxElements.forEach((el) => {
                     const speed = parseFloat(el.dataset.parallax) || 0.5;
                     const rect = el.getBoundingClientRect();
 
@@ -227,44 +208,57 @@ function initScrollParallax() {
 
 
 function initButtonInteractions() {
-    const buttons = document.querySelectorAll('.btn');
+    if (buttonInteractionBound) return;
 
-    buttons.forEach(button => {
-        button.addEventListener('mouseenter', (e) => {
-            const x = e.clientX - button.getBoundingClientRect().left;
-            const y = e.clientY - button.getBoundingClientRect().top;
+    buttonInteractionBound = true;
+    document.addEventListener('mouseover', (e) => {
+        const button = e.target.closest('.btn');
+        if (!button) return;
 
-            const ripple = document.createElement('div');
-            ripple.style.left = x + 'px';
-            ripple.style.top = y + 'px';
-            ripple.style.width = '10px';
-            ripple.style.height = '10px';
-            ripple.style.background = 'rgba(255, 255, 255, 0.5)';
-            ripple.style.borderRadius = '50%';
-            ripple.style.position = 'absolute';
-            ripple.style.pointerEvents = 'none';
-            ripple.style.transform = 'scale(1)';
-            ripple.style.animation = 'ripple 0.6s ease-out';
+        if (e.relatedTarget && button.contains(e.relatedTarget)) {
+            return;
+        }
 
-            button.style.position = 'relative';
-            button.style.overflow = 'hidden';
-            button.appendChild(ripple);
+        const x = e.clientX - button.getBoundingClientRect().left;
+        const y = e.clientY - button.getBoundingClientRect().top;
 
-            setTimeout(() => ripple.remove(), 600);
-        });
+        const ripple = document.createElement('div');
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        ripple.style.width = '10px';
+        ripple.style.height = '10px';
+        ripple.style.background = 'rgba(255, 255, 255, 0.5)';
+        ripple.style.borderRadius = '50%';
+        ripple.style.position = 'absolute';
+        ripple.style.pointerEvents = 'none';
+        ripple.style.transform = 'scale(1)';
+        ripple.style.animation = 'ripple 0.6s ease-out';
+
+        button.style.position = 'relative';
+        button.style.overflow = 'hidden';
+        button.appendChild(ripple);
+
+        setTimeout(() => {
+            if (ripple.isConnected) {
+                ripple.remove();
+            }
+        }, 600);
     });
 }
 
 function initFaqAccordion() {
     const faqItems = document.querySelectorAll('.faq-item');
 
-    faqItems.forEach(item => {
+    faqItems.forEach((item) => {
         const header = item.querySelector('.faq-header');
+        if (!header || header.dataset.faqBound === '1') return;
 
+        header.dataset.faqBound = '1';
         header.addEventListener('click', () => {
             const isActive = item.classList.contains('active');
+            const allFaqItems = document.querySelectorAll('.faq-item');
 
-            faqItems.forEach(otherItem => {
+            allFaqItems.forEach((otherItem) => {
                 otherItem.classList.remove('active');
             });
 
@@ -286,5 +280,7 @@ style.textContent = `
         }
     }
 `;
-document.head.appendChild(style);
-
+if (!document.getElementById('ripple-effect-style')) {
+    style.id = 'ripple-effect-style';
+    document.head.appendChild(style);
+}

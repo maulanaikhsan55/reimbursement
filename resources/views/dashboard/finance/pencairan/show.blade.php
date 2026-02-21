@@ -46,7 +46,7 @@
         :showProfile="true" 
     />
 
-    <div class="dashboard-content">
+    <div class="dashboard-content detail-single-content">
         <!-- Main Info Section -->
         <section class="modern-section">
             <div class="section-header" style="margin-bottom: 1.25rem; padding-bottom: 0; border: none;">
