@@ -11,6 +11,12 @@ class Notifikasi extends Model
 {
     use HasFactory;
 
+    private static function forgetUnreadCountCache(int $userId): void
+    {
+        Cache::forget('notif_unread_count_user_'.$userId);
+        Cache::forget('unread_notif_count_'.$userId);
+    }
+
     protected $table = 'notifikasi';
 
     protected $primaryKey = 'notifikasi_id';
@@ -35,8 +41,7 @@ class Notifikasi extends Model
     protected static function booted()
     {
         static::created(function ($notifikasi) {
-            // Clear unread count cache
-            Cache::forget('unread_notif_count_'.$notifikasi->user_id);
+            self::forgetUnreadCountCache((int) $notifikasi->user_id);
 
             // Automatically broadcast notification when created
             // Use afterCommit to ensure the transaction is finished so listeners get updated data
@@ -58,14 +63,12 @@ class Notifikasi extends Model
         });
 
         static::deleted(function ($notifikasi) {
-            // Clear unread count cache when notification is deleted
-            Cache::forget('unread_notif_count_'.$notifikasi->user_id);
+            self::forgetUnreadCountCache((int) $notifikasi->user_id);
         });
 
         static::updated(function ($notifikasi) {
-            // Clear unread count cache when is_read status changes via update()
             if ($notifikasi->wasChanged('is_read')) {
-                Cache::forget('unread_notif_count_'.$notifikasi->user_id);
+                self::forgetUnreadCountCache((int) $notifikasi->user_id);
             }
         });
     }
@@ -117,7 +120,6 @@ class Notifikasi extends Model
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        // Clear cache for unread count
-        Cache::forget('unread_notif_count_'.$userId);
+        self::forgetUnreadCountCache((int) $userId);
     }
 }

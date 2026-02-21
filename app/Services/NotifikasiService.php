@@ -13,6 +13,7 @@ class NotifikasiService
      */
     protected function clearSidebarCache(int $userId): void
     {
+        \Illuminate\Support\Facades\Cache::forget('notif_unread_count_user_'.$userId);
         \Illuminate\Support\Facades\Cache::forget('unread_notif_count_'.$userId);
         \Illuminate\Support\Facades\Cache::forget('pending_approvals_count_'.$userId);
     }

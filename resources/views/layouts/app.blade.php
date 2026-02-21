@@ -74,9 +74,9 @@
         /* PAGE TRANSITION */
         #page-content-wrapper {
             opacity: 1;
-            transform: translateY(0);
+            transform: none;
             transition: opacity 0.06s linear;
-            will-change: opacity, transform;
+            will-change: opacity;
         }
 
         body.is-route-loading #page-content-wrapper {
