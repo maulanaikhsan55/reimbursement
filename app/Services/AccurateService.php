@@ -58,9 +58,7 @@ class AccurateService
                 ];
             }
 
-            // 2. CRITICAL: Prevent Duplicates
-            // Check if transaction with this number already exists in Accurate
-            // This handles cases where previous request timed out but actually succeeded in Accurate
+            
             $check = $this->checkTransactionExists($pengajuan->nomor_pengajuan);
             if ($check['success'] && $check['exists']) {
                 $existingData = $check['data'];

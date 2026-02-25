@@ -21,7 +21,9 @@
     .data-table-wrapper {
         border-radius: 20px;
         border: 1px solid #e2e8f0;
-        overflow: hidden;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         background: white;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
         margin-top: 1rem;
@@ -29,6 +31,7 @@
 
     .data-table {
         width: 100% !important;
+        min-width: 980px;
         border-collapse: separate;
         border-spacing: 0;
     }

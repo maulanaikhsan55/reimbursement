@@ -25,9 +25,17 @@ class KategoriBiayaController extends Controller
             $query->where('is_active', $request->status === 'aktif');
         }
 
-        $kategoriBiaya = $query->orderBy('nama_kategori')->paginate(config('app.pagination.master_data'));
+        $kategoriBiaya = $query->orderBy('nama_kategori')
+            ->paginate(config('app.pagination.master_data'))
+            ->withQueryString();
 
-        return view('dashboard.finance.masterdata.kategori_biaya.index', compact('kategoriBiaya'));
+        $stats = [
+            'total' => KategoriBiaya::count(),
+            'aktif' => KategoriBiaya::where('is_active', true)->count(),
+            'nonaktif' => KategoriBiaya::where('is_active', false)->count(),
+        ];
+
+        return view('dashboard.finance.masterdata.kategori_biaya.index', compact('kategoriBiaya', 'stats'));
     }
 
     public function create()

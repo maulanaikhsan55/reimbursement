@@ -15,9 +15,16 @@
         padding: 1.25rem !important;
     }
 
+    .data-table-wrapper {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .data-table {
         table-layout: fixed !important;
         width: 100% !important;
+        min-width: 1180px;
     }
 
     .data-table th {
@@ -40,7 +47,7 @@
         word-wrap: break-word;
     }
 
-    /* Column Widths & Alignment */
+   
     .col-kode { width: 80px; }
     .col-nama { width: 220px; }
     .col-deskripsi { width: auto; min-width: 200px; }
@@ -140,7 +147,41 @@
         color: #1e3a8a;
     }
 
+    .sync-readonly-note {
+        margin-top: 0.45rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.4rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid #dbeafe;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .sync-readonly-note svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+    }
+
     @media (max-width: 768px) {
+        .filter-form-finance {
+            grid-template-columns: 1fr;
+        }
+
+        .budget-info-banner {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .budget-info-close {
+            align-self: flex-end;
+        }
+    }
 </style>
 @endpush
 
@@ -154,7 +195,7 @@
         <div class="stats-grid">
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">{{ $departemen->count() }}</div>
+                    <div class="stat-value">{{ $stats['total'] }}</div>
                     <div class="stat-label">Total Departemen</div>
                 </div>
                 <div class="stat-icon primary-icon">
@@ -166,7 +207,7 @@
             </div>
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">{{ $departemen->where('users_count', '>', 0)->count() }}</div>
+                    <div class="stat-value">{{ $stats['with_users'] }}</div>
                     <div class="stat-label">Dengan Pengguna</div>
                 </div>
                 <div class="stat-icon success-icon">
@@ -180,7 +221,7 @@
             </div>
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">{{ $departemen->where('users_count', 0)->count() }}</div>
+                    <div class="stat-value">{{ $stats['without_users'] }}</div>
                     <div class="stat-label">Tanpa Pengguna</div>
                 </div>
                 <div class="stat-icon warning-icon">
@@ -198,6 +239,13 @@
                 <div>
                     <h2 class="section-title">Daftar Departemen</h2>
                     <p class="section-subtitle">Data disinkronkan secara otomatis dari Accurate</p>
+                    <div class="sync-readonly-note">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                            <path d="M7 11V8a5 5 0 0 1 10 0v3"></path>
+                        </svg>
+                        Referensi Accurate (Read-only)
+                    </div>
                 </div>
                 <div class="header-actions">
                     <form id="syncForm" action="{{ route('finance.masterdata.departemen.sync') }}" method="POST" class="d-inline">
@@ -236,6 +284,7 @@
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Bulan</label>
                         <select name="month" id="monthInput" class="filter-input-pegawai">
+                            <option value="" {{ empty($selectedMonth) ? 'selected' : '' }}>Semua Bulan</option>
                             @foreach(range(1, 12) as $m)
                                 <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>
                                     {{ \Carbon\Carbon::create()->month($m)->isoFormat('MMMM') }}
@@ -248,6 +297,7 @@
                     <div class="filter-group-pegawai">
                         <label class="filter-label-pegawai">Tahun</label>
                         <select name="year" id="yearInput" class="filter-input-pegawai">
+                            <option value="" {{ empty($selectedYear) ? 'selected' : '' }}>Semua Tahun</option>
                             @foreach(range(now()->year - 2, now()->year + 1) as $y)
                                 <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>
                                     {{ $y }}
@@ -274,6 +324,18 @@
                 </form>
             </div>
 
+            @php
+                $selectedMonthName = $selectedMonth ? \Carbon\Carbon::create()->month($selectedMonth)->isoFormat('MMMM') : null;
+                if ($selectedMonthName && $selectedYear) {
+                    $budgetPeriodLabel = $selectedMonthName.' '.$selectedYear;
+                } elseif ($selectedMonthName) {
+                    $budgetPeriodLabel = $selectedMonthName.' (semua tahun)';
+                } elseif ($selectedYear) {
+                    $budgetPeriodLabel = 'Semua bulan '.$selectedYear;
+                } else {
+                    $budgetPeriodLabel = 'semua periode';
+                }
+            @endphp
             <div class="budget-info-banner" id="budgetInfoBanner">
                 <svg class="budget-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -281,7 +343,7 @@
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                 </svg>
                 <div class="budget-info-text">
-                    <strong>Info:</strong> Budget limit berlaku per bulan. Realisasi dan Sisa Budget dihitung otomatis berdasarkan transaksi pada periode <strong>{{ \Carbon\Carbon::create()->month($selectedMonth)->isoFormat('MMMM') }} {{ $selectedYear }}</strong>.
+                    <strong>Info:</strong> Budget limit berlaku per bulan. Realisasi dan Sisa Budget dihitung otomatis berdasarkan transaksi pada periode <strong>{{ $budgetPeriodLabel }}</strong>.
                 </div>
                 <button type="button" class="budget-info-close" id="budgetInfoClose" aria-label="Tutup informasi budget" title="Tutup">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -404,7 +466,7 @@
 </div>
 
 <!-- Edit Budget Modal -->
-<div id="editBudgetModal" class="modal" style="display: none; position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+<div id="editBudgetModal" class="modal" data-app-modal="1" style="display: none; position: fixed; inset: 0; z-index: 10000; background: rgba(15,23,42,0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); align-items: center; justify-content: center;">
     <div style="background: white; width: 90%; max-width: 500px; border-radius: 1.5rem; padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 id="modalTitle" style="font-size: 1.25rem; font-weight: 700; color: #1e293b;">Set Budget Departemen</h2>
@@ -417,8 +479,9 @@
             
             <div style="margin-bottom: 1.5rem;">
                 <label for="budgetLimitInput" style="display: block; font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 0.5rem;">Anggaran Bulanan (Rp)</label>
-                <input type="number" name="budget_limit" id="budgetLimitInput" required min="0" step="1000" style="width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; font-size: 1rem; font-weight: 700; color: #1e293b;">
-                <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Tentukan batas maksimal pengeluaran per bulan untuk departemen ini.</p>
+                <input type="hidden" name="budget_limit" id="budgetLimitInput" required>
+                <input type="text" id="budgetLimitDisplay" inputmode="numeric" autocomplete="off" placeholder="Rp 0" style="width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; font-size: 1rem; font-weight: 700; color: #1e293b;">
+                <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Format otomatis Rupiah. Nilai tersimpan sebagai angka murni.</p>
             </div>
 
             <div style="margin-bottom: 1.5rem;">
@@ -438,32 +501,93 @@
 @push('scripts')
 <script src="{{ asset('js/finance-master.js') }}"></script>
 <script>
-    function openEditBudgetModal(id, name, budget, desc) {
+    window.__editBudgetModalState = window.__editBudgetModalState || {
+        prevOverflow: '',
+    };
+
+    function ensureEditBudgetModalMounted() {
         const modal = document.getElementById('editBudgetModal');
+        if (!modal) return null;
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+
+        return modal;
+    }
+
+    function openEditBudgetModal(id, name, budget, desc) {
+        const modal = ensureEditBudgetModalMounted();
         const form = document.getElementById('editBudgetForm');
         const title = document.getElementById('modalTitle');
         const budgetInput = document.getElementById('budgetLimitInput');
+        const budgetDisplay = document.getElementById('budgetLimitDisplay');
         const descInput = document.getElementById('deskripsiInput');
+
+        if (!modal || !form || !title || !budgetInput || !budgetDisplay || !descInput) return;
         
         title.innerText = `Set Budget: ${name}`;
         form.action = `{{ url('/finance/masterdata/departemen') }}/${id}`;
-        budgetInput.value = Math.floor(budget);
+        const numericBudget = parseRupiahValue(budget);
+        budgetInput.value = numericBudget;
+        budgetDisplay.value = formatRupiahDisplay(numericBudget);
         descInput.value = desc === 'null' ? '' : desc;
         
         modal.style.display = 'flex';
+        window.__editBudgetModalState.prevOverflow = document.body.style.overflow || '';
+        document.body.style.overflow = 'hidden';
     }
 
     function closeEditBudgetModal() {
-        document.getElementById('editBudgetModal').style.display = 'none';
+        const modal = document.getElementById('editBudgetModal');
+        if (!modal) return;
+
+        modal.style.display = 'none';
+        document.body.style.overflow = window.__editBudgetModalState.prevOverflow || '';
+        window.__editBudgetModalState.prevOverflow = '';
     }
 
-    // Close modal when clicking outside
-    window.onclick = function(event) {
+    function bindEditBudgetModalBehavior() {
+        if (window.__editBudgetModalBound) {
+            return;
+        }
+        window.__editBudgetModalBound = true;
+
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('editBudgetModal');
+            if (!modal) return;
+            if (event.target === modal) {
+                closeEditBudgetModal();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('editBudgetModal');
+            if (!modal) return;
+            if (event.key === 'Escape' && modal.style.display === 'flex') {
+                closeEditBudgetModal();
+            }
+        });
+    }
+
+    function initEditBudgetModalMount() {
+        ensureEditBudgetModalMounted();
+        bindEditBudgetModalBehavior();
+        bindBudgetInputFormatter();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initEditBudgetModalMount);
+    } else {
+        initEditBudgetModalMount();
+    }
+    document.addEventListener('livewire:navigated', initEditBudgetModalMount);
+
+    window.addEventListener('beforeunload', function () {
         const modal = document.getElementById('editBudgetModal');
-        if (event.target == modal) {
+        if (modal && modal.style.display === 'flex') {
             closeEditBudgetModal();
         }
-    };
+    });
 
     function initBudgetInfoBannerClose() {
         const infoBanner = document.getElementById('budgetInfoBanner');
@@ -490,5 +614,46 @@
     }
 
     document.addEventListener('livewire:navigated', initBudgetInfoBannerClose);
+
+    function parseRupiahValue(value) {
+        const numeric = String(value ?? '').replace(/[^0-9]/g, '');
+        return numeric === '' ? 0 : parseInt(numeric, 10);
+    }
+
+    function formatRupiahDisplay(value) {
+        return `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
+    }
+
+    function bindBudgetInputFormatter() {
+        const budgetDisplay = document.getElementById('budgetLimitDisplay');
+        const budgetInput = document.getElementById('budgetLimitInput');
+        const form = document.getElementById('editBudgetForm');
+
+        if (!budgetDisplay || !budgetInput || !form) {
+            return;
+        }
+
+        if (budgetDisplay.dataset.formatBound !== '1') {
+            budgetDisplay.dataset.formatBound = '1';
+            budgetDisplay.addEventListener('input', function () {
+                const numeric = parseRupiahValue(this.value);
+                budgetInput.value = numeric;
+                this.value = formatRupiahDisplay(numeric);
+            });
+
+            budgetDisplay.addEventListener('blur', function () {
+                const numeric = parseRupiahValue(this.value);
+                budgetInput.value = numeric;
+                this.value = formatRupiahDisplay(numeric);
+            });
+        }
+
+        if (form.dataset.submitBound !== '1') {
+            form.dataset.submitBound = '1';
+            form.addEventListener('submit', function () {
+                budgetInput.value = parseRupiahValue(budgetDisplay.value);
+            });
+        }
+    }
 </script>
 @endpush

@@ -56,8 +56,15 @@
 
     .data-table {
         width: 100% !important;
+        min-width: 820px;
         border-collapse: separate;
         border-spacing: 0;
+    }
+
+    .ledger-table-wrap {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
     .data-table th {
@@ -295,7 +302,7 @@
                             </div>
                             
                             <div id="recon-result-{{ $group['coa']->coa_id }}" class="recon-result-banner" style="display: none;"></div>
-                            <div style="overflow-x: auto;">
+                            <div class="ledger-table-wrap">
                                 <table class="data-table">
                                     <thead>
                                         <tr>

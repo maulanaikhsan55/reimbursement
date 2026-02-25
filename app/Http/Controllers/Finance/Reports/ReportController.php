@@ -209,7 +209,8 @@ class ReportController extends Controller
 
         $pengajuan = $pengajuanQuery->with(['user', 'departemen', 'kategori'])
             ->orderBy('tanggal_pencairan', 'desc')
-            ->paginate(config('app.pagination.reports'));
+            ->paginate(config('app.pagination.reports'))
+            ->withQueryString();
 
         $totalNominal = $pengajuanQuery->sum('nominal');
         $totalCount = $pengajuanQuery->count();
@@ -488,65 +489,48 @@ class ReportController extends Controller
         );
     }
 
-    private function getBukuBesarData()
+    private function buildBukuBesarLedger(?string $coaId = null): array
     {
         [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
             Jurnal::query(),
             'tanggal_posting'
         );
-
-        return Jurnal::whereBetween('tanggal_posting', [$startDate, $endDate])
-            ->with('coa')
-            ->get();
-    }
-
-    public function bukuBesar()
-    {
-        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
-            Jurnal::query(),
-            'tanggal_posting'
-        );
-        $coaId = request('coa_id');
 
         $coaQuery = COA::where('is_active', true);
         if ($coaId) {
             $coaQuery->where('coa_id', $coaId);
         }
-        $allCoas = $coaQuery->orderBy('kode_coa')->get();
+        $selectedCoas = $coaQuery->orderBy('kode_coa')->get();
+        $allCoas = COA::where('is_active', true)->orderBy('kode_coa')->get();
 
-        // OPTIMASI ULTRA: Ambil semua mutasi dalam satu query untuk menghindari N+1
-        $coaIds = $allCoas->pluck('coa_id')->toArray();
-        $allMutations = Jurnal::whereIn('coa_id', $coaIds)
-            ->where('tanggal_posting', '<=', $endDate)
-            ->with(['coa', 'pengajuan'])
-            ->orderBy('tanggal_posting')
-            ->orderBy('jurnal_id')
-            ->get()
-            ->groupBy('coa_id');
+        $coaIds = $selectedCoas->pluck('coa_id')->toArray();
+        $allMutations = empty($coaIds)
+            ? collect()
+            : Jurnal::whereIn('coa_id', $coaIds)
+                ->where('tanggal_posting', '<=', $endDate)
+                ->with(['coa', 'pengajuan'])
+                ->orderBy('tanggal_posting')
+                ->orderBy('jurnal_id')
+                ->get()
+                ->groupBy('coa_id');
 
         $ledger = collect();
 
-        foreach ($allCoas as $coa) {
+        foreach ($selectedCoas as $coa) {
             $initialBalance = $coa->saldo ?? 0;
             $asOfDate = $coa->as_of_date ? Carbon::parse($coa->as_of_date) : Carbon::parse('2000-01-01');
             $isDebitNormal = in_array($coa->tipe_akun, ['asset', 'expense']);
             $lastSync = $coa->last_sync_at;
 
-            // Ambil mutasi khusus akun ini dari collection (In-Memory)
             $coaMutations = $allMutations->get($coa->coa_id, collect());
 
-            // 1. Calculate Saldo Awal (Balance before start_date) menggunakan data yang sudah ditarik
-            // LOGIKA SYNC-AWARE: Transaksi dianggap "Historical" (sudah masuk saldo sync) jika:
-            // posted_at <= last_sync_at. Sisanya adalah "Mutasi".
             if ($asOfDate->lt($startDate)) {
-                // MAJU: Dari Sync Point (asOfDate) ke Start Date
                 $preMutations = $coaMutations->filter(function ($m) use ($asOfDate, $startDate, $lastSync) {
                     $isAfterSync = $m->tanggal_posting->gt($asOfDate) || ($lastSync && $m->tanggal_posting->equalTo($asOfDate) && $m->posted_at && $m->posted_at->gt($lastSync));
 
                     return $isAfterSync && $m->tanggal_posting->lt($startDate);
                 });
             } else {
-                // MUNDUR: Dari Sync Point (asOfDate) ke Start Date
                 $preMutations = $coaMutations->filter(function ($m) use ($asOfDate, $startDate, $lastSync) {
                     $isInSync = $m->tanggal_posting->lt($asOfDate) || ($lastSync && $m->tanggal_posting->equalTo($asOfDate) && (! $m->posted_at || $m->posted_at->lte($lastSync)));
 
@@ -563,12 +547,11 @@ class ReportController extends Controller
                 $saldoAwal = $initialBalance - ($isDebitNormal ? ($preDebit - $preCredit) : ($preCredit - $preDebit));
             }
 
-            // 2. Get mutations within range (In-Memory)
             $entries = $coaMutations->filter(function ($m) use ($startDate, $endDate) {
                 return $m->tanggal_posting >= $startDate && $m->tanggal_posting <= $endDate;
             });
 
-            if ($entries->isEmpty() && $saldoAwal == 0) {
+            if ($entries->isEmpty() && (float) $saldoAwal === 0.0) {
                 continue;
             }
 
@@ -598,18 +581,20 @@ class ReportController extends Controller
             ]);
         }
 
-        $totalDebitAll = Jurnal::whereBetween('tanggal_posting', [$startDate, $endDate])->where('tipe_posting', 'debit')->sum('nominal');
-        $totalCreditAll = Jurnal::whereBetween('tanggal_posting', [$startDate, $endDate])->where('tipe_posting', 'credit')->sum('nominal');
-
-        return view('dashboard.finance.reports.buku_besar', [
+        return [
             'ledger' => $ledger,
             'startDate' => $startDate,
             'endDate' => $endDate,
             'coaId' => $coaId,
-            'coas' => COA::where('is_active', true)->orderBy('kode_coa')->get(),
-            'totalDebit' => $totalDebitAll,
-            'totalCredit' => $totalCreditAll,
-        ]);
+            'coas' => $allCoas,
+            'totalDebit' => $ledger->sum('total_debit'),
+            'totalCredit' => $ledger->sum('total_credit'),
+        ];
+    }
+
+    public function bukuBesar()
+    {
+        return view('dashboard.finance.reports.buku_besar', $this->buildBukuBesarLedger(request('coa_id')));
     }
 
     public function reconciliationDashboard()
@@ -1041,36 +1026,19 @@ class ReportController extends Controller
 
     public function bukuBesarExportCsv()
     {
-        $entries = $this->getBukuBesarData();
-
-        $ledger = $entries->groupBy('coa_id')->map(function ($items) {
-            $coa = $items->first()->coa;
-            $debit = $items->where('tipe_posting', 'debit')->sum('nominal');
-            $credit = $items->where('tipe_posting', 'credit')->sum('nominal');
-
-            $isDebitNormal = in_array($coa->tipe_akun, ['asset', 'expense']);
-            $saldoAkhir = $isDebitNormal ? ($debit - $credit) : ($credit - $debit);
-
-            return [
-                'coa' => $coa,
-                'debit' => $debit,
-                'credit' => $credit,
-                'saldo' => $saldoAkhir,
-                'count' => $items->count(),
-            ];
-        })->sortBy('coa.kode_coa');
+        $ledger = $this->buildBukuBesarLedger(request('coa_id'))['ledger'];
 
         $headers = ['No', 'Kode Akun', 'Nama Akun', 'Debit (IDR)', 'Kredit (IDR)', 'Saldo (IDR)', 'Jumlah Transaksi'];
 
         $data = $ledger->values()->map(function ($item, $index) {
             return [
                 $index + 1,
-                $item['coa']->kode_coa,
-                $item['coa']->nama_coa,
-                number_format((float) $item['debit'], 0, ',', '.'),
-                number_format((float) $item['credit'], 0, ',', '.'),
-                number_format((float) $item['saldo'], 0, ',', '.'),
-                $item['count'],
+                $item['coa']->kode_coa ?? '-',
+                $item['coa']->nama_coa ?? '-',
+                number_format((float) ($item['total_debit'] ?? 0), 0, ',', '.'),
+                number_format((float) ($item['total_credit'] ?? 0), 0, ',', '.'),
+                number_format((float) ($item['saldo_akhir'] ?? 0), 0, ',', '.'),
+                isset($item['entries']) ? $item['entries']->count() : 0,
             ];
         });
 
@@ -1083,36 +1051,19 @@ class ReportController extends Controller
 
     public function bukuBesarExportXlsx()
     {
-        $entries = $this->getBukuBesarData();
-
-        $ledger = $entries->groupBy('coa_id')->map(function ($items) {
-            $coa = $items->first()->coa;
-            $debit = $items->where('tipe_posting', 'debit')->sum('nominal');
-            $credit = $items->where('tipe_posting', 'credit')->sum('nominal');
-
-            $isDebitNormal = in_array($coa->tipe_akun, ['asset', 'expense']);
-            $saldoAkhir = $isDebitNormal ? ($debit - $credit) : ($credit - $debit);
-
-            return [
-                'coa' => $coa,
-                'debit' => $debit,
-                'credit' => $credit,
-                'saldo' => $saldoAkhir,
-                'count' => $items->count(),
-            ];
-        })->sortBy('coa.kode_coa');
+        $ledger = $this->buildBukuBesarLedger(request('coa_id'))['ledger'];
 
         $headers = ['No', 'Kode Akun', 'Nama Akun', 'Debit (IDR)', 'Kredit (IDR)', 'Saldo (IDR)', 'Jumlah Transaksi'];
 
         $data = $ledger->values()->map(function ($item, $index) {
             return [
                 $index + 1,
-                $item['coa']->kode_coa,
-                $item['coa']->nama_coa,
-                number_format((float) $item['debit'], 0, ',', '.'),
-                number_format((float) $item['credit'], 0, ',', '.'),
-                number_format((float) $item['saldo'], 0, ',', '.'),
-                $item['count'],
+                $item['coa']->kode_coa ?? '-',
+                $item['coa']->nama_coa ?? '-',
+                number_format((float) ($item['total_debit'] ?? 0), 0, ',', '.'),
+                number_format((float) ($item['total_credit'] ?? 0), 0, ',', '.'),
+                number_format((float) ($item['saldo_akhir'] ?? 0), 0, ',', '.'),
+                isset($item['entries']) ? $item['entries']->count() : 0,
             ];
         });
 
@@ -1126,32 +1077,21 @@ class ReportController extends Controller
 
     public function bukuBesarExportPdf()
     {
-        $entries = $this->getBukuBesarData();
-        [$startDate, $endDate] = $this->resolveDateRangeFromQuery(
-            Jurnal::query(),
-            'tanggal_posting'
-        );
-
-        $ledger = $entries->groupBy('coa_id')->map(function ($items) {
-            $coa = $items->first()->coa;
-            $debit = $items->where('tipe_posting', 'debit')->sum('nominal');
-            $credit = $items->where('tipe_posting', 'credit')->sum('nominal');
-
-            $isDebitNormal = in_array($coa->tipe_akun, ['asset', 'expense']);
-            $saldoAkhir = $isDebitNormal ? ($debit - $credit) : ($credit - $debit);
-
+        $payload = $this->buildBukuBesarLedger(request('coa_id'));
+        $startDate = $payload['startDate'];
+        $endDate = $payload['endDate'];
+        $totalDebit = $payload['totalDebit'];
+        $totalCredit = $payload['totalCredit'];
+        $ledger = $payload['ledger']->map(function ($item) {
             return [
-                'coa' => $coa,
-                'debit' => $debit,
-                'credit' => $credit,
-                'saldo' => $saldoAkhir,
-                'is_debit_normal' => $isDebitNormal,
-                'count' => $items->count(),
+                'coa' => $item['coa'] ?? null,
+                'debit' => (float) ($item['total_debit'] ?? 0),
+                'credit' => (float) ($item['total_credit'] ?? 0),
+                'saldo' => (float) ($item['saldo_akhir'] ?? 0),
+                'is_debit_normal' => (bool) ($item['is_debit_normal'] ?? false),
+                'count' => isset($item['entries']) ? $item['entries']->count() : 0,
             ];
-        })->sortBy('coa.kode_coa');
-
-        $totalDebit = $entries->where('tipe_posting', 'debit')->sum('nominal');
-        $totalCredit = $entries->where('tipe_posting', 'credit')->sum('nominal');
+        });
 
         return $this->exportService->exportToPDF(
             'buku_besar_'.date('Y-m-d').'.pdf',

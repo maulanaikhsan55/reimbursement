@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str;
 use League\Csv\Writer;
 
 class ReportExportService
@@ -12,6 +13,8 @@ class ReportExportService
      */
     public function exportToCSV(string $filename, array $headers, iterable $data): \Symfony\Component\HttpFoundation\StreamedResponse
     {
+        $downloadName = $this->normalizeExportFilename($filename, 'csv');
+
         return response()->streamDownload(function () use ($headers, $data) {
             // UTF-8 BOM to ensure Excel (especially locale ID) reads characters correctly.
             echo "\xEF\xBB\xBF";
@@ -26,7 +29,7 @@ class ReportExportService
             foreach ($data as $row) {
                 $csv->insertOne($this->normalizeCsvRow($row));
             }
-        }, $filename, [
+        }, $downloadName, [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
         ]);
@@ -37,6 +40,8 @@ class ReportExportService
      */
     public function exportToXlsx(string $filename, array $headers, iterable $data, array $options = []): \Symfony\Component\HttpFoundation\StreamedResponse
     {
+        $downloadName = $this->normalizeExportFilename($filename, 'xlsx');
+
         $rows = [];
         $rows[] = $this->normalizeXlsxRow($headers);
 
@@ -56,7 +61,7 @@ class ReportExportService
 
         return response()->streamDownload(function () use ($xlsxBinary) {
             echo $xlsxBinary;
-        }, $filename, [
+        }, $downloadName, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
         ]);
@@ -67,6 +72,7 @@ class ReportExportService
      */
     public function exportToPDF(string $filename, string $viewPath, array $data, array $options = []): \Illuminate\Http\Response
     {
+        $downloadName = $this->normalizeExportFilename($filename, 'pdf');
         $orientation = $options['orientation'] ?? 'portrait';
         $html = view($viewPath, $data)->render();
         $html = $this->injectProfessionalPdfStyles($html);
@@ -80,7 +86,7 @@ class ReportExportService
             ->setOption('isHtml5ParserEnabled', true)
             ->setOption('isRemoteEnabled', true);
 
-        return $pdf->download($filename);
+        return $pdf->download($downloadName);
     }
 
     /**
@@ -88,7 +94,14 @@ class ReportExportService
      */
     public static function formatCurrency($value): string
     {
-        return 'Rp '.number_format($value, 0, ',', '.');
+        $amount = (float) ($value ?? 0);
+        $formatted = number_format(abs($amount), 0, ',', '.');
+
+        if ($amount < 0) {
+            return '(Rp '.$formatted.')';
+        }
+
+        return 'Rp '.$formatted;
     }
 
     /**
@@ -97,6 +110,37 @@ class ReportExportService
     public static function formatDate($date, $format = 'd/m/Y'): string
     {
         return \Carbon\Carbon::parse($date)->format($format);
+    }
+
+    /**
+     * Alias helper for accounting-style number presentation.
+     */
+    public static function formatAccountingAmount($value): string
+    {
+        return self::formatCurrency($value);
+    }
+
+    /**
+     * Build export filename in stable format:
+     * {base}_{YYYYMMDD_HHMMSSmmm}_{token}.{ext}
+     */
+    public function buildExportFilename(string $baseName, string $extension): string
+    {
+        $safeBase = $this->sanitizeFilenamePart($baseName);
+        $safeBase = $this->stripTrailingTimestamp($safeBase);
+        if ($safeBase === '') {
+            $safeBase = 'export';
+        }
+
+        $safeExtension = $this->sanitizeFilenamePart($extension);
+        if ($safeExtension === '') {
+            $safeExtension = 'txt';
+        }
+
+        $timestamp = now(config('app.timezone', 'Asia/Jakarta'))->format('Ymd_Hisv');
+        $token = strtolower(substr((string) Str::ulid(), -6));
+
+        return "{$safeBase}_{$timestamp}_{$token}.{$safeExtension}";
     }
 
     /**
@@ -156,6 +200,33 @@ class ReportExportService
         }
 
         return $stringValue;
+    }
+
+    private function normalizeExportFilename(string $filename, string $defaultExtension): string
+    {
+        $base = pathinfo($filename, PATHINFO_FILENAME);
+        $extension = pathinfo($filename, PATHINFO_EXTENSION) ?: $defaultExtension;
+
+        return $this->buildExportFilename($base, $extension);
+    }
+
+    private function sanitizeFilenamePart(string $value): string
+    {
+        $normalized = preg_replace('/[^a-zA-Z0-9._-]+/', '_', trim($value)) ?? '';
+        $normalized = preg_replace('/_+/', '_', $normalized) ?? '';
+        $normalized = trim($normalized, '._-');
+
+        return substr($normalized, 0, 120);
+    }
+
+    private function stripTrailingTimestamp(string $base): string
+    {
+        // old pattern: *_YYYY-mm-dd_HHiiSS
+        $base = preg_replace('/[_-]\d{4}-\d{2}-\d{2}_\d{6}$/', '', $base) ?? $base;
+        // old/new compact pattern: *_YYYYmmdd_HHiiss[mmm]
+        $base = preg_replace('/[_-]\d{8}_\d{6,9}$/', '', $base) ?? $base;
+
+        return trim($base, '_-');
     }
 
     /**

@@ -15,9 +15,16 @@
         padding: 1.25rem !important;
     }
 
+    .data-table-wrapper {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .data-table {
         table-layout: fixed !important;
         width: 100% !important;
+        min-width: 1080px;
     }
 
     .data-table th {
@@ -91,6 +98,15 @@
     }
 
     @media (max-width: 768px) {
+        .filter-form-finance {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .data-table {
+            min-width: 920px;
+        }
+    }
 </style>
 @endpush
 
@@ -104,7 +120,7 @@
         <div class="stats-grid">
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">{{ $kategoriBiaya->count() }}</div>
+                    <div class="stat-value">{{ $stats['total'] }}</div>
                     <div class="stat-label">Total Kategori</div>
                 </div>
                 <div class="stat-icon primary-icon">
@@ -118,7 +134,7 @@
             </div>
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">{{ $kategoriBiaya->where('is_active', true)->count() }}</div>
+                    <div class="stat-value">{{ $stats['aktif'] }}</div>
                     <div class="stat-label">Aktif</div>
                 </div>
                 <div class="stat-icon success-icon">
@@ -129,7 +145,7 @@
             </div>
             <div class="stat-card modern">
                 <div class="stat-left">
-                    <div class="stat-value">{{ $kategoriBiaya->where('is_active', false)->count() }}</div>
+                    <div class="stat-value">{{ $stats['nonaktif'] }}</div>
                     <div class="stat-label">Nonaktif</div>
                 </div>
                 <div class="stat-icon warning-icon">

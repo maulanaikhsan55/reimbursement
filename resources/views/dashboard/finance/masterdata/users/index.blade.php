@@ -18,7 +18,9 @@
     .data-table-wrapper {
         border-radius: 20px;
         border: 1px solid #e2e8f0;
-        overflow: hidden;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         background: white;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
         margin-top: 1rem;
@@ -27,6 +29,7 @@
     .data-table {
         table-layout: fixed !important;
         width: 100% !important;
+        min-width: 1120px;
         border-collapse: separate;
         border-spacing: 0;
     }
@@ -118,6 +121,64 @@
         font-size: 0.75rem;
         word-break: break-all;
         letter-spacing: -0.01em;
+        margin-bottom: 4px;
+    }
+
+    .icon-leading {
+        margin-right: 8px;
+    }
+
+    .icon-leading-sm {
+        width: 16px;
+        height: 16px;
+        margin-right: 6px;
+    }
+
+    .user-name {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 0.95rem;
+    }
+
+    .user-subtext {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    .contact-phone {
+        font-size: 0.75rem;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .dept-text {
+        font-weight: 500;
+        color: #475569;
+    }
+
+    .bank-name {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.85rem;
+    }
+
+    .bank-number {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.75rem;
+        color: #64748b;
+    }
+
+    .bank-empty {
+        color: #94a3b8;
+        font-style: italic;
+        font-size: 0.75rem;
+    }
+
+    .btn-action-warn {
+        color: #f59e0b;
     }
 
     .action-buttons-centered {
@@ -130,39 +191,6 @@
         text-align: left !important;
     }
 
-    .pagination-wrapper {
-        margin-top: 2rem;
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    /* Override pagination rounded */
-    .pagination {
-        gap: 5px;
-    }
-    .page-item .page-link {
-        border-radius: 12px !important;
-        border: 1px solid #e2e8f0;
-        color: #64748b;
-        font-weight: 600;
-        width: 38px;
-        height: 38px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-    }
-    .page-item.active .page-link {
-        background: #425d87;
-        border-color: #425d87;
-        color: white;
-        box-shadow: 0 4px 12px rgba(66, 93, 135, 0.2);
-    }
-    .page-item .page-link:hover:not(.active) {
-        background: #f1f5f9;
-        color: #425d87;
-        border-color: #cbd5e1;
-    }
 </style>
 @endpush
 
@@ -223,7 +251,7 @@
                     </div>
                     <div class="header-actions">
                         <a href="{{ route('finance.masterdata.users.create') }}" class="btn-modern btn-modern-primary">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <svg class="icon-leading" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
@@ -274,7 +302,7 @@
                         <!-- Actions -->
                         <div class="filter-actions-pegawai">
                             <button type="submit" class="btn-modern btn-modern-secondary btn-modern-sm">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+                                <svg class="icon-leading-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                                 </svg>
                                 Filter
@@ -319,13 +347,13 @@
                                     @foreach ($users as $user)
                                         <tr>
                                             <td data-label="Nama Lengkap" class="col-nama">
-                                                <div style="font-weight: 700; color: #1e293b; font-size: 0.95rem;">{{ $user->name }}</div>
-                                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">{{ $user->jabatan }}</div>
+                                                <div class="user-name">{{ $user->name }}</div>
+                                                <div class="user-subtext">{{ $user->jabatan }}</div>
                                             </td>
                                             <td data-label="Kontak" class="col-kontak">
-                                                <div class="email-text" style="margin-bottom: 4px;">{{ $user->email }}</div>
+                                                <div class="email-text">{{ $user->email }}</div>
                                                 @if($user->nomor_telepon)
-                                                    <div style="font-size: 0.75rem; color: #64748b; display: flex; align-items: center; gap: 4px;">
+                                                    <div class="contact-phone">
                                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                                                         {{ $user->nomor_telepon }}
                                                     </div>
@@ -337,14 +365,14 @@
                                                 </span>
                                             </td>
                                             <td data-label="Departemen" class="col-dept">
-                                                <div style="font-weight: 500; color: #475569;">{{ $user->departemen->nama_departemen ?? '-' }}</div>
+                                                <div class="dept-text">{{ $user->departemen->nama_departemen ?? '-' }}</div>
                                             </td>
                                             <td data-label="Rekening" class="col-rekening">
                                                 @if($user->nama_bank || $user->nomor_rekening)
-                                                    <div style="font-weight: 600; color: #1e293b; font-size: 0.85rem;">{{ $user->nama_bank ?? 'Bank -' }}</div>
-                                                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #64748b;">{{ $user->nomor_rekening ?? '-' }}</div>
+                                                    <div class="bank-name">{{ $user->nama_bank ?? 'Bank -' }}</div>
+                                                    <div class="bank-number">{{ $user->nomor_rekening ?? '-' }}</div>
                                                 @else
-                                                    <span style="color: #94a3b8; font-style: italic; font-size: 0.75rem;">Data belum lengkap</span>
+                                                    <span class="bank-empty">Data belum lengkap</span>
                                                 @endif
                                             </td>
                                             <td data-label="Status" class="col-status">
@@ -362,7 +390,7 @@
                                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                                         </svg>
                                                     </a>
-                                                    <button type="button" class="btn-action-icon" onclick="confirmResetPassword('{{ $user->id }}', '{{ $user->name }}')" title="Reset Password" style="color: #f59e0b;">
+                                                    <button type="button" class="btn-action-icon btn-action-warn" onclick="confirmResetPassword('{{ $user->id }}', '{{ $user->name }}')" title="Reset Password">
                                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                                                             <path d="M12 8v4"></path>
@@ -385,7 +413,7 @@
                             </table>
                         </div>
                         <div class="pagination-wrapper">
-                            {{ $users->links() }}
+                            {{ $users->links('components.pagination') }}
                         </div>
                     @endif
                 </div>
@@ -394,9 +422,7 @@
     </div>
 </div>
 
-<x-confirm-modal />
-
-<div id="resetPasswordModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+<div id="resetPasswordModal" class="modal" data-app-modal="1" style="display: none; position: fixed; inset: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.45); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
     <div class="modal-content" style="max-width: 500px; background: white; border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2); position: relative; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid rgba(255,255,255,0.8);">
         <div class="modal-header" style="padding: 24px 30px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
             <h2 class="modal-title" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #1e293b; letter-spacing: -0.025em;">Reset Password</h2>
@@ -465,6 +491,26 @@
         let searchTimer;
         const searchInput = document.getElementById('searchInput');
         const filterForm = document.getElementById('filterForm');
+        window.__resetModalState = window.__resetModalState || { prevOverflow: '' };
+
+        const ensureResetModalMounted = () => {
+            const modal = document.getElementById('resetPasswordModal');
+            if (!modal) return null;
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+
+            return modal;
+        };
+
+        const openResetModal = () => {
+            const modal = ensureResetModalMounted();
+            if (!modal) return;
+
+            modal.style.display = 'flex';
+            window.__resetModalState.prevOverflow = document.body.style.overflow || '';
+            document.body.style.overflow = 'hidden';
+        };
 
         if (searchInput) {
             searchInput.addEventListener('input', function() {
@@ -483,11 +529,11 @@
         };
 
         window.performPasswordReset = function(userId, userName) {
-            const resetModal = document.getElementById('resetPasswordModal');
+            const resetModal = ensureResetModalMounted();
             const resetStatus = document.getElementById('resetStatus');
             const tempPasswordDisplay = document.getElementById('tempPasswordDisplay');
             
-            if (resetModal) resetModal.style.display = 'flex';
+            if (resetModal) openResetModal();
             if (resetStatus) {
                 resetStatus.innerHTML = `
                     <div style="text-align: center; padding: 40px 20px;">
@@ -544,7 +590,11 @@
 
         window.closeResetModal = function() {
             const modal = document.getElementById('resetPasswordModal');
-            if (modal) modal.style.display = 'none';
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = window.__resetModalState.prevOverflow || '';
+                window.__resetModalState.prevOverflow = '';
+            }
         };
 
         window.copyPassword = function() {
@@ -572,6 +622,37 @@
                 }
             }, 'Hapus Pengguna', `Apakah Anda yakin ingin menghapus pengguna ${userName}? Tindakan ini tidak dapat dibatalkan.`);
         };
+
+        if (!window.__resetModalBehaviorBound) {
+            window.__resetModalBehaviorBound = true;
+
+            document.addEventListener('click', function(event) {
+                const modal = document.getElementById('resetPasswordModal');
+                if (!modal) return;
+                if (event.target === modal) {
+                    closeResetModal();
+                }
+            });
+
+            document.addEventListener('keydown', function(event) {
+                const modal = document.getElementById('resetPasswordModal');
+                if (!modal) return;
+                if (event.key === 'Escape' && modal.style.display === 'flex') {
+                    closeResetModal();
+                }
+            });
+        }
+
+        const initResetModal = () => {
+            ensureResetModalMounted();
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initResetModal);
+        } else {
+            initResetModal();
+        }
+        document.addEventListener('livewire:navigated', initResetModal);
     })();
 </script>
 @endpush

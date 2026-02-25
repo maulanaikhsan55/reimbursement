@@ -36,6 +36,8 @@ return new class extends Migration
 
             $table->index('pengajuan_id');
             $table->index('user_id');
+            $table->index(['pengajuan_id', 'created_at'], 'pengajuan_history_pengajuan_created_idx');
+            $table->index(['user_id', 'action', 'created_at'], 'pengajuan_history_user_action_created_idx');
         });
     }
 

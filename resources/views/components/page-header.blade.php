@@ -56,6 +56,11 @@
         'atasan' => route('atasan.profile.index'),
         default => '#'
     };
+    $headerDisplayName = trim((string) ($user->name ?? 'User'));
+    $headerFirstName = trim((string) explode(' ', $headerDisplayName)[0]);
+    if ($headerFirstName === '') {
+        $headerFirstName = 'User';
+    }
 @endphp
 
 <div class="page-header">
@@ -86,8 +91,15 @@
         @endif
 
         @if($showProfile ?? false)
-            <a href="{{ $profileRoute }}" class="header-profile" title="Profil">
-                <div class="header-profile-avatar">{{ strtoupper(substr($user->name ?? 'U', 0, 1)) }}</div>
+            <a href="{{ $profileRoute }}" class="header-profile" title="{{ $headerDisplayName }}">
+                <span class="header-profile-name">{{ $headerFirstName }}</span>
+                <div class="header-profile-avatar">
+                    @if(!empty($user->foto_profil_url))
+                        <img src="{{ $user->foto_profil_url }}" alt="Foto profil {{ $headerDisplayName }}" class="header-profile-avatar-img">
+                    @else
+                        {{ strtoupper(substr($user->name ?? 'U', 0, 1)) }}
+                    @endif
+                </div>
             </a>
         @endif
     </div>
@@ -173,7 +185,7 @@
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        gap: 0.58rem;
+        gap: 0.88rem;
         flex-shrink: 0;
     }
 
@@ -208,13 +220,15 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0;
+        gap: 0.62rem;
         cursor: pointer;
-        width: 40px;
-        height: 40px;
+        width: auto;
+        min-width: 40px;
+        height: 46px;
         border-radius: 999px;
         border: 1px solid rgba(63, 95, 148, 0.18);
         background: #ffffff;
+        padding: 0 0.62rem 0 0.4rem;
         transition: all 0.22s ease;
         text-decoration: none;
     }
@@ -227,8 +241,8 @@
     }
 
     .header-profile-avatar {
-        width: 30px;
-        height: 30px;
+        width: 34px;
+        height: 34px;
         border-radius: 999px;
         background: linear-gradient(145deg, var(--ph-accent) 0%, var(--ph-accent-700) 100%);
         color: #ffffff;
@@ -236,15 +250,39 @@
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 0.82rem;
+        font-size: 0.9rem;
         flex-shrink: 0;
         box-shadow: none;
+        overflow: hidden;
+    }
+
+    .header-profile-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .header-profile-name {
+        max-width: 132px;
+        color: #2a3f63;
+        font-weight: 700;
+        font-size: 0.82rem;
+        line-height: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     @media (max-width: 1200px) {
         .header-profile {
-            width: 38px;
-            height: 38px;
+            min-width: 38px;
+            height: 42px;
+        }
+
+        .header-profile-name {
+            max-width: 108px;
+            font-size: 0.77rem;
         }
     }
 
@@ -255,6 +293,16 @@
 
         .page-time-inline {
             display: none;
+        }
+
+        .header-profile-name {
+            display: none;
+        }
+
+        .header-profile {
+            width: 40px;
+            padding: 0;
+            gap: 0;
         }
     }
 

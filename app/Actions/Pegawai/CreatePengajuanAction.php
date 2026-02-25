@@ -6,7 +6,7 @@ use App\Enums\PengajuanStatus;
 use App\Enums\ValidationStatus;
 use App\Models\Pengajuan;
 use App\Models\User;
-use App\Services\LocalReceiptParser;
+use App\Services\AuditTrailService;
 use App\Services\NotifikasiService;
 use App\Services\ValidasiAIService;
 use App\Traits\HandlesImageUpload;
@@ -22,7 +22,7 @@ class CreatePengajuanAction
     public function __construct(
         protected ValidasiAIService $validasiAIService,
         protected NotifikasiService $notifikasiService,
-        protected LocalReceiptParser $localParser
+        protected AuditTrailService $auditTrailService
     ) {}
 
     /**
@@ -32,6 +32,16 @@ class CreatePengajuanAction
     {
         // 1. Security check: ensure user has atasan (if role is pegawai)
         if ($user->role === 'pegawai' && ! $user->atasan_id) {
+            $this->auditTrailService->log(
+                event: 'pengajuan.submit_blocked_no_atasan',
+                actor: $user,
+                description: 'Submit pengajuan ditolak karena pegawai belum memiliki atasan.',
+                context: [
+                    'user_id' => $user->id,
+                    'role' => $user->role,
+                ]
+            );
+
             return [
                 'success' => false,
                 'message' => 'Akun Anda belum terhubung dengan Atasan. Silakan hubungi Finance untuk melakukan setting Atasan.',
@@ -46,7 +56,7 @@ class CreatePengajuanAction
             $isOverBudget = $budgetStatus && $budgetStatus['is_over'];
         }
 
-        return DB::transaction(function () use ($user, $validated, $file, $ocrDataJson) {
+        return DB::transaction(function () use ($user, $validated, $file, $ocrDataJson, $isOverBudget) {
             // 3. Handle File Upload & Duplicate Check
             $originalName = $file->getClientOriginalName();
             $fileHash = md5_file($file->getRealPath());
@@ -61,7 +71,7 @@ class CreatePengajuanAction
 
             $filePath = $this->uploadCompressedFile($file, 'pengajuan');
             $nomorPengajuan = $this->generateNomorPengajuan();
-            $standardizedVendor = $this->localParser->standardizeVendorName($validated['nama_vendor']);
+            $standardizedVendor = $this->normalizeVendorName($validated['nama_vendor'] ?? '');
 
             // 4. Create Initial Record
             $pengajuan = Pengajuan::create([
@@ -71,8 +81,9 @@ class CreatePengajuanAction
                 'kategori_id' => $validated['kategori_id'],
                 'tanggal_pengajuan' => now()->toDateString(),
                 'tanggal_transaksi' => $validated['tanggal_transaksi'],
+                'judul' => $validated['judul'],
                 'nama_vendor' => $standardizedVendor,
-                'jenis_transaksi' => $validated['jenis_transaksi'] ?? 'other',
+                'jenis_transaksi' => 'other',
                 'deskripsi' => $validated['deskripsi'],
                 'nominal' => $validated['nominal'],
                 'file_bukti' => $filePath,
@@ -121,6 +132,19 @@ class CreatePengajuanAction
                         }
                     }
 
+                    $this->auditTrailService->logPengajuan(
+                        event: 'pengajuan.submitted',
+                        pengajuan: $pengajuan,
+                        actor: $user,
+                        description: 'Pengajuan berhasil disubmit dan diproses ke tahap berikutnya.',
+                        context: [
+                            'validation_overall_status' => $validationResult['overall_status'],
+                            'status_to' => $nextStatus,
+                            'is_over_budget' => $isOverBudget,
+                            'nominal' => (float) $validated['nominal'],
+                        ]
+                    );
+
                     return [
                         'success' => true,
                         'pengajuan' => $pengajuan,
@@ -131,9 +155,22 @@ class CreatePengajuanAction
                     ];
                 } else {
                     // Blocked - Cleanup
+                    $failedStatus = $validationResult['overall_status'] ?? 'invalid';
                     Storage::disk('local')->delete($filePath);
                     $pengajuan->validasiAi()->delete();
                     $pengajuan->forceDelete();
+
+                    $this->auditTrailService->log(
+                        event: 'pengajuan.validation_blocked',
+                        actor: $user,
+                        description: 'Pengajuan diblokir karena validasi AI gagal.',
+                        context: [
+                            'overall_status' => $failedStatus,
+                            'nominal' => (float) $validated['nominal'],
+                            'tanggal_transaksi' => $validated['tanggal_transaksi'],
+                            'vendor' => $validated['nama_vendor'],
+                        ]
+                    );
 
                     $errors = [];
 
@@ -175,11 +212,30 @@ class CreatePengajuanAction
                 Storage::disk('local')->delete($filePath);
                 $pengajuan->forceDelete();
 
+                $this->auditTrailService->log(
+                    event: 'pengajuan.validation_exception',
+                    actor: $user,
+                    description: 'Terjadi exception saat validasi AI pengajuan.',
+                    context: [
+                        'error_message' => $e->getMessage(),
+                        'nominal' => (float) $validated['nominal'],
+                        'tanggal_transaksi' => $validated['tanggal_transaksi'],
+                    ]
+                );
+
                 return [
                     'success' => false,
                     'message' => 'Terjadi kesalahan sistem saat validasi AI. Silakan coba lagi.',
                 ];
             }
         });
+    }
+
+    private function normalizeVendorName(string $vendor): string
+    {
+        $vendor = trim($vendor);
+        $vendor = preg_replace('/\s+/', ' ', $vendor ?? '');
+
+        return $vendor ?: '-';
     }
 }

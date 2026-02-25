@@ -43,6 +43,12 @@ class StorePengajuanRequest extends FormRequest
                 'integer',
                 'exists:kategori_biaya,kategori_id',
             ],
+            'judul' => [
+                'required',
+                'string',
+                'min:3',
+                'max:120',
+            ],
             'nama_vendor' => [
                 'required',
                 'string',
@@ -57,8 +63,8 @@ class StorePengajuanRequest extends FormRequest
             'deskripsi' => [
                 'required',
                 'string',
-                'min:5',
-                'max:500',
+                'min:10',
+                'max:1000',
             ],
             'nominal' => [
                 'required',
@@ -101,6 +107,10 @@ class StorePengajuanRequest extends FormRequest
             'kategori_id.exists' => 'Kategori biaya tidak ditemukan.',
             'kategori_id.integer' => 'Kategori biaya tidak valid.',
 
+            'judul.required' => 'Judul / deskripsi singkat harus diisi.',
+            'judul.min' => 'Judul / deskripsi singkat minimal 3 karakter.',
+            'judul.max' => 'Judul / deskripsi singkat maksimal 120 karakter.',
+
             'nama_vendor.required' => 'Nama vendor/toko harus diisi.',
             'nama_vendor.min' => 'Nama vendor minimal 2 karakter.',
             'nama_vendor.max' => 'Nama vendor maksimal 100 karakter.',
@@ -109,8 +119,8 @@ class StorePengajuanRequest extends FormRequest
             'jenis_transaksi.in' => 'Jenis transaksi tidak valid.',
 
             'deskripsi.required' => 'Deskripsi pengajuan harus diisi.',
-            'deskripsi.min' => 'Deskripsi minimal 5 karakter.',
-            'deskripsi.max' => 'Deskripsi maksimal 500 karakter.',
+            'deskripsi.min' => 'Catatan detail minimal 10 karakter.',
+            'deskripsi.max' => 'Catatan detail maksimal 1000 karakter.',
 
             'nominal.required' => 'Nominal pengajuan harus diisi.',
             'nominal.numeric' => 'Nominal harus berupa angka.',
@@ -132,32 +142,83 @@ class StorePengajuanRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Sanitize nominal input (remove symbols, handle ID/US formats)
+        $this->merge([
+            'judul' => trim((string) $this->input('judul', '')),
+            'deskripsi' => trim((string) $this->input('deskripsi', '')),
+            'nama_vendor' => trim((string) $this->input('nama_vendor', '')),
+        ]);
+
         if ($this->has('nominal')) {
-            $nominal = $this->input('nominal');
-            $nominal = preg_replace('/[^\d,.]/', '', $nominal);
-
-            // Handle Indonesian format (10.000,00) vs US format (10,000.00)
-            if (str_contains($nominal, '.') && str_contains($nominal, ',')) {
-                $lastDot = strrpos($nominal, '.');
-                $lastComma = strrpos($nominal, ',');
-
-                if ($lastComma > $lastDot) {
-                    // ID Format: 10.000,00 → remove dots, replace comma
-                    $nominal = str_replace('.', '', $nominal);
-                    $nominal = str_replace(',', '.', $nominal);
-                }
-                // else: US Format already correct
-            } elseif (str_contains($nominal, ',')) {
-                // Only comma: assume ID thousands separator 10,000 → 10000
-                if (strlen(explode(',', $nominal)[1] ?? '') <= 2) {
-                    $nominal = str_replace(',', '.', $nominal); // Decimal separator
-                } else {
-                    $nominal = str_replace(',', '', $nominal); // Thousands separator
-                }
-            }
-
-            $this->merge(['nominal' => (float) $nominal]);
+            $this->merge([
+                'nominal' => $this->normalizeNominalInput($this->input('nominal')),
+            ]);
         }
+    }
+
+    /**
+     * Normalize nominal value from UI input to numeric float.
+     *
+     * Handles mixed separators (ID/US) and applies a safety fallback:
+     * if parsed value is suspiciously small while digit-only value is large,
+     * use digit-only value to avoid false "minimal Rp 1.000" errors.
+     */
+    private function normalizeNominalInput(mixed $value): float
+    {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return 0.0;
+        }
+
+        $nominal = preg_replace('/[^\d.,]/', '', $raw) ?? '';
+        if ($nominal === '') {
+            return 0.0;
+        }
+
+        $digitsOnly = preg_replace('/\D+/', '', $nominal) ?? '';
+        $digitsOnlyValue = $digitsOnly !== '' ? (float) $digitsOnly : 0.0;
+
+        $hasDot = str_contains($nominal, '.');
+        $hasComma = str_contains($nominal, ',');
+
+        if ($hasDot && $hasComma) {
+            $lastDot = strrpos($nominal, '.');
+            $lastComma = strrpos($nominal, ',');
+
+            if ($lastComma !== false && $lastDot !== false && $lastComma > $lastDot) {
+                // Indonesian decimal format: 10.000,50
+                $nominal = str_replace('.', '', $nominal);
+                $nominal = str_replace(',', '.', $nominal);
+            } else {
+                // US decimal format: 10,000.50
+                $nominal = str_replace(',', '', $nominal);
+            }
+        } elseif ($hasComma) {
+            $parts = explode(',', $nominal);
+            $lastPart = end($parts) ?: '';
+
+            // Single comma + 1-2 trailing digits => decimal, otherwise thousands separator
+            if (count($parts) === 2 && strlen($lastPart) <= 2) {
+                $nominal = str_replace(',', '.', $nominal);
+            } else {
+                $nominal = str_replace(',', '', $nominal);
+            }
+        } elseif ($hasDot) {
+            $parts = explode('.', $nominal);
+            $lastPart = end($parts) ?: '';
+
+            // Single dot + 1-2 trailing digits => decimal, otherwise thousands separator
+            if (!(count($parts) === 2 && strlen($lastPart) <= 2)) {
+                $nominal = str_replace('.', '', $nominal);
+            }
+        }
+
+        $parsedValue = is_numeric($nominal) ? (float) $nominal : 0.0;
+
+        // Safety net for malformed locale parsing: prefer strong digit-only value.
+        if ($parsedValue < 1000 && $digitsOnlyValue >= 1000) {
+            return $digitsOnlyValue;
+        }
+
+        return $parsedValue;
     }
 }

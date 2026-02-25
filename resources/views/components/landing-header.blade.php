@@ -14,14 +14,14 @@
         <div class="header-actions">
             @auth
                 @if(auth()->user()->isFinance())
-                    <a href="{{ route('finance.dashboard') }}" class="btn btn-primary btn-sm" data-external>Dashboard</a>
+                    <a href="{{ route('finance.dashboard') }}" class="btn btn-primary btn-sm" data-external data-route-loading>Dashboard</a>
                 @elseif(auth()->user()->isAtasan())
-                    <a href="{{ route('atasan.dashboard') }}" class="btn btn-primary btn-sm" data-external>Dashboard</a>
+                    <a href="{{ route('atasan.dashboard') }}" class="btn btn-primary btn-sm" data-external data-route-loading>Dashboard</a>
                 @elseif(auth()->user()->isPegawai())
-                    <a href="{{ route('pegawai.dashboard') }}" class="btn btn-primary btn-sm" data-external>Dashboard</a>
+                    <a href="{{ route('pegawai.dashboard') }}" class="btn btn-primary btn-sm" data-external data-route-loading>Dashboard</a>
                 @endif
             @else
-                <a href="{{ route('login') }}" class="btn btn-primary btn-sm" data-external>Get Started</a>
+                <a href="{{ route('login') }}" class="btn btn-primary btn-sm" data-external data-route-loading>Get Started</a>
             @endauth
         </div>
 

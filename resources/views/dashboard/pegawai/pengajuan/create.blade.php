@@ -307,34 +307,34 @@
                     <div class="validation-shell">
                         <div class="validation-shell-header">
                             <x-icon name="cpu" class="w-5 h-5 validation-shell-icon" />
-                            <h3 class="validation-shell-title">Validasi AI & OCR</h3>
+                            <h3 class="validation-shell-title">Validasi OCR + AI</h3>
                         </div>
 
                         <div class="validation-grid">
                             <div class="validation-row validation-row-head">
                                 <div>Field</div>
-                                <div>Hasil OCR</div>
+                                <div>Hasil OCR + AI</div>
                                 <div>Input Anda</div>
                                 <div class="validation-status-head">Status</div>
                             </div>
 
                             <div class="validation-row">
                                 <div class="validation-field-name">Vendor</div>
-                                <div id="dash-ocr-vendor" class="validation-pill validation-pill-ocr" title="Klik untuk menggunakan nilai ini">-</div>
+                                <div id="dash-ocr-vendor" class="validation-pill validation-pill-ocr" title="Klik untuk menggunakan hasil OCR + AI ini">-</div>
                                 <div id="dash-input-vendor" class="validation-pill validation-pill-input">-</div>
                                 <div id="dash-status-vendor" class="validation-status-cell">-</div>
                             </div>
 
                             <div class="validation-row">
                                 <div class="validation-field-name">Nominal</div>
-                                <div id="dash-ocr-nominal" class="validation-pill validation-pill-ocr" title="Klik untuk menggunakan nilai ini">-</div>
+                                <div id="dash-ocr-nominal" class="validation-pill validation-pill-ocr" title="Klik untuk menggunakan hasil OCR + AI ini">-</div>
                                 <div id="dash-input-nominal" class="validation-pill validation-pill-input">-</div>
                                 <div id="dash-status-nominal" class="validation-status-cell">-</div>
                             </div>
 
                             <div class="validation-row">
                                 <div class="validation-field-name">Tanggal</div>
-                                <div id="dash-ocr-date" class="validation-pill validation-pill-ocr" title="Klik untuk menggunakan nilai ini">-</div>
+                                <div id="dash-ocr-date" class="validation-pill validation-pill-ocr" title="Klik untuk menggunakan hasil OCR + AI ini">-</div>
                                 <div id="dash-input-date" class="validation-pill validation-pill-input">-</div>
                                 <div id="dash-status-date" class="validation-status-cell">-</div>
                             </div>
@@ -355,7 +355,7 @@
                     <div id="ultra-smart-summary" class="ultra-smart-container" style="display: none;">
                         <div class="smart-header">
                             <x-icon name="ai" class="w-5 h-5" />
-                            <h3>Ultra Smart OCR Result</h3>
+                            <h3>Ultra Smart AI Result (Berdasarkan OCR)</h3>
                         </div>
 
                         <div class="smart-grid">
@@ -388,8 +388,8 @@
                     </div>
 
                     <details class="validation-debug-details">
-                        <summary class="validation-debug-summary">Lihat Raw OCR Text</summary>
-                        <textarea id="debug-raw-ocr" rows="4" class="validation-debug-textarea" readonly placeholder="Raw OCR data akan muncul di sini..."></textarea>
+                        <summary class="validation-debug-summary">Lihat Raw OCR (Mentah)</summary>
+                        <textarea id="debug-raw-ocr" rows="4" class="validation-debug-textarea" readonly placeholder="Teks OCR mentah sebelum analisis AI akan muncul di sini..."></textarea>
                     </details>
                 </div>
 
@@ -936,9 +936,69 @@
 
 @push('scripts')
 <script>
+    window.__fileModalState = window.__fileModalState || {
+        prevOverflow: '',
+        objectUrl: null,
+    };
+
+    function ensureFileModalMounted() {
+        const modal = document.getElementById('fileModal');
+        if (!modal) return null;
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+
+        return modal;
+    }
+
+    function openFileModal() {
+        const modal = ensureFileModalMounted();
+        if (!modal) return;
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        window.__fileModalState.prevOverflow = document.body.style.overflow || '';
+        document.body.style.overflow = 'hidden';
+    }
+
     function closeFileModal() {
         const modal = document.getElementById('fileModal');
-        if (modal) modal.classList.remove('show');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+        }
+
+        const modalBody = document.getElementById('modalBody');
+        if (modalBody) {
+            modalBody.innerHTML = '';
+        }
+
+        if (window.__fileModalState.objectUrl) {
+            URL.revokeObjectURL(window.__fileModalState.objectUrl);
+            window.__fileModalState.objectUrl = null;
+        }
+
+        document.body.style.overflow = window.__fileModalState.prevOverflow || '';
+        window.__fileModalState.prevOverflow = '';
+    }
+
+    if (!window.__fileModalBehaviorBound) {
+        window.__fileModalBehaviorBound = true;
+
+        document.addEventListener('click', function (event) {
+            const modal = document.getElementById('fileModal');
+            if (!modal) return;
+            if (event.target === modal) {
+                closeFileModal();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            const modal = document.getElementById('fileModal');
+            if (!modal) return;
+            if (event.key === 'Escape' && modal.classList.contains('show')) {
+                closeFileModal();
+            }
+        });
     }
 
     const OCR_ROUTES = {
@@ -988,6 +1048,7 @@
             const fileName = document.getElementById('fileName');
             const fileSize = document.getElementById('fileSize');
             const filePreview = document.getElementById('filePreview');
+            const previewBtn = document.getElementById('previewBtn');
             const removeFile = document.getElementById('removeFile');
             const retryOcr = document.getElementById('retry-ocr');
             const multiInvoice = document.getElementById('multi-invoice-selector');
@@ -1263,6 +1324,34 @@
                 setSubmitState();
             });
 
+            previewBtn?.addEventListener('click', () => {
+                const selectedFile = fileInput?.files?.[0];
+                const modalBody = document.getElementById('modalBody');
+                const modalFileName = document.getElementById('modalFileName');
+                if (!selectedFile || !modalBody || !modalFileName) {
+                    return;
+                }
+
+                if (window.__fileModalState.objectUrl) {
+                    URL.revokeObjectURL(window.__fileModalState.objectUrl);
+                    window.__fileModalState.objectUrl = null;
+                }
+
+                const objectUrl = URL.createObjectURL(selectedFile);
+                window.__fileModalState.objectUrl = objectUrl;
+                modalFileName.textContent = selectedFile.name || 'Bukti Transaksi';
+
+                const mime = (selectedFile.type || '').toLowerCase();
+                const isPdf = mime.includes('pdf') || selectedFile.name.toLowerCase().endsWith('.pdf');
+                if (isPdf) {
+                    modalBody.innerHTML = `<iframe src="${objectUrl}" class="file-preview-pdf" title="Preview Bukti Transaksi"></iframe>`;
+                } else {
+                    modalBody.innerHTML = `<img src="${objectUrl}" class="file-preview-image" alt="Preview Bukti Transaksi">`;
+                }
+
+                openFileModal();
+            });
+
             retryOcr?.addEventListener('click', (e) => {
                 e.preventDefault();
                 fileInput?.click();
@@ -1283,8 +1372,13 @@
             setSubmitState();
         };
 
-        document.addEventListener('DOMContentLoaded', initOcrCreateForm);
-        document.addEventListener('livewire:navigated', initOcrCreateForm);
+        const initCreatePage = () => {
+            ensureFileModalMounted();
+            initOcrCreateForm();
+        };
+
+        document.addEventListener('DOMContentLoaded', initCreatePage);
+        document.addEventListener('livewire:navigated', initCreatePage);
     })();
 </script>
 @endpush

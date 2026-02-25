@@ -104,6 +104,20 @@
     margin: 0;
 }
 
+.finance-live-meta {
+    margin-top: 0.45rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.welcome-mini-stats {
+    margin-top: 0.95rem;
+    display: flex;
+    gap: 1.5rem;
+}
+
 .welcome-stats {
     display: flex;
     gap: 1rem;
@@ -398,8 +412,8 @@
 }
 
 .stat-icon svg {
-    width: 26px;
-    height: 26px;
+    width: 26px !important;
+    height: 26px !important;
     stroke-width: 2;
 }
 
@@ -719,9 +733,6 @@
 }
 
 /* Fix large icons on load */
-.stat-icon svg, 
-.card-chip svg, 
-.info-icon-wrapper svg,
 .pencairan-icon svg,
 .welcome-avatar svg {
     width: 24px; /* Base size */
@@ -733,11 +744,7 @@
 .card-chip svg {
     width: 40px !important;
     height: 40px !important;
-}
-
-.stat-icon svg {
-    width: 26px !important;
-    height: 26px !important;
+    opacity: 0.8;
 }
 
 .info-icon-wrapper svg {
@@ -755,12 +762,6 @@
     background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
     border-radius: 50%;
     transform: translate(30%, -30%);
-}
-
-.card-chip svg {
-    width: 40px;
-    height: 40px;
-    opacity: 0.8;
 }
 
 .card-balance {
@@ -830,6 +831,14 @@
 .mini-stat .value {
     font-size: 1.1rem;
     font-weight: 700;
+}
+
+.mini-stat .value.is-alert {
+    color: #fecaca;
+}
+
+.mini-stat .value.is-good {
+    color: #bbf7d0;
 }
 
 /* Top Requesters List */
@@ -1071,7 +1080,6 @@
     }
 
     .priority-action-item {
-        min-height: 64px;
         padding: 0.65rem;
     }
 
@@ -1082,10 +1090,6 @@
     .donut-wrapper {
         width: 170px;
         height: 170px;
-    }
-
-    .dashboard-wrapper {
-        padding: 1rem;
     }
 
     .stats-grid {
@@ -1131,10 +1135,6 @@
         padding: 1.25rem;
         box-sizing: border-box;
         overflow: hidden;
-    }
-
-    .data-table {
-        width: 100%;
     }
 
     .data-table th,
@@ -1300,6 +1300,10 @@ body.role-finance .filter-container {
 body.role-finance .filter-form-finance,
 body.role-finance .filter-form-history,
 body.role-finance .filter-container .filter-form {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: flex-end !important;
+    width: 100% !important;
     background: #f6f9fd !important;
     border: 1px solid rgba(62, 87, 130, 0.14) !important;
     border-radius: 1rem !important;
@@ -1310,6 +1314,9 @@ body.role-finance .filter-container .filter-form {
 
 body.role-finance .filter-group-pegawai,
 body.role-finance .filter-container .filter-group {
+    flex: 1 1 220px !important;
+    min-width: 200px !important;
+    max-width: none !important;
     gap: 0.32rem;
 }
 
@@ -1358,7 +1365,46 @@ body.role-finance .filter-container .filter-actions {
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+    order: 99;
+    min-width: max-content;
     gap: 0.5rem !important;
+}
+
+body.role-finance .filter-form-finance .search-group,
+body.role-finance .filter-form-history .search-group {
+    width: 100%;
+}
+
+body.role-finance .filter-form-finance .filter-input-pegawai,
+body.role-finance .filter-form-history .filter-input-pegawai,
+body.role-finance .filter-form-finance select.filter-input-pegawai,
+body.role-finance .filter-form-history select.filter-input-pegawai {
+    width: 100% !important;
+}
+
+@media (max-width: 992px) {
+    body.role-finance .filter-group-pegawai,
+    body.role-finance .filter-container .filter-group {
+        flex-basis: calc(50% - 0.4rem) !important;
+    }
+
+    body.role-finance .filter-actions-pegawai,
+    body.role-finance .filter-actions-report,
+    body.role-finance .filter-container .filter-actions {
+        width: 100%;
+        justify-content: flex-start;
+        margin-left: 0 !important;
+    }
+}
+
+@media (max-width: 640px) {
+    body.role-finance .filter-group-pegawai,
+    body.role-finance .filter-container .filter-group {
+        flex-basis: 100% !important;
+        min-width: 100% !important;
+    }
 }
 
 body.role-finance .filter-actions-pegawai .btn-modern,

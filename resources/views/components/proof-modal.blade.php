@@ -1,5 +1,5 @@
 <!-- Proof Modal -->
-<div id="proofModal" class="proof-modal" style="display: none;">
+<div id="proofModal" class="proof-modal" data-proof-modal-root="1" style="display: none;">
     <div class="proof-modal-overlay" onclick="closeProofModal()"></div>
     <div class="proof-modal-container">
         <div class="proof-modal-header">
@@ -38,32 +38,191 @@
 
 @push('scripts')
 <script>
-    let currentZoom = 1;
-    let currentFileUrl = '';
-    let currentFileName = 'bukti-transaksi';
+    (function () {
+    window.__proofModalState = window.__proofModalState || {
+        zoom: 1,
+        fileUrl: '',
+        fileName: 'bukti-transaksi',
+        previousBodyOverflow: '',
+    };
+
+    const proofModalState = window.__proofModalState;
+
+    const sanitizeProofFileName = (value) => {
+        const normalized = String(value || '')
+            .trim()
+            .replace(/[^a-zA-Z0-9._-]+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '');
+
+        if (!normalized) {
+            return '';
+        }
+
+        return normalized.slice(0, 120);
+    };
+
+    const extractExtensionFromPath = (path) => {
+        if (!path) {
+            return '';
+        }
+
+        const match = path.match(/\.([a-zA-Z0-9]{2,8})$/);
+        if (!match) {
+            return '';
+        }
+
+        return String(match[1]).toLowerCase();
+    };
+
+    const resolveProofExtension = (fileUrl, isPdf) => {
+        if (isPdf) {
+            return 'pdf';
+        }
+
+        try {
+            const parsed = new URL(fileUrl, window.location.origin);
+            const extFromPath = extractExtensionFromPath(parsed.pathname);
+            if (extFromPath) {
+                return extFromPath;
+            }
+        } catch (error) {
+            const extFromRaw = extractExtensionFromPath(String(fileUrl || ''));
+            if (extFromRaw) {
+                return extFromRaw;
+            }
+        }
+
+        return 'jpg';
+    };
+
+    const ensureExtension = (fileName, extension) => {
+        if (!fileName) {
+            return '';
+        }
+
+        if (!extension) {
+            return fileName;
+        }
+
+        const lowerFileName = fileName.toLowerCase();
+        const suffix = `.${extension}`;
+        if (lowerFileName.endsWith(suffix)) {
+            return fileName;
+        }
+
+        return `${fileName}${suffix}`;
+    };
+
+    const formatTimestamp = () => {
+        const now = new Date();
+        const YYYY = now.getFullYear();
+        const MM = String(now.getMonth() + 1).padStart(2, '0');
+        const DD = String(now.getDate()).padStart(2, '0');
+        const HH = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        return `${YYYY}${MM}${DD}_${HH}${mm}${ss}`;
+    };
+
+    const resolveProofId = (fileUrl) => {
+        const fallbackId = 'unknown';
+
+        try {
+            const parsed = new URL(fileUrl, window.location.origin);
+            const segments = parsed.pathname.split('/').filter(Boolean);
+            const proofIndex = segments.lastIndexOf('proof');
+            const idSegment = proofIndex >= 0 ? segments[proofIndex + 1] : segments[segments.length - 1];
+            const safeId = sanitizeProofFileName(idSegment || fallbackId);
+            return safeId || fallbackId;
+        } catch (error) {
+            const match = String(fileUrl || '').match(/\/proof\/([^/?#]+)/i);
+            const safeId = sanitizeProofFileName(match ? match[1] : fallbackId);
+            return safeId || fallbackId;
+        }
+    };
+
+    const buildAutoProofFileName = (fileUrl, isPdf) => {
+        const extension = resolveProofExtension(fileUrl, isPdf);
+        const proofId = resolveProofId(fileUrl);
+        const timestamp = formatTimestamp();
+        return `bukti-transaksi_${proofId}_${timestamp}.${extension}`;
+    };
+
+    const resolveProofFileName = (fileUrl, isPdf, requestedFileName) => {
+        const sanitizedRequested = sanitizeProofFileName(requestedFileName);
+        const normalizedRequested = sanitizedRequested.toLowerCase();
+        const shouldAutoGenerate = !sanitizedRequested ||
+            normalizedRequested === 'bukti-transaksi' ||
+            normalizedRequested === 'bukti_transaksi';
+
+        if (shouldAutoGenerate) {
+            return buildAutoProofFileName(fileUrl, isPdf);
+        }
+
+        const extension = resolveProofExtension(fileUrl, isPdf);
+        return ensureExtension(sanitizedRequested, extension);
+    };
+
+    const buildDownloadUrl = (fileUrl, fileName) => {
+        try {
+            const url = new URL(fileUrl, window.location.origin);
+            url.searchParams.set('download', '1');
+            if (fileName) {
+                url.searchParams.set('filename', fileName);
+            }
+            return url.toString();
+        } catch (error) {
+            return fileUrl;
+        }
+    };
+
+    const ensureProofModalMounted = () => {
+        const modalNodes = Array.from(document.querySelectorAll('#proofModal'));
+        if (!modalNodes.length) {
+            return null;
+        }
+
+        const activeModal = modalNodes[modalNodes.length - 1];
+        modalNodes.slice(0, -1).forEach((node) => node.remove());
+
+        if (activeModal.parentElement !== document.body) {
+            document.body.appendChild(activeModal);
+        }
+
+        return activeModal;
+    };
+
+    if (!window.__proofModalMountListenerBound) {
+        window.__proofModalMountListenerBound = true;
+        document.addEventListener('livewire:navigated', () => setTimeout(ensureProofModalMounted, 0));
+        document.addEventListener('DOMContentLoaded', ensureProofModalMounted);
+    }
+    ensureProofModalMounted();
 
     if (typeof window.openProofModal !== 'function') {
-        window.openProofModal = function(fileUrl, isPdf = false, fileName = 'bukti-transaksi') {
-            const modal = document.getElementById('proofModal');
+        window.openProofModal = function(fileUrl, isPdf = false, fileName = '') {
+            const modal = ensureProofModalMounted();
             const modalBody = document.getElementById('proofModalBody');
             const downloadBtn = document.getElementById('downloadBtn');
             const zoomControls = document.getElementById('imageZoomControls');
-            
-            if (!modal || !modalBody) return;
-            
-            currentFileUrl = fileUrl;
-            currentFileName = fileName;
-            currentZoom = 1;
-            
+
+            if (!modal || !modalBody || !downloadBtn || !zoomControls) return;
+
+            proofModalState.fileUrl = fileUrl;
+            proofModalState.fileName = resolveProofFileName(fileUrl, isPdf, fileName);
+            proofModalState.zoom = 1;
+
             modalBody.innerHTML = '<div class="clip-loader" style="border-color: #3b82f6; border-bottom-color: transparent; margin: 2rem auto;"></div>';
             modal.style.display = 'flex';
+
+            proofModalState.previousBodyOverflow = document.body.style.overflow || '';
             document.body.style.overflow = 'hidden';
-            
-            // Set download action
+
             downloadBtn.onclick = () => {
                 const link = document.createElement('a');
-                link.href = currentFileUrl;
-                link.download = currentFileName;
+                link.href = buildDownloadUrl(proofModalState.fileUrl, proofModalState.fileName);
+                link.download = proofModalState.fileName;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -71,50 +230,88 @@
 
             if (isPdf) {
                 zoomControls.style.display = 'none';
-                modalBody.innerHTML = `<iframe src="${fileUrl}" style="width: 100%; height: 75vh; border: none; border-radius: 0.5rem;" title="Bukti Transaksi"></iframe>`;
-            } else {
-                zoomControls.style.display = 'flex';
-                const img = new Image();
-                img.onload = function() {
-                    modalBody.innerHTML = `<img id="proofImage" src="${fileUrl}" style="max-width: 100%; height: auto; transition: transform 0.2s ease; border-radius: 0.5rem; transform-origin: top center;" alt="Bukti Transaksi">`;
-                };
-                img.onerror = function() {
-                    modalBody.innerHTML = '<div style="padding: 2rem; text-align: center;"><p style="color: #dc2626;">Gagal memuat gambar bukti.</p></div>';
-                };
-                img.src = fileUrl;
+                modalBody.innerHTML = '';
+                modalBody.style.alignItems = 'stretch';
+
+                const iframe = document.createElement('iframe');
+                iframe.src = fileUrl;
+                iframe.title = 'Bukti Transaksi';
+                iframe.style.width = '100%';
+                iframe.style.height = '75vh';
+                iframe.style.border = 'none';
+                iframe.style.borderRadius = '0.5rem';
+                modalBody.appendChild(iframe);
+                return;
             }
+
+            zoomControls.style.display = 'flex';
+            modalBody.style.alignItems = 'center';
+
+            const image = new Image();
+            image.id = 'proofImage';
+            image.alt = 'Bukti Transaksi';
+            image.style.maxWidth = '100%';
+            image.style.height = 'auto';
+            image.style.transition = 'transform 0.2s ease';
+            image.style.borderRadius = '0.5rem';
+            image.style.transformOrigin = 'top center';
+
+            image.onload = () => {
+                modalBody.innerHTML = '';
+                modalBody.appendChild(image);
+            };
+            image.onerror = () => {
+                modalBody.innerHTML = '<div style="padding: 2rem; text-align: center;"><p style="color: #dc2626;">Gagal memuat gambar bukti.</p></div>';
+            };
+            image.src = fileUrl;
         };
 
         window.zoomProof = function(delta) {
             const img = document.getElementById('proofImage');
             if (!img) return;
-            currentZoom += delta;
-            currentZoom = Math.max(0.1, Math.min(3, currentZoom)); // Limit zoom between 10% and 300%
-            img.style.transform = `scale(${currentZoom})`;
-            
-            // Adjust container scroll if zoomed
-            if (currentZoom > 1) {
-                img.parentElement.style.alignItems = 'flex-start';
-            } else {
-                img.parentElement.style.alignItems = 'center';
+
+            proofModalState.zoom += delta;
+            proofModalState.zoom = Math.max(0.1, Math.min(3, proofModalState.zoom));
+            img.style.transform = `scale(${proofModalState.zoom})`;
+
+            const modalBody = document.getElementById('proofModalBody');
+            if (modalBody) {
+                modalBody.style.alignItems = proofModalState.zoom > 1 ? 'flex-start' : 'center';
             }
         };
 
         window.resetZoom = function() {
             const img = document.getElementById('proofImage');
-            if (!img) return;
-            currentZoom = 1;
-            img.style.transform = 'scale(1)';
-            img.parentElement.style.alignItems = 'center';
+            proofModalState.zoom = 1;
+
+            if (img) {
+                img.style.transform = 'scale(1)';
+            }
+
+            const modalBody = document.getElementById('proofModalBody');
+            if (modalBody) {
+                modalBody.style.alignItems = 'center';
+            }
         };
 
         window.closeProofModal = function() {
             const modal = document.getElementById('proofModal');
             const modalBody = document.getElementById('proofModalBody');
+            const zoomControls = document.getElementById('imageZoomControls');
+
             if (!modal) return;
+
             modal.style.display = 'none';
-            if (modalBody) modalBody.innerHTML = '';
-            document.body.style.overflow = 'auto';
+            if (modalBody) {
+                modalBody.innerHTML = '';
+                modalBody.style.alignItems = 'center';
+            }
+            if (zoomControls) {
+                zoomControls.style.display = 'none';
+            }
+
+            document.body.style.overflow = proofModalState.previousBodyOverflow || '';
+            proofModalState.previousBodyOverflow = '';
             resetZoom();
         };
 
@@ -122,5 +319,6 @@
             if (e.key === 'Escape') closeProofModal();
         });
     }
+    })();
 </script>
 @endpush

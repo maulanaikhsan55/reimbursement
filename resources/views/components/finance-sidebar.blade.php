@@ -1,3 +1,11 @@
+@php
+    $isReimbursementActive = request()->routeIs('finance.approval.*')
+        || request()->routeIs('finance.disbursement.*')
+        || request()->routeIs('finance.notifikasi*');
+    $isMasterDataActive = request()->routeIs('finance.masterdata.*');
+    $isReportActive = request()->routeIs('finance.report.*');
+@endphp
+
 <aside class="finance-sidebar" wire:persist="sidebar">
     <!-- Logo Section -->
     <div class="sidebar-header">
@@ -25,223 +33,138 @@
 
         <!-- REIMBURSEMENT Section -->
         <div class="menu-section-label">REIMBURSEMENT</div>
+        <div class="menu-group {{ $isReimbursementActive ? 'is-open' : '' }}" data-menu-group="reimbursement">
+            <button type="button" class="menu-item menu-group-toggle" data-menu-toggle aria-expanded="{{ $isReimbursementActive ? 'true' : 'false' }}" aria-controls="financeGroupReimbursement">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 11l3 3L22 4"></path>
+                    <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="menu-text">Proses</span>
+                <svg class="menu-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 6 15 12 9 18"></polyline>
+                </svg>
+            </button>
 
-        <!-- Persetujuan -->
-        <a href="{{ route('finance.approval.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.approval.*') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 11l3 3L22 4"></path>
-                <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span class="menu-text">Persetujuan</span>
-            <span class="badge-sidebar badge-approval-finance" 
-                x-data="{ count: 0 }" 
-                x-init="
-                    const updateApprovalCount = () => {
-                        fetch('{{ route('finance.approval.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                            .then(r => r.json())
-                            .then(data => { count = Number(data.pending_count || 0); })
-                            .catch(() => {});
-                    };
-                    window.addEventListener('refresh-notif-badges', updateApprovalCount);
-                    if (typeof Livewire !== 'undefined') {
-                        Livewire.on('notifikasi-baru', () => setTimeout(updateApprovalCount, 250));
-                    }
-                    if ('requestIdleCallback' in window) {
-                        requestIdleCallback(updateApprovalCount, { timeout: 1200 });
-                    } else {
-                        setTimeout(updateApprovalCount, 120);
-                    }
-                    setInterval(updateApprovalCount, 30000);
-                " 
-                x-show="count > 0"
-                x-cloak
-                x-text="count > 99 ? '99+' : count">
-            </span>
-        </a>
+            <div id="financeGroupReimbursement" class="menu-submenu" role="group" aria-label="Workflow reimbursement">
+                <a href="{{ route('finance.approval.index') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.approval.index') || request()->routeIs('finance.approval.show') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Persetujuan</span>
+                    <span class="badge-sidebar badge-approval-finance" data-badge-key="approval" style="display: none;">0</span>
+                </a>
 
-        <!-- Pencairan -->
-        <a href="{{ route('finance.disbursement.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.disbursement.*') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2v20m10-10H2"></path>
-                <path d="M4 8l8-6 8 6"></path>
-                <path d="M4 16l8 6 8-6"></path>
-            </svg>
-            <span class="menu-text">Pencairan</span>
-            <span class="badge-sidebar badge-disbursement-finance" 
-                x-data="{ count: 0 }" 
-                x-init="
-                    const updateDisbursementCount = () => {
-                        fetch('{{ route('finance.disbursement.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                            .then(r => r.json())
-                            .then(data => { count = Number(data.pending_count || 0); })
-                            .catch(() => {});
-                    };
-                    window.addEventListener('refresh-notif-badges', updateDisbursementCount);
-                    if (typeof Livewire !== 'undefined') {
-                        Livewire.on('notifikasi-baru', () => setTimeout(updateDisbursementCount, 250));
-                    }
-                    if ('requestIdleCallback' in window) {
-                        requestIdleCallback(updateDisbursementCount, { timeout: 1200 });
-                    } else {
-                        setTimeout(updateDisbursementCount, 180);
-                    }
-                    setInterval(updateDisbursementCount, 30000);
-                " 
-                x-show="count > 0"
-                x-cloak
-                x-text="count > 99 ? '99+' : count">
-            </span>
-        </a>
+                <a href="{{ route('finance.approval.history') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.approval.history*') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Riwayat Persetujuan</span>
+                </a>
 
-         <!-- Notifikasi -->
-        <a href="{{ route('finance.notifikasi') }}" wire:navigate.hover class="menu-item notifikasi-menu {{ request()->routeIs('finance.notifikasi*') ? 'active' : '' }}" x-data="{
-            unreadCount: 0
-        }" x-init="
-            const updateNotifCount = () => {
-                fetch('{{ route('finance.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(r => r.json())
-                    .then(data => {
-                        unreadCount = Number(data.unread_count || 0);
-                    })
-                    .catch(() => {});
-            };
+                <a href="{{ route('finance.disbursement.index') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.disbursement.index') || request()->routeIs('finance.disbursement.show') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Pencairan</span>
+                    <span class="badge-sidebar badge-disbursement-finance" data-badge-key="disbursement" style="display: none;">0</span>
+                </a>
 
-            // Listen for notification events
-            window.addEventListener('refresh-notif-badges', updateNotifCount);
-            
-            // Also listen for Livewire event
-            if (typeof Livewire !== 'undefined') {
-                Livewire.on('notifikasi-baru', () => {
-                    setTimeout(updateNotifCount, 350);
-                });
-            }
+                <a href="{{ route('finance.disbursement.history') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.disbursement.history*') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Riwayat Pencairan</span>
+                </a>
 
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(updateNotifCount, { timeout: 1200 });
-            } else {
-                setTimeout(updateNotifCount, 220);
-            }
-            
-            // Fallback polling every 30 seconds
-            setInterval(() => {
-                updateNotifCount();
-            }, 30000);
-        ">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-            <span class="menu-text">Notifikasi</span>
-            <span class="notif-badge-sidebar" x-show="unreadCount > 0" x-cloak x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
-        </a>
+                <a href="{{ route('finance.notifikasi') }}" wire:navigate.hover class="menu-item menu-sub-item notifikasi-menu {{ request()->routeIs('finance.notifikasi*') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Notifikasi</span>
+                    <span class="notif-badge-sidebar" data-badge-key="notif" style="display: none;">0</span>
+                </a>
+            </div>
+        </div>
 
         <!-- MASTER DATA Section -->
         <div class="menu-section-label">MASTER DATA</div>
+        <div class="menu-group {{ $isMasterDataActive ? 'is-open' : '' }}" data-menu-group="masterdata">
+            <button type="button" class="menu-item menu-group-toggle" data-menu-toggle aria-expanded="{{ $isMasterDataActive ? 'true' : 'false' }}" aria-controls="financeGroupMasterData">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 7h18"></path>
+                    <path d="M3 12h18"></path>
+                    <path d="M3 17h18"></path>
+                </svg>
+                <span class="menu-text">Master Data</span>
+                <svg class="menu-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 6 15 12 9 18"></polyline>
+                </svg>
+            </button>
 
-        <!-- User -->
-        <a href="{{ route('finance.masterdata.users.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.masterdata.users.*') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            </svg>
-            <span class="menu-text">User</span>
-        </a>
+            <div id="financeGroupMasterData" class="menu-submenu" role="group" aria-label="Master data">
+                <a href="{{ route('finance.masterdata.users.index') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.masterdata.users.*') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">User</span>
+                </a>
 
-        <!-- Departemen -->
-        <a href="{{ route('finance.masterdata.departemen.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.masterdata.departemen.*') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-            </svg>
-            <span class="menu-text">Departemen</span>
-        </a>
+                <a href="{{ route('finance.masterdata.departemen.index') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.masterdata.departemen.*') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Departemen</span>
+                </a>
 
-        <!-- Kategori Biaya -->
-        <a href="{{ route('finance.masterdata.kategori_biaya.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.masterdata.kategori_biaya.*') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                <line x1="7" y1="7" x2="7.01" y2="7"></line>
-            </svg>
-            <span class="menu-text">Kategori Biaya</span>
-        </a>
+                <a href="{{ route('finance.masterdata.kategori_biaya.index') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.masterdata.kategori_biaya.*') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Kategori Biaya</span>
+                </a>
 
-        <!-- COA -->
-        <a href="{{ route('finance.masterdata.coa.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.masterdata.coa.*') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="8" y1="6" x2="21" y2="6"></line>
-                <line x1="8" y1="12" x2="21" y2="12"></line>
-                <line x1="8" y1="18" x2="21" y2="18"></line>
-                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                <line x1="3" y1="18" x2="3.01" y2="18"></line>
-            </svg>
-            <span class="menu-text">COA</span>
-        </a>
+                <a href="{{ route('finance.masterdata.coa.index') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.masterdata.coa.*') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">COA</span>
+                </a>
 
-        <!-- Kas/Bank -->
-        <a href="{{ route('finance.masterdata.kas_bank.index') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.masterdata.kas_bank.*') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                <line x1="1" y1="10" x2="23" y2="10"></line>
-            </svg>
-            <span class="menu-text">Kas/Bank</span>
-        </a>
+                <a href="{{ route('finance.masterdata.kas_bank.index') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.masterdata.kas_bank.*') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Kas/Bank</span>
+                </a>
+            </div>
+        </div>
 
         <!-- LAPORAN Section -->
         <div class="menu-section-label">LAPORAN</div>
+        <div class="menu-group {{ $isReportActive ? 'is-open' : '' }}" data-menu-group="reports">
+            <button type="button" class="menu-item menu-group-toggle" data-menu-toggle aria-expanded="{{ $isReportActive ? 'true' : 'false' }}" aria-controls="financeGroupReports">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <span class="menu-text">Laporan Keuangan</span>
+                <svg class="menu-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 6 15 12 9 18"></polyline>
+                </svg>
+            </button>
 
-        <!-- Jurnal Umum -->
-        <a href="{{ route('finance.report.jurnal_umum') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.report.jurnal_umum') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="12" y1="11" x2="12" y2="17"></line>
-                <line x1="9" y1="14" x2="15" y2="14"></line>
-            </svg>
-            <span class="menu-text">Jurnal Umum</span>
-        </a>
+            <div id="financeGroupReports" class="menu-submenu" role="group" aria-label="Laporan keuangan">
+                <a href="{{ route('finance.report.index') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.report.index') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Report Center</span>
+                </a>
 
-        <!-- Buku Besar -->
-        <a href="{{ route('finance.report.buku_besar') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.report.buku_besar') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            </svg>
-            <span class="menu-text">Buku Besar</span>
-        </a>
+                <a href="{{ route('finance.report.jurnal_umum') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.report.jurnal_umum') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Jurnal Umum</span>
+                </a>
 
-        <!-- Rekonsiliasi -->
-        <a href="{{ route('finance.report.reconciliation') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.report.reconciliation') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 6L9 17l-5-5"></path>
-                <path d="M12 2v4"></path>
-                <path d="M12 18v4"></path>
-                <path d="M4 12H2"></path>
-                <path d="M22 12h-2"></path>
-            </svg>
-            <span class="menu-text">Rekonsiliasi</span>
-        </a>
+                <a href="{{ route('finance.report.buku_besar') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.report.buku_besar') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Buku Besar</span>
+                </a>
 
-        <!-- Arus Kas -->
-        <a href="{{ route('finance.report.laporan_arus_kas') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.report.laporan_arus_kas') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="21 8 21 21 3 21 3 8"></polyline>
-                <line x1="1" y1="3" x2="23" y2="3"></line>
-                <path d="M10 12v4"></path>
-                <path d="M14 12v4"></path>
-            </svg>
-            <span class="menu-text">Arus Kas</span>
-        </a>
+                <a href="{{ route('finance.report.reconciliation') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.report.reconciliation') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Rekonsiliasi</span>
+                </a>
 
-        <!-- Audit Budget -->
-        <a href="{{ route('finance.report.budget_audit') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('finance.report.budget_audit') ? 'active' : '' }}">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
-                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
-            </svg>
-            <span class="menu-text">Audit Budget</span>
-        </a>
+                <a href="{{ route('finance.report.laporan_arus_kas') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.report.laporan_arus_kas') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Arus Kas</span>
+                </a>
+
+                <a href="{{ route('finance.report.budget_audit') }}" wire:navigate.hover class="menu-item menu-sub-item {{ request()->routeIs('finance.report.budget_audit') ? 'active' : '' }}">
+                    <span class="menu-sub-dot" aria-hidden="true"></span>
+                    <span class="menu-text">Audit Budget</span>
+                </a>
+            </div>
+        </div>
 
         <!-- AKUN Section -->
         <div class="menu-section-label">AKUN</div>
@@ -298,6 +221,7 @@
         padding: 0.5rem 1.25rem 0 1.25rem;
         scroll-behavior: smooth;
         padding-bottom: 0;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Modern thin scrollbar - Chrome/Safari */
@@ -370,7 +294,7 @@
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
-        padding-right: -1.5rem;
+        padding-right: 0.35rem;
         position: relative;
     }
 
@@ -415,6 +339,97 @@
 
     .menu-item:active {
         transform: scale(0.98) translateX(2px);
+    }
+
+    .menu-group {
+        display: grid;
+        gap: 0.2rem;
+    }
+
+    .menu-group-toggle {
+        width: 100%;
+        text-align: left;
+    }
+
+    .menu-group-toggle .menu-icon,
+    .menu-group-toggle .menu-text {
+        color: var(--finance-sidebar-primary);
+        font-weight: 600;
+    }
+
+    .menu-group-chevron {
+        width: 16px;
+        height: 16px;
+        color: var(--finance-sidebar-muted);
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .menu-group.is-open .menu-group-chevron {
+        transform: rotate(90deg);
+    }
+
+    .menu-submenu {
+        display: grid;
+        gap: 0.2rem;
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transform: translateY(-4px);
+        transition: max-height 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease, transform 0.24s ease, margin-top 0.24s ease;
+        margin-top: 0;
+        padding: 0 0.15rem 0 0.25rem;
+        position: relative;
+    }
+
+    .menu-submenu::before {
+        content: '';
+        position: absolute;
+        left: 1rem;
+        top: 0.35rem;
+        bottom: 0.35rem;
+        width: 1px;
+        background: linear-gradient(180deg, rgba(167, 184, 209, 0.18) 0%, rgba(136, 157, 189, 0.42) 50%, rgba(167, 184, 209, 0.18) 100%);
+        border-radius: 999px;
+        pointer-events: none;
+    }
+
+    .menu-group.is-open .menu-submenu {
+        max-height: 520px;
+        opacity: 1;
+        transform: translateY(0);
+        margin-top: 0.2rem;
+    }
+
+    .menu-sub-item {
+        border-radius: 1rem;
+        padding: 0.36rem 0.8rem 0.36rem 1.45rem;
+        min-height: 32px;
+        font-size: 0.82rem;
+    }
+
+    .menu-sub-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 999px;
+        background: #9eb3d2;
+        flex-shrink: 0;
+        margin-left: -0.22rem;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95);
+    }
+
+    .menu-sub-item .menu-text {
+        color: #3f587f;
+        font-weight: 600;
+    }
+
+    .menu-sub-item.active .menu-sub-dot {
+        background: #ffffff;
+    }
+
+    .menu-sub-item.active .menu-text {
+        color: #ffffff;
+        font-weight: 600;
     }
 
     .menu-item.active {
@@ -533,11 +548,20 @@
 
     @media (max-width: 768px) {
         .finance-sidebar {
-            width: 100% !important;
-            height: auto !important;
-            position: relative !important;
-            border-radius: 0 !important;
+            width: 280px !important;
+            height: 100vh !important;
+            position: fixed !important;
+            left: -280px !important;
+            top: 0 !important;
+            border-radius: 0 2rem 2rem 0 !important;
             padding: 1rem !important;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            visibility: visible !important;
+            transform: none !important;
+        }
+
+        .finance-sidebar.show {
+            left: 0 !important;
         }
     }
 </style>
@@ -545,11 +569,195 @@
 <script data-navigate-once>
 function confirmLogout(event) {
     event.preventDefault();
-    openConfirmModal(
-        () => document.getElementById('logout-form').submit(),
-        'Konfirmasi Logout',
-        'Apakah Anda yakin ingin keluar dari sistem?'
-    );
+    if (typeof openConfirmModal === 'function') {
+        openConfirmModal(
+            () => document.getElementById('logout-form').submit(),
+            'Konfirmasi Logout',
+            'Apakah Anda yakin ingin keluar dari sistem?'
+        );
+    } else {
+        if (confirm('Apakah Anda yakin ingin keluar?')) {
+            document.getElementById('logout-form').submit();
+        }
+    }
 }
+
+(function() {
+    function setGroupOpen(group, open) {
+        if (!group) return;
+        group.classList.toggle('is-open', open);
+        const toggle = group.querySelector('[data-menu-toggle]');
+        if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function normalizePath(path) {
+        const normalized = (path || '/').replace(/\/+$/, '');
+        return normalized === '' ? '/' : normalized;
+    }
+
+    function syncFinanceActiveLink(sidebar) {
+        if (!sidebar) return null;
+        const links = Array.from(sidebar.querySelectorAll('a.menu-item[href]'));
+        if (!links.length) return null;
+
+        const currentPath = normalizePath(window.location.pathname);
+        let bestLink = null;
+        let bestScore = -1;
+
+        links.forEach((link) => {
+            let linkPath = '/';
+            try {
+                linkPath = normalizePath(new URL(link.href, window.location.origin).pathname);
+            } catch (error) {
+                linkPath = normalizePath(link.getAttribute('href') || '/');
+            }
+
+            let score = -1;
+            if (currentPath === linkPath) {
+                score = 1000 + linkPath.length;
+            } else if (currentPath.startsWith(`${linkPath}/`)) {
+                score = 500 + linkPath.length;
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestLink = link;
+            }
+        });
+
+        links.forEach((link) => link.classList.remove('active'));
+        if (bestLink && bestScore >= 0) {
+            bestLink.classList.add('active');
+        }
+
+        return bestLink && bestScore >= 0 ? bestLink : null;
+    }
+
+    function updateFinanceSidebarIndicator(sidebar) {
+        if (!sidebar) return;
+        const menuContainer = sidebar.querySelector('.sidebar-menu');
+        const indicator = sidebar.querySelector('#sidebarIndicator');
+        const activeMenu = sidebar.querySelector('a.menu-item.active');
+
+        if (!menuContainer || !indicator || !activeMenu) {
+            if (indicator) indicator.style.opacity = '0';
+            return;
+        }
+
+        const menuRect = menuContainer.getBoundingClientRect();
+        const activeRect = activeMenu.getBoundingClientRect();
+        // Include scrollTop so indicator stays aligned while sidebar content scrolls.
+        const relativeTop = activeRect.top - menuRect.top + menuContainer.scrollTop;
+        const maxTop = Math.max(0, menuContainer.scrollHeight - activeRect.height);
+        const safeTop = Math.max(0, Math.min(relativeTop, maxTop));
+
+        indicator.style.opacity = '1';
+        indicator.style.height = `${activeRect.height}px`;
+        indicator.style.top = `${safeTop}px`;
+    }
+
+    function scheduleFinanceIndicatorRefresh(sidebar, durationMs = 420) {
+        if (!sidebar) return;
+        const startedAt = performance.now();
+
+        const frame = (now) => {
+            updateFinanceSidebarIndicator(sidebar);
+            if (now - startedAt < durationMs) {
+                requestAnimationFrame(frame);
+            }
+        };
+
+        requestAnimationFrame(frame);
+    }
+
+    function scrollActiveMenuIntoView(sidebar, smooth = true) {
+        if (!sidebar) return;
+        const menuContainer = sidebar.querySelector('.sidebar-menu');
+        const activeMenu = sidebar.querySelector('.menu-item.active');
+        if (!menuContainer || !activeMenu) return;
+
+        const padding = 18;
+        const containerTop = menuContainer.scrollTop;
+        const containerBottom = containerTop + menuContainer.clientHeight;
+        const itemTop = activeMenu.offsetTop - padding;
+        const itemBottom = activeMenu.offsetTop + activeMenu.offsetHeight + padding;
+
+        if (itemTop < containerTop) {
+            menuContainer.scrollTo({ top: Math.max(0, itemTop), behavior: smooth ? 'smooth' : 'auto' });
+            return;
+        }
+
+        if (itemBottom > containerBottom) {
+            const nextTop = Math.max(0, itemBottom - menuContainer.clientHeight);
+            menuContainer.scrollTo({ top: nextTop, behavior: smooth ? 'smooth' : 'auto' });
+        }
+    }
+
+    function initFinanceSidebarDropdown() {
+        const sidebar = document.querySelector('.finance-sidebar');
+        if (!sidebar) return;
+
+        const groups = Array.from(sidebar.querySelectorAll('.menu-group[data-menu-group]'));
+        if (!groups.length) return;
+
+        const activeLink = syncFinanceActiveLink(sidebar);
+
+        groups.forEach((group) => {
+            const toggle = group.querySelector('[data-menu-toggle]');
+            const activeChild = activeLink && group.contains(activeLink);
+            const shouldOpen = Boolean(activeChild);
+
+            setGroupOpen(group, shouldOpen);
+
+            const submenu = group.querySelector('.menu-submenu');
+            if (submenu && submenu.dataset.indicatorBound !== 'true') {
+                submenu.dataset.indicatorBound = 'true';
+                submenu.addEventListener('transitionend', (event) => {
+                    if (event.propertyName === 'max-height' || event.propertyName === 'transform') {
+                        scheduleFinanceIndicatorRefresh(sidebar, 260);
+                    }
+                });
+            }
+
+            if (!toggle || toggle.dataset.bound === 'true') return;
+            toggle.dataset.bound = 'true';
+            toggle.addEventListener('click', () => {
+                const nextOpen = !group.classList.contains('is-open');
+                groups.forEach((otherGroup) => {
+                    if (otherGroup !== group) setGroupOpen(otherGroup, false);
+                });
+                setGroupOpen(group, nextOpen);
+                setTimeout(() => scrollActiveMenuIntoView(sidebar, true), 40);
+                scheduleFinanceIndicatorRefresh(sidebar);
+            });
+        });
+
+        const menuContainer = sidebar.querySelector('.sidebar-menu');
+        if (menuContainer && menuContainer.dataset.indicatorBound !== 'true') {
+            menuContainer.dataset.indicatorBound = 'true';
+            menuContainer.addEventListener('scroll', () => updateFinanceSidebarIndicator(sidebar), { passive: true });
+        }
+
+        if (!sidebar.dataset.resizeBound) {
+            sidebar.dataset.resizeBound = 'true';
+            window.addEventListener('resize', () => updateFinanceSidebarIndicator(sidebar));
+        }
+
+        requestAnimationFrame(() => {
+            scheduleFinanceIndicatorRefresh(sidebar, 460);
+            setTimeout(() => {
+                scrollActiveMenuIntoView(sidebar, true);
+                scheduleFinanceIndicatorRefresh(sidebar, 460);
+            }, 120);
+        });
+    }
+
+    if (document.readyState === 'complete') {
+        initFinanceSidebarDropdown();
+    } else {
+        document.addEventListener('DOMContentLoaded', initFinanceSidebarDropdown);
+    }
+    document.addEventListener('livewire:navigated', initFinanceSidebarDropdown);
+})();
 
 </script>

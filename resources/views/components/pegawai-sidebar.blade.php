@@ -12,7 +12,7 @@
         <div class="menu-sliding-bg" id="sidebarIndicator"></div>
 
         <!-- OVERVIEW Section -->
-        <div class="menu-section-label">MENU UTAMA</div>
+        <div class="menu-section-label">OVERVIEW</div>
         
         <!-- Dashboard -->
         <a href="{{ route('pegawai.dashboard') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('pegawai.dashboard') ? 'active' : '' }}">
@@ -35,43 +35,13 @@
             <span class="menu-text">Pengajuan</span>
         </a>
 
-        <a href="{{ route('pegawai.notifikasi') }}" wire:navigate.hover class="menu-item notifikasi-menu {{ request()->routeIs('pegawai.notifikasi*') ? 'active' : '' }}" x-data="{
-            unreadCount: 0
-        }" x-init="
-            const updateNotifCount = () => {
-                fetch('{{ route('pegawai.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(r => r.json())
-                    .then(data => {
-                        unreadCount = Number(data.unread_count || 0);
-                    })
-                    .catch(() => {});
-            };
-
-            // Listen for notification events
-            window.addEventListener('refresh-notif-badges', updateNotifCount);
-            
-            // Also listen for Livewire event
-            if (typeof Livewire !== 'undefined') {
-                Livewire.on('notifikasi-baru', () => {
-                    setTimeout(updateNotifCount, 300);
-                });
-            }
-
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(updateNotifCount, { timeout: 1200 });
-            } else {
-                setTimeout(updateNotifCount, 120);
-            }
-            
-            // Fallback polling every 30 seconds
-            setInterval(updateNotifCount, 30000);
-        ">
+        <a href="{{ route('pegawai.notifikasi') }}" wire:navigate.hover class="menu-item notifikasi-menu {{ request()->routeIs('pegawai.notifikasi*') ? 'active' : '' }}">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
             <span class="menu-text">Notifikasi</span>
-            <span class="notif-badge-sidebar" x-show="unreadCount > 0" x-cloak x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
+            <span class="notif-badge-sidebar" data-badge-key="notif" style="display: none;">0</span>
         </a>
 
         <!-- ACCOUNT Section -->
@@ -105,7 +75,7 @@
 
 <style>
     /* Pegawai Sidebar */
-    .pegawai-sidebar {
+.pegawai-sidebar {
         width: 260px;
         background: #ffffff;
         display: flex;
@@ -119,6 +89,7 @@
         border-radius: 0 2.5rem 2.5rem 0;
         padding: 0.5rem 1.25rem 0 1.25rem;
         scroll-behavior: smooth;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .pegawai-sidebar::-webkit-scrollbar {
@@ -350,12 +321,13 @@
             top: 0 !important;
             border-radius: 0 2rem 2rem 0 !important;
             padding: 1rem !important;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             visibility: visible !important;
+            transform: none !important;
         }
 
         .pegawai-sidebar.show {
-            transform: translateX(280px) !important;
+            left: 0 !important;
         }
     }
 </style>
@@ -363,10 +335,16 @@
 <script data-navigate-once>
 function confirmLogout(event) {
     event.preventDefault();
-    openConfirmModal(
-        () => document.getElementById('logout-form').submit(),
-        'Konfirmasi Logout',
-        'Apakah Anda yakin ingin keluar dari sistem?'
-    );
+    if (typeof openConfirmModal === 'function') {
+        openConfirmModal(
+            () => document.getElementById('logout-form').submit(),
+            'Konfirmasi Logout',
+            'Apakah Anda yakin ingin keluar dari sistem?'
+        );
+    } else {
+        if (confirm('Apakah Anda yakin ingin keluar?')) {
+            document.getElementById('logout-form').submit();
+        }
+    }
 }
 </script>

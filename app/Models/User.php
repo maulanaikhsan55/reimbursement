@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property int $id
@@ -19,6 +20,7 @@ use Illuminate\Notifications\Notifiable;
  * @property string|null $nomor_telepon
  * @property string|null $nama_bank
  * @property string|null $nomor_rekening
+ * @property string|null $foto_profil_path
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $password_reset_at
  * @property string|null $remember_token
@@ -63,6 +65,7 @@ class User extends Authenticatable
         'nomor_telepon',
         'nama_bank',
         'nomor_rekening',
+        'foto_profil_path',
         'is_active',
         'password_reset_at',
     ];
@@ -257,5 +260,21 @@ class User extends Authenticatable
         $domain = end($emailParts);
 
         return in_array($domain, $allowedDomains);
+    }
+
+    /**
+     * Public URL for uploaded profile photo.
+     */
+    public function getFotoProfilUrlAttribute(): ?string
+    {
+        if (! $this->foto_profil_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->foto_profil_path, 'http://') || str_starts_with($this->foto_profil_path, 'https://')) {
+            return $this->foto_profil_path;
+        }
+
+        return Storage::disk('public')->url($this->foto_profil_path);
     }
 }

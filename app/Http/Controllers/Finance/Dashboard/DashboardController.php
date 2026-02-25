@@ -14,10 +14,13 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $cacheKey = 'finance_dashboard_data_v2';
+        $cacheKey = 'finance_dashboard_data_v3';
+        $cacheLockKey = $cacheKey.'_lock';
 
-        $viewData = Cache::remember($cacheKey, 300, function () {
-            return $this->getDashboardData();
+        $viewData = Cache::flexible($cacheKey, [60, 300], function () use ($cacheLockKey) {
+            return Cache::lock($cacheLockKey, 15)->block(5, function () {
+                return $this->getDashboardData();
+            });
         });
 
         return view('dashboard.finance.dashboard', $viewData);
@@ -83,6 +86,8 @@ class DashboardController extends Controller
         $monthlyBudget = (float) Departemen::sum('budget_limit');
         $thisMonthProcessedAmount = (float) ($coreStats->this_month_processed_amount ?? 0);
         $budgetUsagePercentage = $monthlyBudget > 0 ? ($thisMonthProcessedAmount / $monthlyBudget) * 100 : ($thisMonthProcessedAmount > 0 ? 100 : 0);
+        $remainingBudget = max($monthlyBudget - $thisMonthProcessedAmount, 0);
+        $financeAlerts = (int) ($coreStats->oversla_count ?? 0);
 
         // 4. CHART DATA: ACTIVITY TREND (Ensure no empty gaps for 7 days)
         $trendRaw = Pengajuan::select(
@@ -251,10 +256,12 @@ class DashboardController extends Controller
             'this_month_count' => $thisMonthRequestsCount,
             'this_month_processed_amount' => $thisMonthProcessedAmount,
             'monthly_budget' => $monthlyBudget,
+            'remainingBudget' => $remainingBudget,
             'budget_usage_percent' => $budgetUsagePercentage,
             'growth_percentage' => $growthPercentage,
             'avg_request_amount' => $avgRequestAmount,
             'oversla_count' => $coreStats->oversla_count ?? 0,
+            'financeAlerts' => $financeAlerts,
             'oversla_nominal' => $coreStats->oversla_nominal ?? 0,
             'oversla_avg_days' => $overslaAvgDays,
             'dailyTrend' => $dailyTrend,
@@ -270,6 +277,7 @@ class DashboardController extends Controller
             'totalUsers' => $totalUsers,
             'totalDepartemen' => $totalDepartemen,
             'totalCategories' => $totalCategories,
+            'generatedAt' => now()->toIso8601String(),
         ];
     }
 }

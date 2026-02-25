@@ -44,7 +44,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}">
+            <form method="POST" action="{{ route('login') }}" id="loginForm">
                 @csrf
 
                 <div class="form-group">
@@ -91,8 +91,23 @@
                     </div>
                 </div>
 
-                <button type="submit" class="auth-btn">
-                    Masuk
+                <div class="auth-remember">
+                    <label for="remember" class="auth-remember-label">
+                        <input
+                            type="checkbox"
+                            id="remember"
+                            name="remember"
+                            value="1"
+                            class="auth-remember-checkbox"
+                            {{ old('remember') ? 'checked' : '' }}
+                        >
+                        <span>Ingat saya</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="auth-btn" id="loginSubmitBtn">
+                    <span class="auth-btn-spinner" aria-hidden="true"></span>
+                    <span class="auth-btn-label">Masuk</span>
                 </button>
 
                 <div class="auth-footer kiri-kanan">
@@ -128,6 +143,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+
     // Inline toggle password function
     window.togglePassword = function() {
         const passwordInput = document.getElementById('password');
@@ -147,6 +165,23 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleBtn.setAttribute('aria-label', 'Tampilkan kata sandi');
         }
     };
+
+    if (loginForm && loginSubmitBtn) {
+        loginForm.addEventListener('submit', function() {
+            if (loginSubmitBtn.disabled) {
+                return;
+            }
+
+            loginSubmitBtn.disabled = true;
+            loginSubmitBtn.classList.add('is-loading');
+            loginSubmitBtn.setAttribute('aria-busy', 'true');
+
+            const label = loginSubmitBtn.querySelector('.auth-btn-label');
+            if (label) {
+                label.textContent = 'Memproses...';
+            }
+        });
+    }
 });
 </script>
 @endsection

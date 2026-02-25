@@ -11,6 +11,15 @@ class NotificationList extends Component
 {
     use WithPagination;
 
+    public string $search = '';
+
+    public string $readStatus = 'all';
+
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'readStatus' => ['except' => 'all'],
+    ];
+
     public function mount()
     {
         if (! auth()->check()) {
@@ -22,6 +31,16 @@ class NotificationList extends Component
         Notifikasi::markAllAsReadForUser(auth()->id());
         $this->dispatch('notifikasi-baru');
         $this->dispatch('refresh-notif-badges');
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedReadStatus(): void
+    {
+        $this->resetPage();
     }
 
     public function getListeners()
@@ -53,33 +72,7 @@ class NotificationList extends Component
 
     private function resolveNotificationTarget(Notifikasi $notifikasi): string
     {
-        $role = auth()->user()->role ?? '';
-
-        if ($notifikasi->pengajuan_id) {
-            if ($role === 'pegawai') {
-                return route('pegawai.pengajuan.show', $notifikasi->pengajuan_id);
-            }
-
-            if ($role === 'atasan') {
-                return route('atasan.approval.show', $notifikasi->pengajuan_id);
-            }
-
-            if ($role === 'finance') {
-                return route('finance.approval.show', $notifikasi->pengajuan_id);
-            }
-        }
-
-        $fallbackRoute = $role.'.notifikasi';
-        if (\Illuminate\Support\Facades\Route::has($fallbackRoute)) {
-            return route($fallbackRoute);
-        }
-
-        $dashboardRoute = $role.'.dashboard';
-        if (\Illuminate\Support\Facades\Route::has($dashboardRoute)) {
-            return route($dashboardRoute);
-        }
-
-        return url('/');
+        return $notifikasi->resolveTargetUrlForViewer(auth()->user());
     }
 
     public function markAllAsRead()
@@ -97,14 +90,30 @@ class NotificationList extends Component
             ? route($routeName, [], false)
             : '/'.ltrim(request()->path(), '/');
 
-        $notifikasi = Notifikasi::where('user_id', auth()->id())
+        $baseQuery = Notifikasi::where('user_id', auth()->id());
+        $totalCount = (clone $baseQuery)->count();
+        $unreadCount = (clone $baseQuery)->where('is_read', false)->count();
+
+        $notifikasi = $baseQuery
+            ->when($this->readStatus === 'unread', fn ($query) => $query->where('is_read', false))
+            ->when($this->readStatus === 'read', fn ($query) => $query->where('is_read', true))
+            ->when(trim($this->search) !== '', function ($query) {
+                $search = trim($this->search);
+                $query->where(function ($innerQuery) use ($search) {
+                    $innerQuery->where('judul', 'like', '%'.$search.'%')
+                        ->orWhere('pesan', 'like', '%'.$search.'%')
+                        ->orWhere('tipe', 'like', '%'.$search.'%');
+                });
+            })
             ->orderBy('created_at', 'desc')
-            ->paginate(config('app.notifikasi', 20))
+            ->paginate(config('app.pagination.notifikasi', 10))
             ->withPath($paginationPath)
             ->withQueryString();
 
         return view('livewire.notification-list', [
             'notifikasi' => $notifikasi,
+            'totalCount' => $totalCount,
+            'unreadCount' => $unreadCount,
         ]);
     }
 }

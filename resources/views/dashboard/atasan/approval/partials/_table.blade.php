@@ -36,16 +36,16 @@
                             <span class="code-badge">{{ $pengajuan->nomor_pengajuan }}</span>
                         </td>
                         <td data-label="Tanggal" class="col-tanggal">
-                            <span class="text-secondary">{{ $pengajuan->tanggal_pengajuan->format('d/m/Y') }}</span>
+                            <span class="text-secondary">{{ $pengajuan->tanggal_pengajuan->format('d M Y') }}</span>
                         </td>
                         <td data-label="Staff">
-                            <div style="font-weight: 600; color: #334155;">{{ $pengajuan->user->name }}</div>
+                            <div class="table-text-strong">{{ $pengajuan->user->name }}</div>
                         </td>
                         <td data-label="Vendor">
-                            <div style="font-weight: 600; color: #334155;">{{ $pengajuan->nama_vendor }}</div>
+                            <div class="table-text-strong">{{ $pengajuan->nama_vendor }}</div>
                         </td>
                         <td data-label="Nominal" class="col-nominal">
-                            <span class="amount-text" style="font-weight: 700; color: #0f172a;">{{ format_rupiah($pengajuan->nominal) }}</span>
+                            <span class="amount-text amount-text-strong">{{ format_rupiah($pengajuan->nominal) }}</span>
                         </td>
                         <td data-label="Status" class="col-status">
                             <x-status-badge :status="$pengajuan->status" :transactionId="$pengajuan->accurate_transaction_id" />
@@ -59,21 +59,11 @@
                         </td>
                         <td data-label="Aksi" class="col-aksi">
                             <div class="action-buttons-centered">
-                                <a href="{{ route('atasan.approval.show', $pengajuan->pengajuan_id) }}" 
-                                   class="btn-action-icon" 
-                                   title="{{ $pengajuan->status->value === 'menunggu_atasan' ? 'Persetujuan' : 'Lihat Detail' }}">
-                                    @if($pengajuan->status->value === 'menunggu_atasan')
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <polyline points="9 11 12 14 22 4"></polyline>
-                                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                                        </svg>
-                                    @else
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    @endif
-                                </a>
+                                <x-action-icon
+                                    :href="route('atasan.approval.show', $pengajuan->pengajuan_id)"
+                                    :variant="$pengajuan->status->value === 'menunggu_atasan' ? 'approve' : 'view'"
+                                    :title="$pengajuan->status->value === 'menunggu_atasan' ? 'Persetujuan' : 'Lihat Detail'"
+                                />
                             </div>
                         </td>
                     </tr>

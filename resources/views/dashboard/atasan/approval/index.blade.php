@@ -57,6 +57,16 @@
         gap: 0.5rem;
     }
 
+    .table-text-strong {
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .amount-text-strong {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
     .status-transaction-id {
         display: inline-block;
         font-size: 0.65rem !important;

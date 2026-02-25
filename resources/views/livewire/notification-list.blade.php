@@ -1,9 +1,9 @@
-<div>
+<div x-data="{ showFilters: false }">
     <!-- Quick Stats -->
     <div class="notif-stats">
         <div class="stat-card modern">
             <div class="stat-left">
-                <div class="stat-value">{{ \App\Models\Notifikasi::where('user_id', auth()->id())->where('is_read', false)->count() }}</div>
+                <div class="stat-value">{{ $unreadCount }}</div>
                 <div class="stat-label">Belum Dibaca</div>
             </div>
             <div class="stat-icon warning-icon">
@@ -15,7 +15,7 @@
         </div>
         <div class="stat-card modern">
             <div class="stat-left">
-                <div class="stat-value">{{ \App\Models\Notifikasi::where('user_id', auth()->id())->count() }}</div>
+                <div class="stat-value">{{ $totalCount }}</div>
                 <div class="stat-label">Total Notifikasi</div>
             </div>
             <div class="stat-icon primary-icon">
@@ -34,7 +34,16 @@
                 <h2 class="section-title">Aktivitas Terbaru</h2>
                 <p class="section-subtitle notif-subtitle">Notifikasi terbaru yang perlu perhatian dan tindak lanjut</p>
             </div>
-            @if(\App\Models\Notifikasi::where('user_id', auth()->id())->where('is_read', false)->count() > 0)
+            <div style="display: flex; gap: .5rem; align-items: center;">
+                <button
+                    type="button"
+                    class="btn-modern btn-modern-secondary btn-modern-sm"
+                    x-on:click="showFilters = !showFilters"
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px; margin-right: 6px;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                    Filter
+                </button>
+            @if($unreadCount > 0)
                 <button
                     type="button"
                     class="btn-modern btn-modern-secondary btn-modern-sm"
@@ -47,6 +56,24 @@
                     <span wire:loading wire:target="markAllAsRead">Memproses...</span>
                 </button>
             @endif
+            </div>
+        </div>
+
+        <div x-show="showFilters" x-transition class="notif-filter-panel">
+            <div class="filter-form-pegawai notif-filter-form">
+                <div class="filter-group-pegawai">
+                    <label class="filter-label-pegawai">Cari</label>
+                    <input type="text" wire:model.live.debounce.300ms="search" class="filter-input-pegawai" placeholder="Cari judul, pesan, tipe...">
+                </div>
+                <div class="filter-group-pegawai">
+                    <label class="filter-label-pegawai">Status</label>
+                    <select wire:model.live="readStatus" class="filter-input-pegawai">
+                        <option value="all">Semua</option>
+                        <option value="unread">Belum Dibaca</option>
+                        <option value="read">Sudah Dibaca</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         @if($notifikasi->count() > 0)

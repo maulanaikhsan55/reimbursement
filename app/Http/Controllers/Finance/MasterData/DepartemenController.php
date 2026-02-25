@@ -21,8 +21,16 @@ class DepartemenController extends Controller
 
     public function index(Request $request)
     {
-        $selectedMonth = (int) $request->get('month', now()->month);
-        $selectedYear = (int) $request->get('year', now()->year);
+        $selectedMonth = $request->filled('month') ? (int) $request->get('month') : null;
+        $selectedYear = $request->filled('year') ? (int) $request->get('year') : null;
+
+        if ($selectedMonth !== null && ($selectedMonth < 1 || $selectedMonth > 12)) {
+            $selectedMonth = null;
+        }
+
+        if ($selectedYear !== null && ($selectedYear < 2000 || $selectedYear > 2100)) {
+            $selectedYear = null;
+        }
 
         $query = Departemen::withCount('users')
             ->orderBy('nama_departemen');
@@ -35,20 +43,34 @@ class DepartemenController extends Controller
             });
         }
 
-        $departemen = $query->paginate(config('app.pagination.master_data'));
+        $departemen = $query->paginate(config('app.pagination.master_data'))
+            ->withQueryString();
+
+        $stats = [
+            'total' => Departemen::count(),
+            'with_users' => Departemen::has('users')->count(),
+            'without_users' => Departemen::doesntHave('users')->count(),
+        ];
 
         // Calculate usage for each department
         $departemen->getCollection()->transform(function ($dept) use ($selectedMonth, $selectedYear) {
-            $dept->current_usage = Pengajuan::where('departemen_id', $dept->departemen_id)
-                ->whereMonth('tanggal_transaksi', $selectedMonth)
-                ->whereYear('tanggal_transaksi', $selectedYear)
-                ->whereNotIn('status', ['ditolak_atasan', 'ditolak_finance'])
-                ->sum('nominal');
+            $usageQuery = Pengajuan::where('departemen_id', $dept->departemen_id)
+                ->whereNotIn('status', ['ditolak_atasan', 'ditolak_finance']);
+
+            if ($selectedMonth !== null) {
+                $usageQuery->whereMonth('tanggal_transaksi', $selectedMonth);
+            }
+
+            if ($selectedYear !== null) {
+                $usageQuery->whereYear('tanggal_transaksi', $selectedYear);
+            }
+
+            $dept->current_usage = $usageQuery->sum('nominal');
 
             return $dept;
         });
 
-        return view('dashboard.finance.masterdata.departemen.index', compact('departemen', 'selectedMonth', 'selectedYear'));
+        return view('dashboard.finance.masterdata.departemen.index', compact('departemen', 'selectedMonth', 'selectedYear', 'stats'));
     }
 
     public function update(Request $request, Departemen $departemen)

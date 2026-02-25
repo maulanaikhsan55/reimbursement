@@ -4,6 +4,58 @@
 
 @push('styles')
 <style>
+    .dashboard-kpi-grid {
+        margin-top: 0.85rem;
+        gap: 0.8rem;
+    }
+
+    .dashboard-kpi-grid .stat-card.modern {
+        min-height: 96px;
+        padding: 0.82rem 0.95rem;
+    }
+
+    .dashboard-kpi-grid .stat-label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #64748b;
+        line-height: 1.3;
+        margin-bottom: 0.2rem;
+    }
+
+    .dashboard-kpi-grid .stat-value {
+        font-size: clamp(1.12rem, 2vw, 1.55rem);
+        font-weight: 800;
+        color: #1f2f47;
+        line-height: 1.2;
+        margin-bottom: 0.12rem;
+    }
+
+    .chart-switch {
+        display: flex;
+        background: #eef2ff;
+        padding: 0.2rem;
+        border-radius: 10px;
+        border: 1px solid #dbeafe;
+    }
+
+    .chart-switch-btn {
+        border: none;
+        background: transparent;
+        padding: 0.3rem 0.6rem;
+        border-radius: 8px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .chart-switch-btn.is-active {
+        background: white;
+        color: #425d87;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
     .stat-sub-label {
         font-size: 0.75rem;
         color: #64748b;
@@ -36,6 +88,17 @@
     @keyframes slideInDown {
         from { transform: translateY(-20px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
+    }
+
+    @media (max-width: 1024px) {
+        .dashboard-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .dashboard-kpi-grid .stat-card.modern {
+            height: auto;
+            min-height: 96px;
+        }
     }
 </style>
 @endpush
@@ -90,14 +153,15 @@
                             data: sData,
                             backgroundColor: ['#425d87', '#7693ba', '#10b981', '#ef4444'],
                             hoverOffset: 4,
-                            borderWidth: 0,
+                            borderColor: 'rgba(255,255,255,0.86)',
+                            borderWidth: 2.5,
                             borderRadius: 2
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '50%',
+                        cutout: '68%',
                         plugins: {
                             legend: { display: false },
                             tooltip: {
@@ -142,15 +206,17 @@
                         datasets: [{
                             data: values,
                             backgroundColor: colors.slice(0, values.length),
-                            borderColor: '#ffffff',
-                            borderWidth: 4,
-                            borderRadius: 4
+                            borderColor: 'rgba(255,255,255,0.86)',
+                            borderWidth: 2.5,
+                            borderRadius: 4,
+                            spacing: 3,
+                            hoverOffset: 6
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '40%',
+                        cutout: '68%',
                         plugins: {
                             legend: { display: false },
                             tooltip: {
@@ -269,22 +335,27 @@
             '.smarter-dashboard-alerts',
             '.recent-section',
         ];
+        const refreshUrl = "{{ route('pegawai.dashboard.widgets') }}";
 
         try {
-            const response = await fetch(window.location.href, {
+            const response = await fetch(refreshUrl, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
                 },
                 credentials: 'same-origin',
             });
-            const html = await response.text();
-            const doc = new DOMParser().parseFromString(html, 'text/html');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const payload = await response.json();
+            const sections = payload.sections || {};
 
             selectors.forEach((selector) => {
                 const currentEl = document.querySelector(selector);
-                const nextEl = doc.querySelector(selector);
-                if (currentEl && nextEl) {
-                    currentEl.outerHTML = nextEl.outerHTML;
+                const nextHtml = sections[selector];
+                if (currentEl && typeof nextHtml === 'string' && nextHtml.length > 0) {
+                    currentEl.outerHTML = nextHtml;
                 }
             });
         } catch (error) {
@@ -308,22 +379,14 @@
         if (type === 'status') {
             statusContainer.style.display = 'flex';
             categoryContainer.style.display = 'none';
-            btnStatus.style.background = 'white';
-            btnStatus.style.color = '#425d87';
-            btnStatus.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-            btnCategory.style.background = 'transparent';
-            btnCategory.style.color = '#64748b';
-            btnCategory.style.boxShadow = 'none';
+            btnStatus.classList.add('is-active');
+            btnCategory.classList.remove('is-active');
             subtitle.innerText = 'Berdasarkan status';
         } else {
             statusContainer.style.display = 'none';
             categoryContainer.style.display = 'flex';
-            btnStatus.style.background = 'transparent';
-            btnStatus.style.color = '#64748b';
-            btnStatus.style.boxShadow = 'none';
-            btnCategory.style.background = 'white';
-            btnCategory.style.color = '#425d87';
-            btnCategory.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+            btnStatus.classList.remove('is-active');
+            btnCategory.classList.add('is-active');
             subtitle.innerText = 'Berdasarkan nominal kategori';
         }
     }
@@ -342,14 +405,25 @@
 
         <div class="dashboard-content">
         <!-- User Welcome Card with Gradient (Enhanced) -->
-        <div class="welcome-card" style="padding: 2.25rem 2.5rem; min-height: 180px;">
+        <div class="welcome-card dashboard-welcome-card">
             <div class="welcome-content">
                 <div class="welcome-avatar">
                     <span class="avatar-initial">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
                 </div>
                 <div class="welcome-text">
-                    <h2 class="welcome-title">Halo, {{ explode(' ', Auth::user()->name)[0] }}! 👋</h2>
+                    <h2 class="welcome-title">Halo, {{ explode(' ', Auth::user()->name)[0] }}!</h2>
                     <p class="welcome-subtitle">{{ Auth::user()->departemen->nama_departemen ?? 'Departemen' }}</p>
+                    @php
+                        $dashboardGeneratedAt = isset($generatedAt) ? \Carbon\Carbon::parse($generatedAt) : now();
+                    @endphp
+                    <p class="welcome-desc">Ringkasan realtime pengajuan, pencairan, dan proteksi anggaran Anda.</p>
+                    <div class="dashboard-live-meta">
+                        <span class="dashboard-live-pill">
+                            <span class="dashboard-live-dot"></span>
+                            Realtime aktif
+                        </span>
+                        <span class="dashboard-last-updated">Update terakhir: {{ $dashboardGeneratedAt->format('d M Y, H:i') }}</span>
+                    </div>
                 </div>
             </div>
             <div class="welcome-stats">
@@ -362,14 +436,14 @@
                     <div class="stat-value">Rp {{ number_format($nominalDisbursedMonth ?? 0, 0, ',', '.') }}</div>
                     <div class="stat-label">Dicairkan (Bulan Ini)</div>
                     @if(isset($disbursedGrowth))
-                        <div style="font-size: 0.7rem; font-weight: 700; color: {{ $disbursedGrowth >= 0 ? '#bbf7d0' : '#fca5a5' }}; margin-top: 0.2rem;">
-                            {!! $disbursedGrowth >= 0 ? '↑' : '↓' !!} {{ abs(round($disbursedGrowth, 1)) }}% <span style="opacity: 0.8; font-weight: 500;">vs bln lalu</span>
+                        <div class="welcome-growth {{ $disbursedGrowth >= 0 ? 'is-up' : 'is-down' }}">
+                            {{ $disbursedGrowth >= 0 ? '+' : '-' }} {{ abs(round($disbursedGrowth, 1)) }}% <span class="welcome-growth-note">vs bln lalu</span>
                         </div>
                     @endif
                 </div>
                 <div class="stat-divider"></div>
-                <div class="welcome-stat-item" title="Total nominal pengajuan yang tidak dicairkan bulan ini (Ditolak oleh AI/Atasan/Finance)">
-                    <div class="stat-value" style="color: #fca5a5;">Rp {{ number_format($nominalRejected ?? 0, 0, ',', '.') }}</div>
+                <div class="welcome-stat-item is-protection" title="Total nominal pengajuan yang tidak dicairkan bulan ini (Ditolak oleh AI/Atasan/Finance)">
+                    <div class="stat-value">Rp {{ number_format($nominalRejected ?? 0, 0, ',', '.') }}</div>
                     <div class="stat-label">Proteksi Anggaran</div>
                 </div>
             </div>
@@ -394,7 +468,7 @@
                 </div>
             @endif
 
-            @if($activeRequest ?? null)
+            @if(isset($activeRequest) && $activeRequest)
                 <div class="live-status-tracker" style="background: white; border: 1px solid #f1f5f9; border-radius: 1rem; padding: 1rem; box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <h4 style="margin: 0; color: #425d87; font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -511,9 +585,9 @@
                         <h3 class="chart-title" style="color: #1e293b; margin-bottom: 0;">Distribusi</h3>
                         <p class="chart-subtitle" id="chartSubtitle">Berdasarkan status</p>
                     </div>
-                    <div style="display: flex; background: #f1f5f9; padding: 0.2rem; border-radius: 10px;">
-                        <button onclick="toggleDistChart('status')" id="btnStatusChart" style="border: none; background: white; padding: 0.3rem 0.6rem; border-radius: 8px; font-size: 0.65rem; font-weight: 700; color: #425d87; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.2s;">Status</button>
-                        <button onclick="toggleDistChart('category')" id="btnCategoryChart" style="border: none; background: transparent; padding: 0.3rem 0.6rem; border-radius: 8px; font-size: 0.65rem; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.2s;">Kategori</button>
+                    <div class="chart-switch">
+                        <button onclick="toggleDistChart('status')" id="btnStatusChart" class="chart-switch-btn is-active">Status</button>
+                        <button onclick="toggleDistChart('category')" id="btnCategoryChart" class="chart-switch-btn">Kategori</button>
                     </div>
                 </div>
                 
@@ -586,6 +660,51 @@
             </div>
         </div>
 
+        @php
+            $pegawaiTotalStatus = (int) ($statusData['menunggu_atasan'] ?? 0)
+                + (int) ($statusData['menunggu_finance'] ?? 0)
+                + (int) ($statusData['dicairkan'] ?? 0)
+                + (int) ($statusData['ditolak_atasan'] ?? 0)
+                + (int) ($statusData['ditolak_finance'] ?? 0);
+            $pegawaiApprovedRate = $pegawaiTotalStatus > 0
+                ? (((int) ($statusData['dicairkan'] ?? 0) / $pegawaiTotalStatus) * 100)
+                : 0;
+            $pegawaiTotalNominalMonth = (float) (($nominalPending ?? 0) + ($nominalDisbursedMonth ?? 0) + ($nominalRejected ?? 0));
+            $pegawaiAvgNominal = $pegawaiTotalStatus > 0 ? ($pegawaiTotalNominalMonth / $pegawaiTotalStatus) : 0;
+        @endphp
+        <div class="stats-grid dashboard-kpi-grid">
+            <div class="stat-card modern">
+                <div class="stat-left">
+                    <div class="stat-label">Total Pengajuan</div>
+                    <div class="stat-value">{{ number_format($pegawaiTotalStatus, 0, ',', '.') }}</div>
+                    <div class="stat-sub-label">Keseluruhan status aktif</div>
+                </div>
+                <span class="stat-icon primary-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M20 8v6"></path><path d="M23 11h-6"></path></svg>
+                </span>
+            </div>
+            <div class="stat-card modern">
+                <div class="stat-left">
+                    <div class="stat-label">Approval Rate</div>
+                    <div class="stat-value">{{ number_format($pegawaiApprovedRate, 1, ',', '.') }}%</div>
+                    <div class="stat-sub-label">Persentase status dicairkan</div>
+                </div>
+                <span class="stat-icon success-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.8 2.8L16.5 9"></path></svg>
+                </span>
+            </div>
+            <div class="stat-card modern">
+                <div class="stat-left">
+                    <div class="stat-label">Rata-rata Nominal</div>
+                    <div class="stat-value">Rp {{ number_format($pegawaiAvgNominal, 0, ',', '.') }}</div>
+                    <div class="stat-sub-label">Nilai per pengajuan</div>
+                </div>
+                <span class="stat-icon warning-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7h18"></path><path d="M5 7l1.5 10.5A2 2 0 0 0 8.5 19h7a2 2 0 0 0 2-1.5L19 7"></path><path d="M9 11h6"></path><path d="M10 15h4"></path><path d="M9 4h6"></path></svg>
+                </span>
+            </div>
+        </div>
+
         <!-- Quick Actions & Recent Table Grid -->
         <div class="dashboard-main-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 1rem; align-items: start;">
             
@@ -596,9 +715,9 @@
                         <h3 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0;">Pengajuan Terbaru</h3>
                         <p style="font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0 0;">Pantau status 5 pengajuan terakhir</p>
                     </div>
-                    <a href="{{ route('pegawai.pengajuan.index') }}" style="font-size: 0.75rem; color: #3b82f6; text-decoration: none; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.8rem; background: #eff6ff; border-radius: 8px; transition: all 0.2s;">
+                    <a href="{{ route('pegawai.pengajuan.index') }}" class="btn-link-right">
                         Lihat Semua
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
                     </a>
                 </div>
 
@@ -643,12 +762,17 @@
                                         </td>
                                         <td data-label="Aksi" style="text-align: center; padding: 0.6rem 0.5rem;">
                                             <div style="display: flex; gap: 0.4rem; justify-content: center;">
-                                                <a href="{{ route('pegawai.pengajuan.show', $pengajuan->pengajuan_id) }}" class="btn-action-icon" style="width: 28px; height: 28px;" title="Lihat detail">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                                </a>
-                                                <a href="{{ route('pegawai.pengajuan.create', ['duplicate_id' => $pengajuan->pengajuan_id]) }}" class="btn-action-icon" style="width: 28px; height: 28px; background: #f0f7ff; color: #3b82f6;" title="Ajukan lagi (Duplikat)">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                                </a>
+                                                <x-action-icon
+                                                    :href="route('pegawai.pengajuan.show', $pengajuan->pengajuan_id)"
+                                                    title="Lihat detail"
+                                                    style="width: 28px; height: 28px;"
+                                                />
+                                                <x-action-icon
+                                                    :href="route('pegawai.pengajuan.create', ['duplicate_id' => $pengajuan->pengajuan_id])"
+                                                    variant="duplicate"
+                                                    title="Ajukan lagi (Duplikat)"
+                                                    style="width: 28px; height: 28px; background: #f0f7ff; color: #3b82f6;"
+                                                />
                                             </div>
                                         </td>
                                     </tr>

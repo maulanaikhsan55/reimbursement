@@ -2,20 +2,91 @@
 
 namespace App\Services;
 
+use App\Jobs\CreateUserNotificationJob;
 use App\Models\Notifikasi;
 use App\Models\Pengajuan;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class NotifikasiService
 {
+    /**
+     * Decide whether notification writes should go through queue.
+     * Default is sync to keep UX reliable in local/dev without queue workers.
+     */
+    protected function shouldQueueNotifications(): bool
+    {
+        $delivery = strtolower((string) config('reimbursement.notifications.delivery', 'sync'));
+        $queueDefault = strtolower((string) config('queue.default', 'sync'));
+
+        return $delivery === 'queue' && $queueDefault !== 'sync';
+    }
+
     /**
      * Clear sidebar notification and approval caches
      */
     protected function clearSidebarCache(int $userId): void
     {
-        \Illuminate\Support\Facades\Cache::forget('notif_unread_count_user_'.$userId);
-        \Illuminate\Support\Facades\Cache::forget('unread_notif_count_'.$userId);
-        \Illuminate\Support\Facades\Cache::forget('pending_approvals_count_'.$userId);
+        Notifikasi::flushUnreadCaches($userId);
+        Cache::forget($this->pendingApprovalsCacheKey($userId));
+    }
+
+    protected function pendingApprovalsCacheKey(int $userId): string
+    {
+        return 'pending_approvals_count_'.$userId;
+    }
+
+    /**
+     * Queue notification creation so write spikes do not block request lifecycle.
+     */
+    protected function queueNotification(int $userId, ?int $pengajuanId, string $tipe, string $judul, string $pesan): void
+    {
+        CreateUserNotificationJob::dispatch($userId, $pengajuanId, $tipe, $judul, $pesan);
+    }
+
+    public function notifyUserImmediate(int $userId, ?int $pengajuanId, string $tipe, string $judul, string $pesan): void
+    {
+        Notifikasi::create([
+            'user_id' => $userId,
+            'pengajuan_id' => $pengajuanId,
+            'tipe' => $tipe,
+            'judul' => $judul,
+            'pesan' => $pesan,
+            'is_read' => false,
+        ]);
+
+        $this->clearSidebarCache($userId);
+    }
+
+    protected function notifyUser(int $userId, ?int $pengajuanId, string $tipe, string $judul, string $pesan): void
+    {
+        if (! $this->shouldQueueNotifications()) {
+            $this->notifyUserImmediate($userId, $pengajuanId, $tipe, $judul, $pesan);
+
+            return;
+        }
+
+        try {
+            $this->queueNotification($userId, $pengajuanId, $tipe, $judul, $pesan);
+            $this->clearSidebarCache($userId);
+        } catch (\Throwable $e) {
+            \Log::warning('Notifikasi queue gagal, fallback ke sync', [
+                'user_id' => $userId,
+                'pengajuan_id' => $pengajuanId,
+                'tipe' => $tipe,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->notifyUserImmediate($userId, $pengajuanId, $tipe, $judul, $pesan);
+        }
+    }
+
+    protected function getActiveFinanceUsers(): Collection
+    {
+        return User::where('role', 'finance')
+            ->where('is_active', true)
+            ->get();
     }
 
     public function notifyApprovedByAtasan(Pengajuan $pengajuan): void
@@ -27,16 +98,7 @@ class NotifikasiService
         $pesan = "Pengajuan #{$pengajuan->nomor_pengajuan} telah disetujui oleh ".($atasan->name ?? 'Atasan');
         $judul = 'Pengajuan Disetujui';
 
-        Notifikasi::create([
-            'user_id' => $pegawai->id,
-            'pengajuan_id' => $pengajuan->pengajuan_id,
-            'tipe' => 'disetujui_atasan',
-            'judul' => $judul,
-            'pesan' => $pesan,
-            'is_read' => false,
-        ]);
-
-        $this->clearSidebarCache($pegawai->id);
+        $this->notifyUser($pegawai->id, $pengajuan->pengajuan_id, 'disetujui_atasan', $judul, $pesan);
         if ($atasan) {
             $this->clearSidebarCache($atasan->id);
         }
@@ -48,16 +110,7 @@ class NotifikasiService
         $pesan = "Pengajuan #{$pengajuan->nomor_pengajuan} telah ditolak. Alasan: {$pengajuan->catatan_atasan}";
         $judul = 'Pengajuan Ditolak';
 
-        Notifikasi::create([
-            'user_id' => $pegawai->id,
-            'pengajuan_id' => $pengajuan->pengajuan_id,
-            'tipe' => 'ditolak_atasan',
-            'judul' => $judul,
-            'pesan' => $pesan,
-            'is_read' => false,
-        ]);
-
-        $this->clearSidebarCache($pegawai->id);
+        $this->notifyUser($pegawai->id, $pengajuan->pengajuan_id, 'ditolak_atasan', $judul, $pesan);
         if ($pengajuan->user->atasan_id) {
             $this->clearSidebarCache($pengajuan->user->atasan_id);
         }
@@ -69,16 +122,7 @@ class NotifikasiService
         $pesan = "Pengajuan #{$pengajuan->nomor_pengajuan} telah ditolak oleh Finance. Alasan: {$pengajuan->catatan_finance}";
         $judul = 'Pengajuan Ditolak Finance';
 
-        Notifikasi::create([
-            'user_id' => $pegawai->id,
-            'pengajuan_id' => $pengajuan->pengajuan_id,
-            'tipe' => 'ditolak_finance',
-            'judul' => $judul,
-            'pesan' => $pesan,
-            'is_read' => false,
-        ]);
-
-        $this->clearSidebarCache($pegawai->id);
+        $this->notifyUser($pegawai->id, $pengajuan->pengajuan_id, 'ditolak_finance', $judul, $pesan);
 
         try {
             $pengajuan->load('user.atasan');
@@ -86,16 +130,7 @@ class NotifikasiService
 
             if ($atasan && $atasan->is_active) {
                 $pesanAtasan = "Pengajuan #{$pengajuan->nomor_pengajuan} dari {$pengajuan->user->name} telah ditolak oleh Finance. Alasan: {$pengajuan->catatan_finance}";
-                Notifikasi::create([
-                    'user_id' => $atasan->id,
-                    'pengajuan_id' => $pengajuan->pengajuan_id,
-                    'tipe' => 'ditolak_finance',
-                    'judul' => $judul,
-                    'pesan' => $pesanAtasan,
-                    'is_read' => false,
-                ]);
-
-                $this->clearSidebarCache($atasan->id);
+                $this->notifyUser($atasan->id, $pengajuan->pengajuan_id, 'ditolak_finance', $judul, $pesanAtasan);
             }
         } catch (\Exception $e) {
             \Log::warning('Failed to notify atasan about finance rejection: '.$e->getMessage());
@@ -113,16 +148,7 @@ class NotifikasiService
                 $pesan = "Ada pengajuan baru dari {$pengajuan->user->name} ({$pengajuan->departemen->nama_departemen}) sebesar Rp ".number_format((float) $pengajuan->nominal, 0, ',', '.');
                 $judul = 'Pengajuan Baru untuk Persetujuan';
 
-                Notifikasi::create([
-                    'user_id' => $atasan->id,
-                    'pengajuan_id' => $pengajuan->pengajuan_id,
-                    'tipe' => 'pengajuan_baru',
-                    'judul' => $judul,
-                    'pesan' => $pesan,
-                    'is_read' => false,
-                ]);
-
-                $this->clearSidebarCache($atasan->id);
+                $this->notifyUser($atasan->id, $pengajuan->pengajuan_id, 'pengajuan_baru', $judul, $pesan);
             } else {
                 \Log::warning('NotifikasiService: Atasan not found or inactive', [
                     'user_id' => $pengajuan->user_id,
@@ -142,9 +168,7 @@ class NotifikasiService
         try {
             $pengajuan->load('user', 'departemen');
 
-            $financeUsers = User::where('role', 'finance')
-                ->where('is_active', true)
-                ->get();
+            $financeUsers = $this->getActiveFinanceUsers();
 
             if ($financeUsers->isEmpty()) {
                 \Log::warning('NotifikasiService: No active finance users found', [
@@ -159,16 +183,7 @@ class NotifikasiService
 
             foreach ($financeUsers as $finance) {
                 \Log::info('Notifying finance user: '.$finance->id.' for pengajuan: '.$pengajuan->pengajuan_id);
-                Notifikasi::create([
-                    'user_id' => $finance->id,
-                    'pengajuan_id' => $pengajuan->pengajuan_id,
-                    'tipe' => 'pengajuan_baru',
-                    'judul' => $judul,
-                    'pesan' => $pesan,
-                    'is_read' => false,
-                ]);
-
-                $this->clearSidebarCache($finance->id);
+                $this->notifyUser($finance->id, $pengajuan->pengajuan_id, 'pengajuan_baru', $judul, $pesan);
             }
         } catch (\Exception $e) {
             \Log::error('NotifikasiService: Failed to notify finance users', [
@@ -184,16 +199,7 @@ class NotifikasiService
         $pesan = "Pengajuan #{$pengajuan->nomor_pengajuan} telah disetujui oleh Finance and diproses ke Accurate Online dengan nomor jurnal {$jvNumber}.";
         $judul = 'Disetujui Finance';
 
-        Notifikasi::create([
-            'user_id' => $pengajuan->user_id,
-            'pengajuan_id' => $pengajuan->pengajuan_id,
-            'tipe' => 'terkirim_accurate',
-            'judul' => $judul,
-            'pesan' => $pesan,
-            'is_read' => false,
-        ]);
-
-        $this->clearSidebarCache($pengajuan->user_id);
+        $this->notifyUser($pengajuan->user_id, $pengajuan->pengajuan_id, 'terkirim_accurate', $judul, $pesan);
 
         try {
             $pengajuan->load('user.atasan');
@@ -201,16 +207,7 @@ class NotifikasiService
 
             if ($atasan && $atasan->is_active) {
                 $pesanAtasan = "Pengajuan #{$pengajuan->nomor_pengajuan} dari {$pengajuan->user->name} telah disetujui oleh Finance dan diproses ke sistem akuntansi.";
-                Notifikasi::create([
-                    'user_id' => $atasan->id,
-                    'pengajuan_id' => $pengajuan->pengajuan_id,
-                    'tipe' => 'terkirim_accurate',
-                    'judul' => $judul,
-                    'pesan' => $pesanAtasan,
-                    'is_read' => false,
-                ]);
-
-                $this->clearSidebarCache($atasan->id);
+                $this->notifyUser($atasan->id, $pengajuan->pengajuan_id, 'terkirim_accurate', $judul, $pesanAtasan);
             }
         } catch (\Exception $e) {
             \Log::warning('Failed to notify atasan about accurate approval: '.$e->getMessage());
@@ -220,24 +217,13 @@ class NotifikasiService
     public function notifyFailedToAccurate(Pengajuan $pengajuan, string $errorMessage): void
     {
         try {
-            $financeUsers = User::where('role', 'finance')
-                ->where('is_active', true)
-                ->get();
+            $financeUsers = $this->getActiveFinanceUsers();
 
             $pesan = "Pengajuan #{$pengajuan->nomor_pengajuan} gagal dikirim ke Accurate. Error: {$errorMessage}. Silakan coba lagi.";
             $judul = 'Gagal Kirim ke Accurate';
 
             foreach ($financeUsers as $finance) {
-                Notifikasi::create([
-                    'user_id' => $finance->id,
-                    'pengajuan_id' => $pengajuan->pengajuan_id,
-                    'tipe' => 'ditolak_finance',
-                    'judul' => $judul,
-                    'pesan' => $pesan,
-                    'is_read' => false,
-                ]);
-
-                $this->clearSidebarCache($finance->id);
+                $this->notifyUser($finance->id, $pengajuan->pengajuan_id, 'ditolak_finance', $judul, $pesan);
             }
         } catch (\Exception $e) {
             \Log::error('NotifikasiService: Failed to notify finance about Accurate error', [
@@ -253,16 +239,7 @@ class NotifikasiService
         $pesan = 'Reimbursement Rp '.number_format((float) $pengajuan->nominal, 0, ',', '.')." untuk pengajuan #{$pengajuan->nomor_pengajuan}{$jvNumber} telah ditransfer ke rekening Anda pada ".($pengajuan->tanggal_pencairan ? \Carbon\Carbon::parse($pengajuan->tanggal_pencairan)->format('d-m-Y') : \Carbon\Carbon::now()->format('d-m-Y'));
         $judul = 'Dana Dicairkan';
 
-        Notifikasi::create([
-            'user_id' => $pengajuan->user_id,
-            'pengajuan_id' => $pengajuan->pengajuan_id,
-            'tipe' => 'dicairkan',
-            'judul' => $judul,
-            'pesan' => $pesan,
-            'is_read' => false,
-        ]);
-
-        $this->clearSidebarCache($pengajuan->user_id);
+        $this->notifyUser($pengajuan->user_id, $pengajuan->pengajuan_id, 'dicairkan', $judul, $pesan);
 
         try {
             $pengajuan->load('user.atasan');
@@ -270,16 +247,7 @@ class NotifikasiService
 
             if ($atasan && $atasan->is_active) {
                 $pesanAtasan = 'Reimbursement Rp '.number_format((float) $pengajuan->nominal, 0, ',', '.')." untuk pengajuan #{$pengajuan->nomor_pengajuan} dari {$pengajuan->user->name} telah dicairkan pada ".($pengajuan->tanggal_pencairan ? \Carbon\Carbon::parse($pengajuan->tanggal_pencairan)->format('d-m-Y') : \Carbon\Carbon::now()->format('d-m-Y'));
-                Notifikasi::create([
-                    'user_id' => $atasan->id,
-                    'pengajuan_id' => $pengajuan->pengajuan_id,
-                    'tipe' => 'dicairkan',
-                    'judul' => $judul,
-                    'pesan' => $pesanAtasan,
-                    'is_read' => false,
-                ]);
-
-                $this->clearSidebarCache($atasan->id);
+                $this->notifyUser($atasan->id, $pengajuan->pengajuan_id, 'dicairkan', $judul, $pesanAtasan);
             }
         } catch (\Exception $e) {
             \Log::warning('Failed to notify atasan about disbursement: '.$e->getMessage());

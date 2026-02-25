@@ -4,73 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#243b61">
     
     <title>@yield('title', 'Humplus Reimbursement')</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32.png') }}">
+    <link rel="alternate icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        window.ReimbursementFeatures = {
+            realtimeNotifications: @js((bool) config('reimbursement.features.realtime_notifications', true)),
+            broadcastNotifications: @js((bool) config('reimbursement.features.broadcast_notifications', true)),
+            echoClient: @js((bool) config('reimbursement.features.echo_client', true)),
+        };
+    </script>
     
-    @vite(['resources/css/app.css', 'resources/css/dashboard-ultra.css', 'resources/css/dashboard/finance.css', 'resources/css/pages/pegawai/dashboard.css', 'resources/css/pages/pegawai/pengajuan.css', 'resources/css/modules/pengajuan-detail.css', 'resources/css/pages/pegawai/notifikasi.css', 'resources/css/pages/pegawai/profile.css', 'resources/css/pages/atasan/dashboard.css', 'resources/css/pages/pegawai/responsive-fixes.css', 'resources/css/pages/role-unified.css', 'resources/js/app.js', 'resources/js/dashboard-ultra.js'])
+    @vite(['resources/css/app.css', 'resources/css/dashboard-ultra.css', 'resources/css/dashboard/finance.css', 'resources/css/pages/pegawai/dashboard.css', 'resources/css/pages/pegawai/pengajuan.css', 'resources/css/modules/pengajuan-detail.css', 'resources/css/pages/pegawai/notifikasi.css', 'resources/css/pages/pegawai/profile.css', 'resources/css/pages/atasan/dashboard.css', 'resources/css/pages/pegawai/responsive-fixes.css', 'resources/css/pages/role-unified.css', 'resources/css/pages/dashboard/premium-welcome.css', 'resources/js/app.js', 'resources/js/dashboard-ultra.js'])
     
     @livewireStyles
     @stack('styles')
     <style>
       
-        .progress-bar-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: rgba(66, 93, 135, 0.08);
-            z-index: 9999999;
-            overflow: hidden;
-            pointer-events: none;
-            opacity: 0;
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            will-change: opacity;
-            transition: opacity 0.1s linear;
-        }
-
-        .progress-bar-fill {
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(90deg, #32507f 0%, #3b82f6 52%, #38bdf8 100%);
-            border-radius: 999px;
-            transform-origin: left center;
-            transform: scaleX(0);
-            opacity: 1;
-            box-shadow: 0 0 12px rgba(59, 130, 246, 0.45);
-            will-change: transform, opacity;
-            transition: transform 0.14s linear, opacity 0.1s linear;
-        }
-
-        /* Active state */
-        .progress-bar-active {
-            opacity: 1 !important;
-        }
-
-        .progress-bar-active .progress-bar-fill {
-            animation: none !important;
-        }
-
-        /* Exit state */
-        .progress-bar-exit {
-            opacity: 0 !important;
-            transition: opacity 0.12s linear !important;
-        }
-
-        .progress-bar-exit .progress-bar-fill {
-            transform: scaleX(1) !important;
-            opacity: 0 !important;
-        }
-
         /* PAGE TRANSITION */
         #page-content-wrapper {
             opacity: 1;
@@ -384,8 +343,8 @@
     <!-- FALLBACK: Livewire config callbacks BEFORE Livewire loads -->
     <script>
         // Initialize progress bar functions as no-ops until dashboard-ultra.js loads
-        window.showProgressBar = window.showProgressBar || function() { console.log('[ProgressBar] show (pending)'); };
-        window.hideProgressBar = window.hideProgressBar || function() { console.log('[ProgressBar] hide (pending)'); };
+        window.showProgressBar = window.showProgressBar || function() {};
+        window.hideProgressBar = window.hideProgressBar || function() {};
         window.hideAllLoaders = window.hideAllLoaders || function() { /* no-op until loaded */ };
     </script>
 </head>
@@ -397,11 +356,6 @@
             : (request()->routeIs('atasan.*') ? 'role-atasan' : 'role-guest'));
 @endphp
 <body class="{{ $roleBodyClass }}">
-    <!-- Modern Progress Bar - LinkedIn/Twitter Style -->
-    <div class="progress-bar-container" id="modernProgressBar">
-        <div class="progress-bar-fill"></div>
-    </div>
-
     <div class="wrapper">
         <div class="mobile-header">
             <button class="mobile-toggle" id="mobileSidebarToggle">
@@ -442,14 +396,6 @@
     </div>
 
     <x-confirm-modal />
-
-    <!-- Global Loader (Minimalist & Non-Blocking) -->
-    <div id="global-loader" style="position: fixed; inset: 0; z-index: 9000; background-color: rgba(255, 255, 255, 0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; opacity: 0; pointer-events: none;">
-        <div class="loader-content" style="background: white; padding: 1.5rem; border-radius: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
-            <div class="clip-loader" style="width: 24px; height: 24px; border: 2.5px solid #425d87; border-bottom-color: transparent; border-radius: 50%; animation: clip-loader-spin 0.75s linear infinite;"></div>
-            <span style="font-size: 0.7rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Memproses...</span>
-        </div>
-    </div>
 
     @if(session('success') || session('error') || session('warning') || session('info') || $errors->any())
     <script>
@@ -532,18 +478,11 @@
         });
 
         document.addEventListener('livewire:navigate', () => {
-            // Keep loading feedback minimal and instant.
-            if (window.showProgressBar) {
-                window.showProgressBar();
-            }
             document.body.classList.add('is-route-loading');
         });
 
         document.addEventListener('livewire:navigated', () => {
             // HIDE ALL LOADERS immediately when content is ready
-            if (window.hideProgressBar) {
-                window.hideProgressBar();
-            }
             if (window.hideAllLoaders) {
                 window.hideAllLoaders();
             }
@@ -641,6 +580,11 @@
     @auth
     <script data-navigate-once>
         const notifUserRole = @js(Auth::user()->role ?? null);
+        const notifUserId = Number(@js((int) Auth::id()));
+        const notifFeatureFlags = window.ReimbursementFeatures || {};
+        const realtimeFeatureEnabled = Boolean(notifFeatureFlags.realtimeNotifications);
+        const broadcastFeatureEnabled = Boolean(notifFeatureFlags.broadcastNotifications);
+        const echoClientFeatureEnabled = Boolean(notifFeatureFlags.echoClient);
         const notifRouteMap = {
             pegawai: {
                 detailBase: @js(url('/pegawai/pengajuan')),
@@ -648,7 +592,8 @@
                 markReadBase: @js(url('/pegawai/notifikasi')),
             },
             atasan: {
-                detailBase: @js(url('/atasan/approval')),
+                approvalBase: @js(url('/atasan/approval')),
+                personalBase: @js(url('/atasan/pengajuan')),
                 notif: @js(route('atasan.notifikasi')),
                 markReadBase: @js(url('/atasan/notifikasi')),
             },
@@ -658,13 +603,174 @@
                 markReadBase: @js(url('/finance/notifikasi')),
             },
         };
+        const notifCountRouteMap = {
+            pegawai: {
+                notif: @js(route('pegawai.notifikasi.count')),
+            },
+            atasan: {
+                approval: @js(route('atasan.approval.count')),
+                notif: @js(route('atasan.notifikasi.count')),
+            },
+            finance: {
+                approval: @js(route('finance.approval.count')),
+                disbursement: @js(route('finance.disbursement.count')),
+                notif: @js(route('finance.notifikasi.count')),
+            },
+        };
+        const activeNotifRole = String(notifUserRole || '').toLowerCase();
+
+        const initNotificationBadgeStore = () => {
+            if (window.__notifBadgeStoreInitialized) {
+                window.__notifBadgeStore?.refresh?.();
+                return;
+            }
+            window.__notifBadgeStoreInitialized = true;
+
+            const routeMap = notifCountRouteMap[activeNotifRole] || {};
+            const routeEntries = Object.entries(routeMap);
+            const FAST_POLL_MS = realtimeFeatureEnabled ? 30000 : 60000;
+            const SLOW_POLL_MS = 180000;
+
+            let pollMs = FAST_POLL_MS;
+            let pollHandle = null;
+            let refreshInFlight = false;
+            let refreshQueued = false;
+            let echoStateBound = false;
+
+            const formatBadgeCount = (value) => (value > 99 ? '99+' : String(value));
+
+            const renderBadge = (badgeKey, count) => {
+                document.querySelectorAll(`[data-badge-key="${badgeKey}"]`).forEach((badge) => {
+                    if (!(badge instanceof HTMLElement)) return;
+                    if (count > 0) {
+                        badge.textContent = formatBadgeCount(count);
+                        badge.style.display = 'inline-flex';
+                    } else {
+                        badge.textContent = '0';
+                        badge.style.display = 'none';
+                    }
+                });
+            };
+
+            const fetchBadgeCount = async ([badgeKey, endpoint]) => {
+                try {
+                    const response = await fetch(endpoint, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                    });
+
+                    if (!response.ok) return;
+                    const payload = await response.json();
+                    const count = Number(
+                        payload?.unread_count ??
+                        payload?.pending_count ??
+                        payload?.count ??
+                        0
+                    );
+                    renderBadge(badgeKey, Number.isFinite(count) ? count : 0);
+                } catch (error) {
+                    // Ignore transient badge fetch failures.
+                }
+            };
+
+            const refresh = async () => {
+                if (!routeEntries.length) return;
+
+                if (refreshInFlight) {
+                    refreshQueued = true;
+                    return;
+                }
+
+                refreshInFlight = true;
+                try {
+                    await Promise.all(routeEntries.map(fetchBadgeCount));
+                } finally {
+                    refreshInFlight = false;
+                    if (refreshQueued) {
+                        refreshQueued = false;
+                        setTimeout(refresh, 60);
+                    }
+                }
+            };
+
+            const startPolling = () => {
+                if (pollHandle) {
+                    clearInterval(pollHandle);
+                }
+                if (!routeEntries.length) return;
+                pollHandle = setInterval(refresh, pollMs);
+            };
+
+            const setPollingMode = (preferSlowPolling) => {
+                const nextPollMs = preferSlowPolling ? SLOW_POLL_MS : FAST_POLL_MS;
+                if (nextPollMs === pollMs) return;
+                pollMs = nextPollMs;
+                startPolling();
+            };
+
+            const bindEchoConnectionState = () => {
+                if (echoStateBound) return;
+                if (!realtimeFeatureEnabled || !echoClientFeatureEnabled || !broadcastFeatureEnabled) return;
+
+                const connection = window.Echo?.connector?.pusher?.connection;
+                if (!connection) return;
+
+                echoStateBound = true;
+                const applyState = (state) => {
+                    const isConnected = state === 'connected';
+                    setPollingMode(isConnected);
+                    if (isConnected) {
+                        refresh();
+                    }
+                };
+
+                applyState(connection.state);
+                connection.bind('state_change', (states) => applyState(states?.current));
+            };
+
+            window.__notifBadgeStore = {
+                refresh,
+                bindEchoConnectionState,
+            };
+
+            window.addEventListener('refresh-notif-badges', refresh);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    refresh();
+                }
+            });
+            document.addEventListener('livewire:navigated', () => setTimeout(refresh, 120));
+            if (window.Livewire) {
+                window.Livewire.on('notifikasi-baru', () => setTimeout(refresh, 180));
+            }
+
+            startPolling();
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => refresh(), { timeout: 1200 });
+            } else {
+                setTimeout(refresh, 120);
+            }
+            bindEchoConnectionState();
+        };
 
         const resolveRealtimeNotifUrl = (payload) => {
-            const roleRoutes = notifRouteMap[notifUserRole];
+            const roleRoutes = notifRouteMap[activeNotifRole];
             if (!roleRoutes) return null;
 
             const pengajuanId = payload?.pengajuan_id ?? payload?.pengajuanId ?? null;
             if (pengajuanId) {
+                if (activeNotifRole === 'atasan') {
+                    const ownerId = Number(payload?.pengajuan_owner_id ?? payload?.pengajuanOwnerId ?? 0);
+                    const detailBase = ownerId && ownerId === notifUserId
+                        ? roleRoutes.personalBase
+                        : roleRoutes.approvalBase;
+
+                    return `${detailBase}/${pengajuanId}`;
+                }
+
                 return `${roleRoutes.detailBase}/${pengajuanId}`;
             }
 
@@ -672,7 +778,7 @@
         };
 
         const resolveRealtimeMarkReadUrl = (payload) => {
-            const roleRoutes = notifRouteMap[notifUserRole];
+            const roleRoutes = notifRouteMap[activeNotifRole];
             if (!roleRoutes) return null;
 
             const notifId = payload?.notifikasi_id ?? payload?.notifikasiId ?? null;
@@ -682,7 +788,7 @@
         };
 
         const markNotificationReadAndNavigate = async (payload) => {
-            const targetUrl = resolveRealtimeNotifUrl(payload);
+            let targetUrl = resolveRealtimeNotifUrl(payload);
             const markReadUrl = resolveRealtimeMarkReadUrl(payload);
 
             if (!markReadUrl) {
@@ -691,15 +797,23 @@
             }
 
             try {
-                const csrfToken = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content');
-                await fetch(markReadUrl, {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const response = await fetch(markReadUrl, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': csrfToken || '',
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
                     },
+                    credentials: 'same-origin',
                 });
+
+                if (response.ok) {
+                    const result = await response.json().catch(() => null);
+                    if (typeof result?.redirect_url === 'string' && result.redirect_url.length > 0) {
+                        targetUrl = result.redirect_url;
+                    }
+                }
             } catch (error) {
                 // Ignore mark-read request failures and still navigate.
             } finally {
@@ -709,13 +823,25 @@
             }
         };
 
+        const refreshNotificationWidgets = () => {
+            window.dispatchEvent(new CustomEvent('refresh-notif-badges'));
+            if (window.Livewire) {
+                window.Livewire.dispatch('notifikasi-baru');
+            }
+        };
+
         const hasPengajuanContext = (payload) => {
             const pengajuanId = payload?.pengajuan_id ?? payload?.pengajuanId ?? null;
             return Boolean(pengajuanId);
         };
 
         const initEchoListener = () => {
+            if (!realtimeFeatureEnabled || !echoClientFeatureEnabled || !broadcastFeatureEnabled) {
+                return;
+            }
+
             if (window.Echo) {
+                window.__notifBadgeStore?.bindEchoConnectionState?.();
                 const channelName = 'App.Models.User.{{ Auth::id() }}';
                 const bindFlagKey = '__echo_notif_bound_' + channelName.replace(/[^a-zA-Z0-9_]/g, '_');
                 if (window[bindFlagKey]) {
@@ -726,10 +852,13 @@
                 window.Echo.private(channelName)
                     .listen('.notifikasi.pengajuan', (e) => {
                         const targetUrl = resolveRealtimeNotifUrl(e);
-                        window.dispatchEvent(new CustomEvent('refresh-notif-badges'));
-                        if (window.Livewire) {
-                            window.Livewire.dispatch('notifikasi-baru');
-                        }
+
+                        // Policy:
+                        // - Realtime event saat user sedang aktif di web => tampil toast saja.
+                        //   Notif tetap tersimpan dan muncul di list header (unread).
+                        // - Notifikasi saat user offline tetap tersimpan unread dan muncul di list/header setelah login.
+                        setTimeout(refreshNotificationWidgets, 140);
+
                         if (hasPengajuanContext(e)) {
                             window.dispatchEvent(new CustomEvent('refresh-approval-table'));
                             window.dispatchEvent(new CustomEvent('refresh-pengajuan-table'));
@@ -751,6 +880,8 @@
             }
         };
 
+        document.addEventListener('DOMContentLoaded', () => setTimeout(initNotificationBadgeStore, 220));
+        document.addEventListener('livewire:navigated', () => setTimeout(initNotificationBadgeStore, 150));
         document.addEventListener('DOMContentLoaded', () => setTimeout(initEchoListener, 500));
         document.addEventListener('livewire:navigated', () => setTimeout(initEchoListener, 300));
     </script>

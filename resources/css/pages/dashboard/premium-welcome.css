@@ -1,0 +1,157 @@
+/* Shared premium welcome/header style for all role dashboards.
+   Keep this file focused only for welcome card readability and live meta badges. */
+
+body.role-pegawai .welcome-card,
+body.role-atasan .welcome-card {
+    background: linear-gradient(132deg, #35527e 0%, #425d87 52%, #2d4265 100%) !important;
+    color: #f8fbff !important;
+}
+
+body.role-pegawai .welcome-card .welcome-title,
+body.role-atasan .welcome-card .welcome-title {
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+}
+
+body.role-pegawai .welcome-card .welcome-subtitle,
+body.role-atasan .welcome-card .welcome-subtitle,
+body.role-pegawai .welcome-card .welcome-desc,
+body.role-atasan .welcome-card .welcome-desc {
+    color: rgba(241, 245, 249, 0.92) !important;
+}
+
+body.role-pegawai .welcome-card .welcome-avatar,
+body.role-atasan .welcome-card .welcome-avatar {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.34) !important;
+}
+
+body.role-pegawai .welcome-card .welcome-stats,
+body.role-atasan .welcome-card .welcome-stats {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 1rem !important;
+    padding: 0.7rem 0.95rem !important;
+    backdrop-filter: blur(2px);
+}
+
+body.role-pegawai .welcome-card .welcome-stat-item .stat-value,
+body.role-atasan .welcome-card .welcome-stat-item .stat-value {
+    color: #f8fbff !important;
+}
+
+body.role-pegawai .welcome-card .welcome-stat-item[title] .stat-value,
+body.role-atasan .welcome-card .welcome-stat-item[title] .stat-value {
+    color: #fecaca !important;
+}
+
+body.role-pegawai .welcome-card .welcome-stat-item .stat-label,
+body.role-atasan .welcome-card .welcome-stat-item .stat-label {
+    color: rgba(226, 232, 240, 0.9) !important;
+    font-weight: 650 !important;
+}
+
+body.role-pegawai .welcome-card .stat-divider,
+body.role-atasan .welcome-card .stat-divider {
+    background: rgba(255, 255, 255, 0.22) !important;
+}
+
+body.role-pegawai .dashboard-welcome-card {
+    padding: 1.7rem 2rem 1.45rem !important;
+    min-height: 166px !important;
+}
+
+body.role-atasan .dashboard-welcome-card {
+    padding: 1.9rem 2.15rem !important;
+    min-height: 176px !important;
+}
+
+body.role-pegawai .dashboard-live-meta,
+body.role-atasan .dashboard-live-meta {
+    margin-top: 0.55rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+body.role-pegawai .dashboard-live-pill,
+body.role-atasan .dashboard-live-pill,
+body.role-finance .dashboard-live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.34rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2fbe8;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+body.role-pegawai .dashboard-live-dot,
+body.role-atasan .dashboard-live-dot,
+body.role-finance .dashboard-live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+    animation: dashboard-live-pulse 1.8s ease-in-out infinite;
+}
+
+body.role-pegawai .dashboard-last-updated,
+body.role-atasan .dashboard-last-updated {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: rgba(226, 232, 240, 0.92);
+}
+
+body.role-pegawai .welcome-growth,
+body.role-atasan .welcome-growth {
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+body.role-pegawai .welcome-growth.is-up,
+body.role-atasan .welcome-growth.is-up {
+    color: #bbf7d0;
+}
+
+body.role-pegawai .welcome-growth.is-down,
+body.role-atasan .welcome-growth.is-down {
+    color: #fca5a5;
+}
+
+body.role-pegawai .welcome-growth-note,
+body.role-atasan .welcome-growth-note {
+    opacity: 0.82;
+    font-weight: 500;
+}
+
+body.role-pegawai .welcome-stat-item.is-protection .stat-value,
+body.role-atasan .welcome-stat-item.is-protection .stat-value {
+    color: #fecaca !important;
+}
+
+@media (max-width: 1024px) {
+    body.role-pegawai .dashboard-welcome-card {
+        padding: 1.28rem 1.45rem 1.1rem !important;
+        min-height: 148px !important;
+    }
+}
+
+@keyframes dashboard-live-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+}

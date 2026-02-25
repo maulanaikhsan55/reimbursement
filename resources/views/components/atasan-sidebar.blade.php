@@ -12,7 +12,7 @@
         <div class="menu-sliding-bg" id="sidebarIndicator"></div>
 
         <!-- OVERVIEW Section -->
-        <div class="menu-section-label">MENU UTAMA</div>
+        <div class="menu-section-label">OVERVIEW</div>
         
         <!-- Dashboard -->
         <a href="{{ route('atasan.dashboard') }}" wire:navigate.hover class="menu-item {{ request()->routeIs('atasan.dashboard') ? 'active' : '' }}">
@@ -42,65 +42,17 @@
                 <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <span class="menu-text">Persetujuan</span>
-            <span class="badge-sidebar badge-approval-atasan" x-data="{ count: 0 }" x-init="
-                const updateApprovalCount = () => {
-                    fetch('{{ route('atasan.approval.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                        .then(r => r.json())
-                        .then(data => { count = Number(data.pending_count || 0); })
-                        .catch(() => {});
-                };
-                window.addEventListener('refresh-notif-badges', updateApprovalCount);
-                if (typeof Livewire !== 'undefined') {
-                    Livewire.on('notifikasi-baru', () => setTimeout(updateApprovalCount, 250));
-                }
-                if ('requestIdleCallback' in window) {
-                    requestIdleCallback(updateApprovalCount, { timeout: 1200 });
-                } else {
-                    setTimeout(updateApprovalCount, 120);
-                }
-                setInterval(updateApprovalCount, 30000);
-            " x-show="count > 0" x-cloak x-text="count > 99 ? '99+' : count">
-            </span>
+            <span class="badge-sidebar badge-approval-atasan" data-badge-key="approval" style="display: none;">0</span>
         </a>
 
         <!-- Notifikasi -->
-        <a href="{{ route('atasan.notifikasi') }}" wire:navigate.hover class="menu-item notifikasi-menu {{ request()->routeIs('atasan.notifikasi*') ? 'active' : '' }}" x-data="{
-            unreadCount: 0
-        }" x-init="
-            const updateNotifCount = () => {
-                fetch('{{ route('atasan.notifikasi.count') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(r => r.json())
-                    .then(data => {
-                        unreadCount = Number(data.unread_count || 0);
-                    })
-                    .catch(() => {});
-            };
-
-            // Listen for notification events
-            window.addEventListener('refresh-notif-badges', updateNotifCount);
-            
-            // Also listen for Livewire event
-            if (typeof Livewire !== 'undefined') {
-                Livewire.on('notifikasi-baru', () => {
-                    setTimeout(updateNotifCount, 300);
-                });
-            }
-
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(updateNotifCount, { timeout: 1200 });
-            } else {
-                setTimeout(updateNotifCount, 180);
-            }
-            
-            // Fallback polling every 30 seconds
-            setInterval(updateNotifCount, 30000);
-        ">
+        <a href="{{ route('atasan.notifikasi') }}" wire:navigate.hover class="menu-item notifikasi-menu {{ request()->routeIs('atasan.notifikasi*') ? 'active' : '' }}">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
             <span class="menu-text">Notifikasi</span>
-            <span class="notif-badge-sidebar" x-show="unreadCount > 0" x-cloak x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
+            <span class="notif-badge-sidebar" data-badge-key="notif" style="display: none;">0</span>
         </a>
 
         <!-- AKUN Section -->
@@ -132,62 +84,7 @@
     </div>
 </aside>
 
-<!-- Mobile Toggle & Overlay -->
-<button class="mobile-menu-toggle" onclick="toggleSidebar()" aria-label="Toggle Menu">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="3" y1="12" x2="21" y2="12"></line>
-        <line x1="3" y1="6" x2="21" y2="6"></line>
-        <line x1="3" y1="18" x2="21" y2="18"></line>
-    </svg>
-</button>
-<div class="sidebar-overlay" onclick="toggleSidebar()" id="sidebarOverlay"></div>
-
 <style>
-    /* Mobile Toggle & Overlay Styles */
-    .mobile-menu-toggle {
-        display: none;
-        position: fixed;
-        top: 1.25rem;
-        left: 1.25rem;
-        z-index: 1002;
-        background: white;
-        border: none;
-        border-radius: 0.75rem;
-        padding: 0.65rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        color: #425d87;
-    }
-
-    .mobile-menu-toggle:active {
-        transform: scale(0.95);
-    }
-    
-    .mobile-menu-toggle svg {
-        width: 24px;
-        height: 24px;
-    }
-
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 999;
-        backdrop-filter: blur(2px);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .sidebar-overlay.active {
-        opacity: 1;
-        display: block;
-    }
-
     /* Atasan Sidebar */
     .atasan-sidebar {
         width: 260px;
@@ -427,10 +324,6 @@
     }
 
     @media (max-width: 768px) {
-        .mobile-menu-toggle {
-            display: flex;
-        }
-
         .atasan-sidebar {
             left: -280px;
         }
@@ -442,25 +335,6 @@
 </style>
 
 <script data-navigate-once>
-    function toggleSidebar() {
-        const sidebar = document.getElementById('atasanSidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        sidebar.classList.toggle('show');
-        overlay.classList.toggle('active');
-        document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
-    }
-
-    // Close sidebar when clicking a menu item on mobile
-    document.querySelectorAll('.atasan-sidebar .menu-item').forEach(item => {
-        if (item.dataset.mobileCloseBound === 'true') return;
-        item.dataset.mobileCloseBound = 'true';
-        item.addEventListener('click', () => {
-            if (window.innerWidth <= 768) {
-                toggleSidebar();
-            }
-        });
-    });
-
     function confirmLogout(event) {
         event.preventDefault();
         if (typeof openConfirmModal === 'function') {

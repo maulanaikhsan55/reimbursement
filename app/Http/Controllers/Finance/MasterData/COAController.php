@@ -61,7 +61,8 @@ class COAController extends Controller
             }
         }
 
-        $coas = $query->paginate(config('app.pagination.master_data'));
+        $coas = $query->paginate(config('app.pagination.master_data'))
+            ->withQueryString();
 
         if ($useCache) {
             Cache::put($cacheKey, $coas, now()->addHours(12));

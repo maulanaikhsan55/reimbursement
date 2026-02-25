@@ -18,7 +18,9 @@
         width: '24em',
         padding: '1.5em',
         reverseButtons: true,
-        backdrop: `rgba(0,0,0,0.4)`
+        allowEscapeKey: true,
+        allowOutsideClick: true,
+        backdrop: 'rgba(15,23,42,0.45)'
     };
 
     window.openConfirmModal = function(actionCallback, title = 'Konfirmasi', message = 'Apakah Anda yakin ingin melanjutkan tindakan ini?') {
@@ -164,7 +166,9 @@
                 title: 'text-lg font-bold text-gray-800 border-bottom pb-3',
                 closeButton: 'focus:outline-none'
             },
-            backdrop: `rgba(0,0,0,0.6)`
+            allowEscapeKey: true,
+            allowOutsideClick: true,
+            backdrop: 'rgba(15,23,42,0.45)'
         });
     }
 
@@ -208,6 +212,11 @@
     div:where(.swal2-container).swal2-center>.swal2-popup {
         animation-duration: 0.25s !important;
         animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    div:where(.swal2-container).swal2-backdrop-show {
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
     }
 </style>
 @endpush

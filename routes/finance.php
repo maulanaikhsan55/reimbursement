@@ -27,7 +27,8 @@ Route::group([], function () {
     Route::post('/notifikasi/read-all', [NotifikasiController::class, 'markAllAsRead'])->name('notifikasi.mark-all-read');
 
     Route::prefix('masterdata')->name('masterdata.')->group(function () {
-        Route::resource('users', UserController::class);
+        Route::get('/users/check-email', [UserController::class, 'checkEmailAvailability'])->name('users.check-email');
+        Route::resource('users', UserController::class)->except(['show']);
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
         Route::get('/departemen', [DepartemenController::class, 'index'])->name('departemen.index');

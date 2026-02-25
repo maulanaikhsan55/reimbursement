@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $kas_bank_id
  * @property \Illuminate\Support\Carbon $tanggal_pengajuan
  * @property \Illuminate\Support\Carbon $tanggal_transaksi
+ * @property string|null $judul
  * @property string $nama_vendor
  * @property string|null $jenis_transaksi
  * @property string $deskripsi
@@ -72,6 +73,7 @@ class Pengajuan extends Model
         'kas_bank_id',
         'tanggal_pengajuan',
         'tanggal_transaksi',
+        'judul',
         'nama_vendor',
         'jenis_transaksi',
         'deskripsi',
@@ -203,9 +205,14 @@ class Pengajuan extends Model
     {
         // 1. Clear Finance Dashboard Cache
         \Illuminate\Support\Facades\Cache::forget('finance_dashboard_data');
+        \Illuminate\Support\Facades\Cache::forget('finance_dashboard_data_v2');
+        \Illuminate\Support\Facades\Cache::forget('finance_approval_pending_count');
+        \Illuminate\Support\Facades\Cache::forget('finance_disbursement_pending_count');
+        \Illuminate\Support\Facades\Cache::forget('finance_disbursement_summary');
 
         // 2. Clear Pegawai Dashboard & Stats Cache
         \Illuminate\Support\Facades\Cache::forget('pegawai_dashboard_'.$this->user_id);
+        \Illuminate\Support\Facades\Cache::forget('pegawai_dashboard_sections_'.$this->user_id);
         \Illuminate\Support\Facades\Cache::forget('pengajuan_stats_'.$this->user_id);
 
         // 3. Clear Atasan Dashboard Cache
@@ -218,11 +225,13 @@ class Pengajuan extends Model
 
         if ($atasanId) {
             \Illuminate\Support\Facades\Cache::forget('atasan_dashboard_'.$atasanId);
+            \Illuminate\Support\Facades\Cache::forget('atasan_dashboard_sections_'.$atasanId);
         }
 
         // Also clear for the specific atasan who approved it (if different or if changed)
         if ($this->disetujui_atasan_oleh) {
             \Illuminate\Support\Facades\Cache::forget('atasan_dashboard_'.$this->disetujui_atasan_oleh);
+            \Illuminate\Support\Facades\Cache::forget('atasan_dashboard_sections_'.$this->disetujui_atasan_oleh);
         }
 
         // Handle cases where disetujui_atasan_oleh was just changed (clear old one too)
@@ -230,6 +239,7 @@ class Pengajuan extends Model
             $oldAtasanId = $this->getOriginal('disetujui_atasan_oleh');
             if ($oldAtasanId) {
                 \Illuminate\Support\Facades\Cache::forget('atasan_dashboard_'.$oldAtasanId);
+                \Illuminate\Support\Facades\Cache::forget('atasan_dashboard_sections_'.$oldAtasanId);
             }
         }
     }

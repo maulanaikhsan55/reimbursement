@@ -1,7 +1,13 @@
 @props(['status', 'departmentName' => null])
 
 @if($status)
-<div class="budget-status-container linkedin-style" id="budget-indicator-container">
+<div
+    class="budget-status-container linkedin-style"
+    id="budget-indicator-container"
+    data-budget-limit="{{ (float) $status['limit'] }}"
+    data-budget-usage-base="{{ (float) $status['usage'] }}"
+    data-budget-current-base="{{ (float) $status['current'] }}"
+>
     <div class="budget-header">
         <div class="budget-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
@@ -25,7 +31,7 @@
         </div>
         <div class="limit-info">
             <span class="label">Plafon:</span>
-            <span class="value">Rp {{ number_format($status['limit'], 0, ',', '.') }}</span>
+            <span class="value" id="budget-limit-value">Rp {{ number_format($status['limit'], 0, ',', '.') }}</span>
         </div>
     </div>
 

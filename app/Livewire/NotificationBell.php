@@ -65,33 +65,7 @@ class NotificationBell extends Component
 
     private function resolveNotificationTarget(Notifikasi $notifikasi): string
     {
-        $role = auth()->user()->role ?? '';
-
-        if ($notifikasi->pengajuan_id) {
-            if ($role === 'pegawai') {
-                return route('pegawai.pengajuan.show', $notifikasi->pengajuan_id);
-            }
-
-            if ($role === 'atasan') {
-                return route('atasan.approval.show', $notifikasi->pengajuan_id);
-            }
-
-            if ($role === 'finance') {
-                return route('finance.approval.show', $notifikasi->pengajuan_id);
-            }
-        }
-
-        $fallbackRoute = $role.'.notifikasi';
-        if (\Illuminate\Support\Facades\Route::has($fallbackRoute)) {
-            return route($fallbackRoute);
-        }
-
-        $dashboardRoute = $role.'.dashboard';
-        if (\Illuminate\Support\Facades\Route::has($dashboardRoute)) {
-            return route($dashboardRoute);
-        }
-
-        return url('/');
+        return $notifikasi->resolveTargetUrlForViewer(auth()->user());
     }
 
     public function markAllAsRead()
