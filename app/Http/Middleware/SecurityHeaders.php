@@ -22,7 +22,12 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        $allowCameraOnProfile = $request->routeIs('pegawai.profile.*')
+            || $request->routeIs('atasan.profile.*')
+            || $request->routeIs('finance.profile.*');
+
+        $cameraPolicy = $allowCameraOnProfile ? 'camera=(self)' : 'camera=()';
+        $response->headers->set('Permissions-Policy', $cameraPolicy.', microphone=(), geolocation=()');
 
         // Strict-Transport-Security if on HTTPS
         if ($request->secure()) {

@@ -126,7 +126,7 @@ return [
     'pagination' => [
         'pengajuan' => env('PAGINATION_PENGAJUAN', 10),
         'approval' => env('PAGINATION_APPROVAL', 10),
-        'notifikasi' => env('PAGINATION_NOTIFIKASI', 20),
+        'notifikasi' => env('PAGINATION_NOTIFIKASI', 10),
         'master_data' => env('PAGINATION_MASTER_DATA', 10),
         'reports' => env('PAGINATION_REPORTS', 10),
     ],

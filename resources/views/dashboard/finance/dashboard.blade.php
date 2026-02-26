@@ -576,9 +576,9 @@
 
         <div class="dashboard-content">
             @php
-                $remainingBudget = max(($monthly_budget ?? 0) - ($this_month_processed_amount ?? 0), 0);
                 $budgetUsage = ($monthly_budget ?? 0) > 0 ? (($this_month_processed_amount ?? 0) / $monthly_budget) * 100 : 0;
-                $financeAlerts = ($oversla_count ?? 0) + ($waiting_finance_count ?? 0);
+                $remainingBudget = $remainingBudget ?? max(($monthly_budget ?? 0) - ($this_month_processed_amount ?? 0), 0);
+                $financeAlerts = $financeAlerts ?? ($oversla_count ?? 0);
             @endphp
 
             <section class="dashboard-filter-strip">
@@ -654,15 +654,25 @@
             <!-- ===== WELCOME & BUDGET CARDS ===== -->
             <div class="top-overview-grid" data-focus="essential">
                 <!-- Welcome Card -->
-                <div class="welcome-card dashboard-card" style="animation-delay: 0.1s;">
+                <div class="welcome-card dashboard-card dashboard-welcome-card" style="animation-delay: 0.1s;">
                     <div class="welcome-content">
                         <div class="welcome-avatar">
                             <span class="avatar-initial">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
                         </div>
                         <div class="welcome-text">
+                            @php
+                                $dashboardGeneratedAt = isset($generatedAt) ? \Carbon\Carbon::parse($generatedAt) : now();
+                            @endphp
                             <h2 class="welcome-title">Halo, {{ explode(' ', Auth::user()->name)[0] }}!</h2>
                             <p class="welcome-subtitle">Finance Control Center</p>
-                            <div style="margin-top: 1rem; display: flex; gap: 1.5rem;">
+                            <div class="dashboard-live-meta finance-live-meta">
+                                <span class="dashboard-live-pill">
+                                    <span class="dashboard-live-dot"></span>
+                                    Realtime aktif
+                                </span>
+                                <span class="dashboard-last-updated">Update terakhir: {{ $dashboardGeneratedAt->format('d M Y, H:i') }}</span>
+                            </div>
+                            <div class="welcome-mini-stats">
                                 <div class="mini-stat">
                                     <span class="label">Persetujuan</span>
                                     <span class="value">{{ $total_pending_count ?? 0 }}</span>
@@ -675,7 +685,7 @@
                                 <div class="stat-divider"></div>
                                 <div class="mini-stat">
                                     <span class="label">SLA Alert</span>
-                                    <span class="value" style="color: {{ $oversla_count > 0 ? '#fca5a5' : '#bbf7d0' }}">{{ $oversla_count ?? 0 }}</span>
+                                    <span class="value {{ ($oversla_count ?? 0) > 0 ? 'is-alert' : 'is-good' }}">{{ $oversla_count ?? 0 }}</span>
                                 </div>
                             </div>
                         </div>
@@ -962,11 +972,12 @@
                             <span>{{ format_rupiah($waiting_finance_amount ?? 0) }}</span>
                         </div>
                         <div class="progress-track">
-                            @php 
-                                $pendingPercent = ($this_month_count ?? 0) > 0 ? (($waiting_finance_count ?? 0) / ($this_month_count ?? 1)) * 100 : 0;
-                                $visualPercent = min($pendingPercent * 2, 100); 
+                            @php
+                                $pendingPercent = ($this_month_count ?? 0) > 0
+                                    ? (($waiting_finance_count ?? 0) / ($this_month_count ?? 1)) * 100
+                                    : 0;
                             @endphp
-                            <div class="progress-fill" style="width: {{ $visualPercent }}%; background: #f59e0b;"></div>
+                            <div class="progress-fill" style="width: {{ min($pendingPercent * 2, 100) }}%; background: #f59e0b;"></div>
                         </div>
                     </div>
 
@@ -1046,17 +1057,22 @@
                             </thead>
                             <tbody>
                                 @forelse($pendingByCategory ?? [] as $item)
-                                <tr class="pending-row" data-category="{{ strtolower($item?->nama_kategori ?? '') }}">
+                                @php
+                                    $pendingCategoryName = (string) data_get($item, 'nama_kategori', '');
+                                    $pendingCategoryCount = (int) data_get($item, 'count', 0);
+                                    $pendingCategoryNominal = (float) data_get($item, 'total_nominal', 0);
+                                @endphp
+                                <tr class="pending-row" data-category="{{ strtolower($pendingCategoryName) }}">
                                     <td style="font-weight: 600; color: #1e293b;">
                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                                             <div style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;"></div>
-                                            <span>{{ $item?->nama_kategori }}</span>
+                                            <span>{{ $pendingCategoryName !== '' ? $pendingCategoryName : '-' }}</span>
                                         </div>
                                     </td>
                                     <td style="text-align: center;">
-                                        <span class="badge-status-menunggu_verifikasi">{{ $item?->count ?? 0 }}</span>
+                                        <span class="badge-status-menunggu_verifikasi">{{ $pendingCategoryCount }}</span>
                                     </td>
-                                    <td style="font-weight: 700; color: #475569;">{{ format_rupiah($item?->total_nominal ?? 0) }}</td>
+                                    <td style="font-weight: 700; color: #475569;">{{ format_rupiah($pendingCategoryNominal) }}</td>
                                     <td>
                                         <span style="font-size: 0.75rem; font-weight: 600; color: #f59e0b;">
                                             Perlu Review
@@ -1085,21 +1101,27 @@
                     </div>
                     <div class="rejection-list">
                         @foreach($rejectionRateByCategory ?? [] as $rate)
-                        <div class="rejection-item" data-category="{{ strtolower($rate?->nama_kategori ?? '') }}">
+                        @php
+                            $rateCategoryName = (string) data_get($rate, 'nama_kategori', '');
+                            $rejectionRate = (float) data_get($rate, 'rejection_rate', 0);
+                            $approvedCount = (int) data_get($rate, 'approved_count', 0);
+                            $rejectedCount = (int) data_get($rate, 'rejected_count', 0);
+                        @endphp
+                        <div class="rejection-item" data-category="{{ strtolower($rateCategoryName) }}">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: center;">
-                                <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">{{ $rate?->nama_kategori ?? '-' }}</span>
-                                <span style="font-size: 0.8rem; font-weight: 800; color: {{ ($rate?->rejection_rate ?? 0) > 20 ? '#ef4444' : '#64748b' }};">
-                                    {{ round($rate?->rejection_rate ?? 0, 1) }}%
+                                <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">{{ $rateCategoryName !== '' ? $rateCategoryName : '-' }}</span>
+                                <span style="font-size: 0.8rem; font-weight: 800; color: {{ $rejectionRate > 20 ? '#ef4444' : '#64748b' }};">
+                                    {{ round($rejectionRate, 1) }}%
                                 </span>
                             </div>
                             <div style="margin-bottom: 0.35rem;">
                                 <div class="progress-track" style="height: 8px;">
-                                    <div class="progress-fill" style="width: {{ $rate?->rejection_rate ?? 0 }}%; background: {{ ($rate?->rejection_rate ?? 0) > 20 ? '#ef4444' : '#94a3b8' }};"></div>
+                                    <div class="progress-fill" style="width: {{ $rejectionRate }}%; background: {{ $rejectionRate > 20 ? '#ef4444' : '#94a3b8' }};"></div>
                                 </div>
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #94a3b8;">
-                                <span>{{ $rate?->approved_count ?? 0 }} disetujui</span>
-                                <span>{{ $rate?->rejected_count ?? 0 }} ditolak</span>
+                                <span>{{ $approvedCount }} disetujui</span>
+                                <span>{{ $rejectedCount }} ditolak</span>
                             </div>
                         </div>
                         @endforeach
@@ -1117,7 +1139,10 @@
                             <h2 class="section-title" style="margin: 0;">Aktivitas Terkini</h2>
                             <p class="section-subtitle" style="margin: 0.25rem 0 0 0;">Transaksi terbaru yang perlu perhatian</p>
                         </div>
-                        <a href="{{ route('finance.approval.index') }}" class="btn-text">Lihat Semua &rarr;</a>
+                        <a href="{{ route('finance.approval.index') }}" class="btn-link-right">
+                            Lihat Semua
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+                        </a>
                     </div>
                     <div class="data-table-wrapper">
                         @if($recentRequests->isEmpty())
@@ -1161,11 +1186,14 @@
                                         </span>
                                     </td>
                                     <td style="text-align: center;">
-                                        <a href="{{ route('finance.approval.show', $pengajuan) }}" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #f8fafc; border: 1.5px solid #e5eaf2; border-radius: 8px; color: #64748b; text-decoration: none; transition: all 0.2s;">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                                <path d="M9 18l6-6-6-6"/>
-                                            </svg>
-                                        </a>
+                                        <div style="display: flex; justify-content: center;">
+                                            <x-action-icon
+                                                :href="route('finance.approval.show', $pengajuan)"
+                                                variant="view"
+                                                title="Lihat detail"
+                                                style="width: 28px; height: 28px;"
+                                            />
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -1185,15 +1213,20 @@
                     </div>
                     <div class="top-requesters-list">
                         @forelse($topRequesters ?? [] as $requester)
+                        @php
+                            $requesterName = (string) data_get($requester, 'name', '');
+                            $requesterTotalRequests = (int) data_get($requester, 'total_requests', 0);
+                            $requesterTotalNominal = (float) data_get($requester, 'total_nominal', 0);
+                        @endphp
                         <div class="requester-item">
                             <div class="requester-avatar">
-                                <span>{{ substr($requester?->name ?? '', 0, 1) }}</span>
+                                <span>{{ substr($requesterName, 0, 1) }}</span>
                             </div>
                             <div class="requester-info">
-                                <span class="requester-name">{{ $requester?->name ?? '-' }}</span>
-                                <span class="requester-requests">{{ $requester?->total_requests ?? 0 }} Pengajuan</span>
+                                <span class="requester-name">{{ $requesterName !== '' ? $requesterName : '-' }}</span>
+                                <span class="requester-requests">{{ $requesterTotalRequests }} Pengajuan</span>
                             </div>
-                            <div class="requester-amount">{{ format_rupiah($requester?->total_nominal ?? 0) }}</div>
+                            <div class="requester-amount">{{ format_rupiah($requesterTotalNominal) }}</div>
                         </div>
                         @empty
                         <div class="empty-state-compact" style="padding: 1rem;">
@@ -1610,26 +1643,40 @@ function applyDateFilterFromInputs() {
 }
 
 function initDashboardFilters() {
+    const form = document.getElementById('dashboardDateFilterForm');
     const applyBtn = document.getElementById('applyDateFilterBtn');
     const resetBtn = document.getElementById('resetDateFilterBtn');
     const startInput = document.getElementById('filterDateStart');
     const endInput = document.getElementById('filterDateEnd');
+    const bindOnce = (el, eventName, key, handler) => {
+        if (!el) return;
+        const flagKey = `bound_${key}`;
+        if (el.dataset[flagKey] === '1') return;
+        el.addEventListener(eventName, handler);
+        el.dataset[flagKey] = '1';
+    };
+    const scheduleApply = () => {
+        if (window.__financeDateFilterTimer) {
+            clearTimeout(window.__financeDateFilterTimer);
+        }
+        window.__financeDateFilterTimer = setTimeout(() => {
+            applyDateFilterFromInputs();
+        }, 120);
+    };
 
-    if (applyBtn) {
-        applyBtn.onclick = applyDateFilterFromInputs;
-    }
-    if (startInput) {
-        startInput.onchange = applyDateFilterFromInputs;
-    }
-    if (endInput) {
-        endInput.onchange = applyDateFilterFromInputs;
-    }
-    if (resetBtn) {
-        resetBtn.onclick = () => {
+    bindOnce(applyBtn, 'click', 'apply_click', applyDateFilterFromInputs);
+    bindOnce(startInput, 'change', 'start_change', applyDateFilterFromInputs);
+    bindOnce(endInput, 'change', 'end_change', applyDateFilterFromInputs);
+    bindOnce(startInput, 'input', 'start_input', scheduleApply);
+    bindOnce(endInput, 'input', 'end_input', scheduleApply);
+    bindOnce(form, 'submit', 'form_submit', (event) => {
+        event.preventDefault();
+        applyDateFilterFromInputs();
+    });
+    bindOnce(resetBtn, 'click', 'reset_click', () => {
             setDefaultDateRange();
             applyDateFilterFromInputs();
-        };
-    }
+    });
 
     setDefaultDateRange();
     applyDateFilterFromInputs();

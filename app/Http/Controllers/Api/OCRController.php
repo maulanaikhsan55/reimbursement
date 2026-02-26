@@ -24,17 +24,15 @@ class OCRController extends Controller
 
             $request->validate([
                 'bukti' => 'required|mimes:jpeg,png,webp,pdf|max:5120',
-                'ocr_text' => 'required|string|min:10',
+                'ocr_text' => 'nullable|string',
             ], [
                 'bukti.required' => 'File bukti wajib diupload',
                 'bukti.mimes' => 'Format file harus JPG, PNG, WebP, atau PDF',
                 'bukti.max' => 'Ukuran file maksimal 5MB',
-                'ocr_text.required' => 'OCR text dari frontend wajib ada',
-                'ocr_text.min' => 'Gambar tidak terbaca dengan baik',
             ]);
 
             $file = $request->file('bukti');
-            $ocrText = $request->input('ocr_text');
+            $ocrText = (string) $request->input('ocr_text', '');
 
             $isPdf = $this->tesseractService->isPdfFile($file);
             if ($isPdf) {

@@ -85,6 +85,7 @@ class ValidasiAIService
     public function validateManualInput(array $ocrData, array $inputData, ?string $userId = null): array
     {
         $inputData['nominal'] = $this->sanitizeNominal($inputData['nominal'] ?? 0);
+        $detectedTransactionTime = $this->extractTransactionTimeFromOcr($ocrData);
 
         // 1. Nominal Validation
         $nominalMatch = $this->matchNominal(
@@ -123,11 +124,29 @@ class ValidasiAIService
 
         // 5. Behavioral Anomaly
         $anomalyInput = array_merge($inputData, [
-            'waktu_transaksi' => $ocrData['time'] ?? null,
+            'waktu_transaksi' => $detectedTransactionTime,
             'invoice_number' => $ocrData['invoice_number'] ?? null,
             'jenis_transaksi' => $inputData['jenis_transaksi'] ?? 'other',
         ]);
         $anomalyResult = $this->detectBehavioralAnomaly($userId, $anomalyInput);
+        $llmAnomaly = $this->extractLlmAnomalyDecision($ocrData);
+        $duplicateCheck = $this->detectPotentialDuplicateSmart(
+            $userId,
+            (string) ($inputData['nama_vendor'] ?? ''),
+            (float) ($inputData['nominal'] ?? 0),
+            $inputData['tanggal_transaksi'] ?? null
+        );
+        $smartAudit = $this->buildSmartAuditPayload(
+            $ocrData,
+            $inputData,
+            $nominalMatch,
+            $vendorMatch,
+            $tanggalMatch,
+            $anomalyResult,
+            $llmAnomaly,
+            $detectedTransactionTime,
+            $duplicateCheck
+        );
 
         // Determine issues
         $issues = [];
@@ -179,6 +198,32 @@ class ValidasiAIService
             ];
         }
 
+        if (($duplicateCheck['is_duplicate'] ?? false) === true) {
+            $canSubmit = false;
+            $issues[] = [
+                'type' => 'error',
+                'title' => 'Duplikasi Terdeteksi',
+                'message' => $duplicateCheck['message'] ?? 'Kombinasi vendor + tanggal + nominal sudah pernah diajukan.',
+                'suggestion' => 'Gunakan dokumen transaksi lain atau cek pengajuan yang sudah ada.',
+            ];
+        }
+
+        if (($llmAnomaly['recommendation'] ?? 'approve') === 'reject') {
+            $issues[] = [
+                'type' => 'warning',
+                'title' => 'Rekomendasi AI: Risiko Tinggi',
+                'message' => $llmAnomaly['summary'],
+                'suggestion' => 'Perlu validasi manual atasan/finance. '.$llmAnomaly['decision_reason'],
+            ];
+        } elseif (($llmAnomaly['recommendation'] ?? 'approve') === 'review') {
+            $issues[] = [
+                'type' => 'warning',
+                'title' => 'Perlu Review AI',
+                'message' => $llmAnomaly['summary'],
+                'suggestion' => $llmAnomaly['decision_reason'],
+            ];
+        }
+
         return [
             'success' => true,
             'can_submit' => $canSubmit,
@@ -187,9 +232,579 @@ class ValidasiAIService
                 'nominal' => $nominalMatch,
                 'tanggal' => array_merge($tanggalMatch, ['is_too_old' => $isTooOld, 'max_age' => $maxAge]),
                 'anomali' => $anomalyResult,
+                'llm_anomaly' => $llmAnomaly,
+                'duplicate' => $duplicateCheck,
             ],
             'issues' => $issues,
+            'smart_audit' => $smartAudit,
         ];
+    }
+
+    private function extractLlmAnomalyDecision(array $ocrData): array
+    {
+        $analysis = is_array($ocrData['llm_anomaly_analysis'] ?? null)
+            ? $ocrData['llm_anomaly_analysis']
+            : [];
+
+        $riskScore = (int) ($analysis['risk_score'] ?? ($ocrData['fraud_risk_score'] ?? 0));
+        $riskScore = max(0, min(100, $riskScore));
+
+        $riskLevel = strtolower(trim((string) ($analysis['risk_level'] ?? '')));
+        if (! in_array($riskLevel, ['low', 'medium', 'high'], true)) {
+            $riskLevel = $riskScore >= 70 ? 'high' : ($riskScore >= 40 ? 'medium' : 'low');
+        }
+
+        $recommendation = strtolower(trim((string) ($analysis['approval_recommendation'] ?? '')));
+        if (! in_array($recommendation, ['approve', 'review', 'reject'], true)) {
+            $recommendation = $riskScore >= 75 ? 'reject' : ($riskScore >= 45 ? 'review' : 'approve');
+        }
+
+        $summary = trim((string) ($analysis['summary'] ?? ''));
+        if ($summary === '') {
+            $summary = trim((string) ($ocrData['sanity_check_notes'] ?? ''));
+        }
+        if ($summary === '') {
+            $summary = $recommendation === 'reject'
+                ? 'AI mendeteksi risiko fraud tinggi pada dokumen ini.'
+                : ($recommendation === 'review'
+                    ? 'AI menemukan beberapa sinyal risiko yang perlu perhatian.'
+                    : 'AI tidak menemukan anomali signifikan.');
+        }
+
+        $decisionReason = trim((string) ($analysis['decision_reason'] ?? ''));
+        if ($decisionReason === '') {
+            $decisionReason = $summary;
+        }
+
+        $redFlags = array_values(array_filter(array_map(
+            fn ($item) => trim((string) $item),
+            is_array($analysis['red_flags'] ?? null) ? $analysis['red_flags'] : []
+        )));
+
+        $manipulationSignals = array_values(array_filter(array_map(
+            fn ($item) => trim((string) $item),
+            is_array($analysis['manipulation_signals'] ?? null) ? $analysis['manipulation_signals'] : []
+        )));
+
+        $anomalyChecks = [];
+        $rawChecks = is_array($analysis['anomaly_checks'] ?? null) ? $analysis['anomaly_checks'] : [];
+        foreach ($rawChecks as $check) {
+            if (! is_array($check)) {
+                continue;
+            }
+            $anomalyChecks[] = [
+                'code' => trim((string) ($check['code'] ?? 'general_anomaly')) ?: 'general_anomaly',
+                'label' => trim((string) ($check['label'] ?? 'Temuan anomali')) ?: 'Temuan anomali',
+                'status' => strtolower(trim((string) ($check['status'] ?? 'warning'))),
+                'severity' => strtolower(trim((string) ($check['severity'] ?? 'medium'))),
+                'evidence' => trim((string) ($check['evidence'] ?? '')),
+                'reason' => trim((string) ($check['reason'] ?? '')),
+            ];
+        }
+
+        $reviewReasons = array_values(array_filter(array_map(
+            fn ($item) => trim((string) $item),
+            is_array($analysis['review_reasons'] ?? null) ? $analysis['review_reasons'] : []
+        )));
+
+        return [
+            'risk_score' => $riskScore,
+            'risk_level' => $riskLevel,
+            'recommendation' => $recommendation,
+            'summary' => $summary,
+            'decision_reason' => $decisionReason,
+            'requires_manual_review' => (bool) ($analysis['requires_manual_review'] ?? ($recommendation === 'review')),
+            'red_flags' => $redFlags,
+            'manipulation_signals' => $manipulationSignals,
+            'anomaly_checks' => $anomalyChecks,
+            'review_reasons' => $reviewReasons,
+        ];
+    }
+
+    private function extractTransactionTimeFromOcr(array $ocrData): ?string
+    {
+        $rawTime = trim((string) ($ocrData['time'] ?? ''));
+        if ($rawTime !== '' && preg_match('/^([01]?\d|2[0-3])[:.]([0-5]\d)$/', $rawTime, $m)) {
+            return sprintf('%02d:%02d', (int) $m[1], (int) $m[2]);
+        }
+
+        $rawText = (string) ($ocrData['raw_text'] ?? '');
+        if ($rawText === '') {
+            return null;
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $rawText) ?: [];
+        $fallbackTime = null;
+        foreach ($lines as $line) {
+            $lineLower = strtolower(trim((string) $line));
+            if ($lineLower === '') {
+                continue;
+            }
+
+            if (! preg_match('/([01]?\d|2[0-3])[:.]([0-5]\d)/', $lineLower, $m)) {
+                continue;
+            }
+
+            $candidate = sprintf('%02d:%02d', (int) $m[1], (int) $m[2]);
+            if (preg_match('/(transaksi|pembayaran|berhasil|waktu|jam|time|wib|wit|wita)/', $lineLower)) {
+                return $candidate;
+            }
+
+            if ($fallbackTime === null) {
+                $fallbackTime = $candidate;
+            }
+        }
+
+        return $fallbackTime;
+    }
+
+    private function buildSmartAuditPayload(
+        array $ocrData,
+        array $inputData,
+        array $nominalMatch,
+        array $vendorMatch,
+        array $tanggalMatch,
+        array $anomalyResult,
+        array $llmAnomaly,
+        ?string $transactionTime,
+        array $duplicateCheck = []
+    ): array {
+        $decision = strtolower((string) ($llmAnomaly['recommendation'] ?? 'approve'));
+        if (! in_array($decision, ['approve', 'review', 'reject'], true)) {
+            $decision = 'review';
+        }
+
+        $decisionScore = max(0, min(100, 100 - (int) ($llmAnomaly['risk_score'] ?? 0)));
+
+        $decisionReasons = [];
+        if (($nominalMatch['status'] ?? 'fail') !== 'pass') {
+            $decision = 'reject';
+            $decisionScore = min($decisionScore, 25);
+            $decisionReasons[] = 'Nominal input tidak sesuai dengan hasil OCR.';
+        }
+
+        if (($tanggalMatch['status'] ?? 'fail') !== 'pass') {
+            $decision = 'reject';
+            $decisionScore = min($decisionScore, 30);
+            $decisionReasons[] = 'Tanggal transaksi tidak cocok dengan dokumen.';
+        }
+
+        if (($vendorMatch['status'] ?? 'fail') === 'fail') {
+            $decision = 'reject';
+            $decisionScore = min($decisionScore, 35);
+            $decisionReasons[] = 'Vendor tidak terverifikasi dengan confidence memadai.';
+        }
+
+        if (($duplicateCheck['is_duplicate'] ?? false) === true) {
+            $decision = 'reject';
+            $decisionScore = min($decisionScore, 15);
+            $decisionReasons[] = $duplicateCheck['message'] ?? 'Terindikasi duplikasi transaksi (vendor+tanggal+nominal).';
+        }
+
+        if (($anomalyResult['is_anomaly'] ?? false) && $decision === 'approve') {
+            $decision = 'review';
+            $decisionScore = min($decisionScore, 55);
+            $decisionReasons[] = 'Terindikasi pola anomali perilaku pada histori pengajuan.';
+        }
+
+        if (($llmAnomaly['recommendation'] ?? '') === 'reject') {
+            $decision = 'reject';
+            $decisionScore = min($decisionScore, 20);
+            $decisionReasons[] = $llmAnomaly['decision_reason'] ?? 'LLM menilai risiko fraud tinggi.';
+        } elseif (($llmAnomaly['recommendation'] ?? '') === 'review' && $decision === 'approve') {
+            $decision = 'review';
+            $decisionScore = min($decisionScore, 60);
+            $decisionReasons[] = $llmAnomaly['decision_reason'] ?? 'LLM meminta review manual.';
+        }
+
+        if (empty($decisionReasons)) {
+            $decisionReasons[] = $llmAnomaly['summary'] ?? 'Dokumen terlihat konsisten dan layak diproses otomatis.';
+        }
+
+        return [
+            'decision' => $decision,
+            'decision_score' => $decisionScore,
+            'decision_reason' => implode(' ', array_values(array_unique(array_filter($decisionReasons)))),
+            'transaction_time' => $transactionTime,
+            'invoice_anomalies' => $this->buildInvoiceAnomalyChecklist(
+                $nominalMatch,
+                $vendorMatch,
+                $tanggalMatch,
+                $anomalyResult,
+                $llmAnomaly,
+                $transactionTime,
+                $duplicateCheck
+            ),
+            'journal_recommendation' => $this->buildJournalRecommendation($ocrData, $inputData),
+            'llm' => $llmAnomaly,
+        ];
+    }
+
+    private function buildInvoiceAnomalyChecklist(
+        array $nominalMatch,
+        array $vendorMatch,
+        array $tanggalMatch,
+        array $anomalyResult,
+        array $llmAnomaly,
+        ?string $transactionTime,
+        array $duplicateCheck = []
+    ): array {
+        $checks = [];
+
+        $checks[] = [
+            'code' => 'nominal_consistency',
+            'label' => 'Konsistensi nominal invoice',
+            'status' => ($nominalMatch['status'] ?? 'fail') === 'pass' ? 'pass' : 'fail',
+            'severity' => ($nominalMatch['status'] ?? 'fail') === 'pass' ? 'low' : 'high',
+            'detail' => ($nominalMatch['status'] ?? 'fail') === 'pass'
+                ? 'Nominal input cocok dengan nominal terdeteksi.'
+                : 'Nominal input tidak cocok dengan nominal invoice.',
+        ];
+
+        $vendorStatus = $vendorMatch['status'] ?? 'fail';
+        $checks[] = [
+            'code' => 'vendor_consistency',
+            'label' => 'Kecocokan vendor/merchant',
+            'status' => $vendorStatus === 'pass' ? 'pass' : ($vendorStatus === 'warning' ? 'warning' : 'fail'),
+            'severity' => $vendorStatus === 'pass' ? 'low' : ($vendorStatus === 'warning' ? 'medium' : 'high'),
+            'detail' => 'Skor kecocokan vendor: '.round((float) ($vendorMatch['match_percentage'] ?? 0), 1).'%.',
+        ];
+
+        $checks[] = [
+            'code' => 'date_consistency',
+            'label' => 'Kecocokan tanggal transaksi',
+            'status' => ($tanggalMatch['status'] ?? 'fail') === 'pass' ? 'pass' : 'fail',
+            'severity' => ($tanggalMatch['status'] ?? 'fail') === 'pass' ? 'low' : 'high',
+            'detail' => ($tanggalMatch['status'] ?? 'fail') === 'pass'
+                ? 'Tanggal transaksi valid dan konsisten.'
+                : 'Tanggal transaksi tidak konsisten dengan dokumen.',
+        ];
+
+        if ($transactionTime !== null) {
+            $workStart = (int) config('reimbursement.policy.workday_start_hour', 8);
+            $workEnd = (int) config('reimbursement.policy.workday_end_hour', 18);
+            [$hour] = array_map('intval', explode(':', $transactionTime));
+            $isOutsideWorkHour = $hour < $workStart || $hour >= $workEnd;
+
+            $checks[] = [
+                'code' => 'outside_working_hours',
+                'label' => 'Transaksi di luar jam kerja',
+                'status' => $isOutsideWorkHour ? 'warning' : 'pass',
+                'severity' => $isOutsideWorkHour ? 'medium' : 'low',
+                'detail' => $isOutsideWorkHour
+                    ? "Waktu transaksi {$transactionTime} berada di luar jam kerja standar ({$workStart}:00-{$workEnd}:00)."
+                    : "Waktu transaksi {$transactionTime} berada dalam jam kerja standar.",
+            ];
+        }
+
+        if (($duplicateCheck['is_duplicate'] ?? false) === true) {
+            $checks[] = [
+                'code' => 'duplicate_combo_vendor_date_amount',
+                'label' => 'Duplikasi kombinasi vendor+tanggal+nominal',
+                'status' => 'fail',
+                'severity' => 'high',
+                'detail' => $duplicateCheck['message'] ?? 'Kombinasi transaksi ini sudah pernah diajukan.',
+            ];
+        }
+
+        foreach (($anomalyResult['anomalies'] ?? []) as $index => $anomaly) {
+            $checks[] = [
+                'code' => 'behavior_'.($anomaly['type'] ?? $index),
+                'label' => 'Anomali perilaku: '.str_replace('_', ' ', (string) ($anomaly['type'] ?? 'unknown')),
+                'status' => 'warning',
+                'severity' => 'medium',
+                'detail' => (string) ($anomaly['reason'] ?? 'Perlu review tambahan.'),
+            ];
+        }
+
+        $llmFlags = (array) ($llmAnomaly['red_flags'] ?? []);
+        $llmSignals = (array) ($llmAnomaly['manipulation_signals'] ?? []);
+        if (! empty($llmFlags) || ! empty($llmSignals)) {
+            $checks[] = [
+                'code' => 'llm_red_flags',
+                'label' => 'Red flags dari LLM',
+                'status' => ($llmAnomaly['recommendation'] ?? 'approve') === 'reject' ? 'fail' : 'warning',
+                'severity' => ($llmAnomaly['recommendation'] ?? 'approve') === 'reject' ? 'high' : 'medium',
+                'detail' => trim(
+                    'Flags: '.implode('; ', array_slice($llmFlags, 0, 4)).'. '.
+                    'Sinyal manipulasi: '.implode('; ', array_slice($llmSignals, 0, 4))
+                ),
+            ];
+        }
+
+        return array_values(array_slice($checks, 0, 12));
+    }
+
+    private function buildJournalRecommendation(array $ocrData, array $inputData): array
+    {
+        $nominal = (float) ($inputData['nominal'] ?? 0);
+        if ($nominal <= 0) {
+            $nominal = (float) ($ocrData['nominal'] ?? 0);
+        }
+        $nominal = max(0, $nominal);
+
+        $components = $this->extractTaxAndFeeComponents($ocrData, $nominal);
+        $taxAmount = (float) ($components['tax'] ?? 0);
+        $feeAmount = (float) ($components['fee'] ?? 0);
+        $mainExpense = $nominal - $taxAmount - $feeAmount;
+
+        if ($mainExpense <= 0) {
+            $mainExpense = $nominal;
+            $taxAmount = 0;
+            $feeAmount = 0;
+        }
+
+        $recommendedCoa = is_array($ocrData['recommended_coa'] ?? null) ? $ocrData['recommended_coa'] : null;
+        $debitAccountCode = (string) ($recommendedCoa['kode_coa'] ?? 'REVIEW-EXPENSE');
+        $debitAccountName = (string) ($recommendedCoa['nama_coa'] ?? (($ocrData['suggested_category'] ?? 'Biaya Operasional').' (Review Finance)'));
+
+        $creditAccount = $this->detectCashBankAccountFromRawText((string) ($ocrData['raw_text'] ?? ''));
+
+        $entries = [
+            [
+                'type' => 'debit',
+                'account_code' => $debitAccountCode,
+                'account_name' => $debitAccountName,
+                'amount' => round($mainExpense, 2),
+                'note' => 'Beban utama transaksi reimbursement.',
+            ],
+        ];
+
+        if ($taxAmount > 0) {
+            $entries[] = [
+                'type' => 'debit',
+                'account_code' => 'REVIEW-PPN',
+                'account_name' => 'PPN Masukan (Review Finance)',
+                'amount' => round($taxAmount, 2),
+                'note' => 'Komponen pajak dari invoice.',
+            ];
+        }
+
+        if ($feeAmount > 0) {
+            $entries[] = [
+                'type' => 'debit',
+                'account_code' => 'REVIEW-ADMIN',
+                'account_name' => 'Biaya Admin/Service (Review Finance)',
+                'amount' => round($feeAmount, 2),
+                'note' => 'Komponen biaya admin/service dari invoice.',
+            ];
+        }
+
+        $entries[] = [
+            'type' => 'credit',
+            'account_code' => $creditAccount['code'],
+            'account_name' => $creditAccount['name'],
+            'amount' => round($nominal, 2),
+            'note' => 'Arus keluar kas/bank untuk pembayaran reimbursement.',
+        ];
+
+        $totalDebit = 0.0;
+        $totalCredit = 0.0;
+        foreach ($entries as $entry) {
+            if (($entry['type'] ?? '') === 'debit') {
+                $totalDebit += (float) ($entry['amount'] ?? 0);
+            } else {
+                $totalCredit += (float) ($entry['amount'] ?? 0);
+            }
+        }
+
+        $diff = round($totalCredit - $totalDebit, 2);
+        if (abs($diff) > 0.01) {
+            foreach ($entries as $idx => $entry) {
+                if (($entry['type'] ?? '') === 'debit') {
+                    $entries[$idx]['amount'] = round(((float) $entries[$idx]['amount']) + $diff, 2);
+                    $totalDebit = round($totalDebit + $diff, 2);
+                    break;
+                }
+            }
+        }
+
+        return [
+            'reference' => (string) ($ocrData['invoice_number'] ?? '-'),
+            'summary' => 'Draft jurnal otomatis untuk membantu review finance sebelum posting final ke Accurate.',
+            'is_balanced' => abs(round($totalDebit - $totalCredit, 2)) <= 0.01,
+            'total_debit' => round($totalDebit, 2),
+            'total_credit' => round($totalCredit, 2),
+            'entries' => $entries,
+        ];
+    }
+
+    private function extractTaxAndFeeComponents(array $ocrData, float $baseNominal): array
+    {
+        $totals = is_array($ocrData['all_detected_totals'] ?? null) ? $ocrData['all_detected_totals'] : [];
+        if (empty($totals) || $baseNominal <= 0) {
+            return ['tax' => 0.0, 'fee' => 0.0];
+        }
+
+        $tax = 0.0;
+        $fee = 0.0;
+        $seen = [];
+
+        foreach ($totals as $total) {
+            $label = strtolower(trim((string) ($total['label'] ?? '')));
+            $amount = (float) ($total['amount'] ?? 0);
+            if ($label === '' || $amount <= 0) {
+                continue;
+            }
+
+            $key = $label.'|'.$amount;
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+
+            if (preg_match('/\b(ppn|pajak|tax|vat)\b/', $label)) {
+                $tax += $amount;
+                continue;
+            }
+
+            if (preg_match('/\b(admin|administrasi|service|fee|biaya admin)\b/', $label)) {
+                $fee += $amount;
+            }
+        }
+
+        $maxComponent = $baseNominal * 0.6;
+        $tax = min($tax, $maxComponent);
+        $fee = min($fee, $maxComponent);
+
+        if (($tax + $fee) > ($baseNominal * 0.8)) {
+            return ['tax' => 0.0, 'fee' => 0.0];
+        }
+
+        return [
+            'tax' => round($tax, 2),
+            'fee' => round($fee, 2),
+        ];
+    }
+
+    private function detectCashBankAccountFromRawText(string $rawText): array
+    {
+        $raw = strtolower($rawText);
+        $map = [
+            ['pattern' => '/\bbank\s*bri\b|\bbri\b/', 'code' => 'BANK-BRI', 'name' => 'Bank BRI'],
+            ['pattern' => '/\bbank\s*bca\b|\bbca\b/', 'code' => 'BANK-BCA', 'name' => 'Bank BCA'],
+            ['pattern' => '/\bbank\s*mandiri\b|\bmandiri\b/', 'code' => 'BANK-MANDIRI', 'name' => 'Bank Mandiri'],
+            ['pattern' => '/\bbank\s*bni\b|\bbni\b/', 'code' => 'BANK-BNI', 'name' => 'Bank BNI'],
+            ['pattern' => '/\bdana\b/', 'code' => 'EWALLET-DANA', 'name' => 'E-Wallet DANA'],
+            ['pattern' => '/\bovo\b/', 'code' => 'EWALLET-OVO', 'name' => 'E-Wallet OVO'],
+            ['pattern' => '/\bgopay\b/', 'code' => 'EWALLET-GOPAY', 'name' => 'E-Wallet GoPay'],
+            ['pattern' => '/\bshopeepay\b/', 'code' => 'EWALLET-SHOPEEPAY', 'name' => 'E-Wallet ShopeePay'],
+            ['pattern' => '/\bqris\b/', 'code' => 'BANK-QRIS', 'name' => 'Kas/Bank via QRIS'],
+        ];
+
+        foreach ($map as $entry) {
+            if (preg_match($entry['pattern'], $raw)) {
+                return [
+                    'code' => $entry['code'],
+                    'name' => $entry['name'],
+                ];
+            }
+        }
+
+        return [
+            'code' => 'KAS-BANK-OPERASIONAL',
+            'name' => 'Kas/Bank Operasional',
+        ];
+    }
+
+    private function detectPotentialDuplicateSmart(
+        ?string $userId,
+        string $inputVendor,
+        float $inputNominal,
+        ?string $inputTanggal,
+        ?int $excludePengajuanId = null
+    ): array {
+        $normalizedVendor = $this->normalizeVendorName($inputVendor);
+        $nominal = (float) $this->sanitizeNominal($inputNominal);
+        $tanggal = trim((string) $inputTanggal);
+
+        if ($normalizedVendor === '' || $nominal <= 0 || $tanggal === '') {
+            return [
+                'is_duplicate' => false,
+                'signature' => $this->buildDuplicateSignature($normalizedVendor, $nominal, $tanggal),
+            ];
+        }
+
+        try {
+            $windowDays = max(0, (int) config('reimbursement.policy.duplicate_window_days', 15));
+            $inputDate = \Carbon\Carbon::parse($tanggal)->startOfDay();
+            $startDate = $inputDate->copy()->subDays($windowDays)->toDateString();
+            $endDate = $inputDate->copy()->addDays($windowDays)->toDateString();
+
+            $query = Pengajuan::query()
+                ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
+                ->where('nominal', $nominal)
+                ->whereNotIn('status', ['ditolak_atasan', 'ditolak_finance', 'void_accurate']);
+
+            if ($excludePengajuanId !== null) {
+                $query->where('pengajuan_id', '!=', $excludePengajuanId);
+            }
+
+            $candidates = $query->limit(30)->get(['pengajuan_id', 'nomor_pengajuan', 'nama_vendor', 'tanggal_transaksi', 'user_id']);
+            if ($candidates->isEmpty()) {
+                return [
+                    'is_duplicate' => false,
+                    'signature' => $this->buildDuplicateSignature($normalizedVendor, $nominal, $tanggal),
+                    'window_days' => $windowDays,
+                ];
+            }
+
+            $best = null;
+            $bestScore = 0.0;
+            $bestDayDiff = PHP_INT_MAX;
+            foreach ($candidates as $candidate) {
+                $match = $this->matchVendor($candidate->nama_vendor, $inputVendor);
+                $score = (float) ($match['match_percentage'] ?? 0);
+                $candidateDate = \Carbon\Carbon::parse((string) $candidate->tanggal_transaksi)->startOfDay();
+                $dayDiff = abs($candidateDate->diffInDays($inputDate, false));
+
+                if ($score > $bestScore || ($score === $bestScore && $dayDiff < $bestDayDiff)) {
+                    $bestScore = $score;
+                    $best = $candidate;
+                    $bestDayDiff = $dayDiff;
+                }
+            }
+
+            // Smart threshold: duplicates trigger when vendor similarity >= 75% within configured day window.
+            if ($best && $bestScore >= 75) {
+                $owner = $best->user_id === $userId ? 'Anda sendiri' : 'pengguna lain';
+                $dateContext = $bestDayDiff === 0
+                    ? 'tanggal yang sama'
+                    : "selisih {$bestDayDiff} hari";
+
+                return [
+                    'is_duplicate' => true,
+                    'signature' => $this->buildDuplicateSignature($normalizedVendor, $nominal, $tanggal),
+                    'similarity' => round($bestScore, 2),
+                    'window_days' => $windowDays,
+                    'day_difference' => $bestDayDiff,
+                    'existing_pengajuan_id' => $best->pengajuan_id,
+                    'existing_nomor_pengajuan' => $best->nomor_pengajuan,
+                    'message' => "Kombinasi vendor+tanggal+nominal terdeteksi duplikat ({$bestScore}%, {$dateContext}) pada pengajuan #{$best->nomor_pengajuan} milik {$owner}.",
+                ];
+            }
+
+            return [
+                'is_duplicate' => false,
+                'signature' => $this->buildDuplicateSignature($normalizedVendor, $nominal, $tanggal),
+                'similarity' => round($bestScore, 2),
+                'window_days' => $windowDays,
+                'day_difference' => $bestDayDiff === PHP_INT_MAX ? null : $bestDayDiff,
+            ];
+        } catch (\Throwable $e) {
+            \Log::warning('Smart duplicate detection failed: '.$e->getMessage());
+
+            return [
+                'is_duplicate' => false,
+                'signature' => $this->buildDuplicateSignature($normalizedVendor, $nominal, $tanggal),
+            ];
+        }
+    }
+
+    private function buildDuplicateSignature(string $normalizedVendor, float $nominal, string $tanggal): string
+    {
+        $payload = trim($normalizedVendor).'|'.(int) $nominal.'|'.$tanggal;
+        return hash('sha256', $payload);
     }
 
     public function validatePengajuan(Pengajuan $pengajuan): array
@@ -287,10 +902,15 @@ class ValidasiAIService
             array_merge($inputData, ['waktu_transaksi' => $ocrData['time'] ?? null]),
             $pengajuan->pengajuan_id
         );
+        $llmAnomaly = $this->extractLlmAnomalyDecision($ocrData);
 
         $anomalyMsg = 'Tidak ada anomali perilaku';
         if ($anomalyResult['is_anomaly']) {
             $anomalyMsg = '⚠️ Terdeteksi '.count($anomalyResult['anomalies']).' anomali: '.$anomalyResult['reason'];
+        }
+        $anomalyMsg .= ' | LLM Risk: '.($llmAnomaly['risk_score'] ?? 0).'% ('.strtoupper($llmAnomaly['risk_level'] ?? 'low').') - '.strtoupper($llmAnomaly['recommendation'] ?? 'approve');
+        if (!empty($llmAnomaly['summary'])) {
+            $anomalyMsg .= '. '.$llmAnomaly['summary'];
         }
 
         $results['anomali'] = [
@@ -298,6 +918,8 @@ class ValidasiAIService
             'confidence' => $anomalyResult['is_anomaly'] ? max(10, 100 - (count($anomalyResult['anomalies']) * 20)) : 100,
             'message' => $anomalyMsg,
             'anomalies' => $anomalyResult['anomalies'] ?? [],
+            'llm_anomaly' => $llmAnomaly,
+            'raw_status' => $llmAnomaly['recommendation'] ?? 'approve',
         ];
 
         // 6. Tax Consistency
@@ -375,7 +997,7 @@ class ValidasiAIService
      */
     public function validateOCR($file, ?string $ocrText = null): array
     {
-        // Delegate to TesseractService which now uses LocalReceiptParser
+        // Delegate to TesseractService (OCR + Groq/LLM pipeline)
         return $this->tesseractService->processReceiptOCR($file, $ocrText ?? '');
     }
 
@@ -424,13 +1046,16 @@ class ValidasiAIService
     private function normalizeVendorName(string $name): string
     {
         $name = strtolower(trim($name));
-        
+
         // Remove leading/trailing symbols and artifacts (e.g. -.-.-.- or |)
         $name = preg_replace('/^[^a-z0-9]+|[^a-z0-9]+$/i', '', $name);
-        
+
         $name = html_entity_decode($name);
         $name = str_replace('u0026', '&', $name);
         $name = str_replace(['-', '_', '.', '|', ':'], ' ', $name);
+
+        // Remove trailing long numeric IDs often attached in transfer receipts.
+        $name = preg_replace('/(?:\s+\d{5,})+$/', '', $name) ?? $name;
 
         return preg_replace('/\s+/', ' ', trim($name));
     }
@@ -468,6 +1093,16 @@ class ValidasiAIService
     {
         similar_text($ocrClean, $inputClean, $percent);
 
+        $ocrCore = $this->stripVendorNoise($ocrClean);
+        $inputCore = $this->stripVendorNoise($inputClean);
+        if ($ocrCore !== '' && $inputCore !== '') {
+            similar_text($ocrCore, $inputCore, $corePercent);
+            $percent = max($percent, $corePercent);
+            if ($ocrCore === $inputCore) {
+                $percent = max($percent, 98.0);
+            }
+        }
+
         $bonus = 0;
         if (! empty($ocrClean) && (str_contains($ocrClean, $inputClean) || str_contains($inputClean, $ocrClean))) {
             $lenRatio = strlen($inputClean) / max(strlen($ocrClean), 1);
@@ -496,6 +1131,13 @@ class ValidasiAIService
             }
         }
 
+        if (! empty($rawText) && strlen($inputCore) > 2) {
+            $inputCorePattern = preg_replace('/\s+/', '\\s*', preg_quote($inputCore, '/'));
+            if (preg_match("/{$inputCorePattern}/i", strtolower($rawText))) {
+                $finalPercent += 6;
+            }
+        }
+
         // Levenshtein Fallback for short names if similarity is borderline
         if ($finalPercent < 80 && $finalPercent > 60) {
             $lev = levenshtein($ocrClean, $inputClean);
@@ -507,6 +1149,22 @@ class ValidasiAIService
         }
 
         return round(min(100, $finalPercent), 2);
+    }
+
+    private function stripVendorNoise(string $name): string
+    {
+        $clean = strtolower(trim($name));
+        if ($clean === '') {
+            return '';
+        }
+
+        // Remove numeric IDs and common legal words for matching purposes only.
+        $clean = preg_replace('/\b\d{4,}\b/', ' ', $clean) ?? $clean;
+        $clean = preg_replace('/\b(pt|cv|tbk|persero|indonesia|official|merchant|store|shop)\b/', ' ', $clean) ?? $clean;
+        $clean = preg_replace('/[^a-z0-9\s]/', ' ', $clean) ?? $clean;
+        $clean = preg_replace('/\s+/', ' ', trim($clean)) ?? $clean;
+
+        return trim($clean);
     }
 
     private function getVendorStatus(float $percent): string
@@ -540,10 +1198,12 @@ class ValidasiAIService
             return $smartMatch;
         }
 
-        // 3. Search in Raw Text
-        $rawMatch = $this->findInRawText($inputNominal, $rawText, $ocrNominal);
-        if ($rawMatch) {
-            return $rawMatch;
+        // 3. Strict mode: only fallback to raw text when OCR nominal is missing.
+        if ($ocrNominal <= 0) {
+            $rawMatch = $this->findInRawText($inputNominal, $rawText, $ocrNominal);
+            if ($rawMatch) {
+                return $rawMatch;
+            }
         }
 
         return ['status' => 'fail', 'difference' => (int) abs($ocrNominal - $inputNominal)];
@@ -551,8 +1211,8 @@ class ValidasiAIService
 
     private function isCloseMatch(float $val1, float $val2): bool
     {
-        // Strict numeric equality check for money amounts
-        return abs($val1 - $val2) < 1.0;
+        // Exact nominal match (2 decimal precision)
+        return round($val1, 2) === round($val2, 2);
     }
 
     private function findInDetectedTotals(float $inputNominal, array $allDetectedTotals): ?array
@@ -563,12 +1223,19 @@ class ValidasiAIService
 
         foreach ($allDetectedTotals as $total) {
             $amount = (float) ($total['amount'] ?? 0);
+            $label = strtolower(trim((string) ($total['label'] ?? '')));
+
+            // Skip non-final amount labels to avoid matching admin/tax as nominal utama.
+            if ($label !== '' && preg_match('/\b(admin|administrasi|fee|service|ppn|pajak|tax|diskon|voucher|potongan)\b/', $label)) {
+                continue;
+            }
+
             if ($this->isCloseMatch($amount, $inputNominal)) {
                 return [
                     'status' => 'pass',
                     'difference' => 0,
-                    'message' => 'Nominal ditemukan sebagai '.($total['label'] ?? 'Alternative Total'),
-                    'note' => 'Nominal cocok dengan: '.($total['label'] ?? 'Alternative Total'),
+                    'message' => 'Nominal ditemukan sebagai '.($total['label'] ?? 'Total Transaksi'),
+                    'note' => 'Nominal cocok dengan: '.($total['label'] ?? 'Total Transaksi'),
                 ];
             }
         }
@@ -623,9 +1290,9 @@ class ValidasiAIService
         // Case C: 10,000.00 (US)
         $valC = (float) str_replace(',', '', $clean);
 
-        return abs($valA - $inputNominal) < 1.0 ||
-               abs($valB - $inputNominal) < 1.0 ||
-               abs($valC - $inputNominal) < 1.0;
+        return $this->isCloseMatch($valA, $inputNominal) ||
+               $this->isCloseMatch($valB, $inputNominal) ||
+               $this->isCloseMatch($valC, $inputNominal);
     }
 
     /**
@@ -644,7 +1311,7 @@ class ValidasiAIService
         }
 
         if (! $ocrDate) {
-            return ['status' => 'warning'];
+            return ['status' => 'fail'];
         }
 
         // 2. Normalize and Parse
@@ -679,7 +1346,7 @@ class ValidasiAIService
                 return ['status' => 'pass'];
             }
 
-            return ['status' => 'warning'];
+            return ['status' => 'fail'];
         }
     }
 
@@ -1365,20 +2032,30 @@ class ValidasiAIService
                 }
             }
 
-            // Fallback check based on vendor + nominal + date + user
-            $duplicate = Pengajuan::where('user_id', $pengajuan->user_id)
-                ->where('nama_vendor', $pengajuan->nama_vendor)
-                ->where('nominal', $pengajuan->nominal)
-                ->where('tanggal_transaksi', $pengajuan->tanggal_transaksi)
-                ->where('pengajuan_id', '!=', $pengajuan->pengajuan_id)
-                ->whereNotIn('status', ['ditolak_atasan', 'ditolak_finance', 'validasi_ai'])
-                ->first();
+            // Smart duplicate check (vendor fuzzy + nominal + date window)
+            $smartDuplicate = $this->detectPotentialDuplicateSmart(
+                (string) $pengajuan->user_id,
+                (string) $pengajuan->nama_vendor,
+                (float) $pengajuan->nominal,
+                $pengajuan->tanggal_transaksi ? $pengajuan->tanggal_transaksi->toDateString() : null,
+                (int) $pengajuan->pengajuan_id
+            );
+
+            if (($smartDuplicate['is_duplicate'] ?? false) === true) {
+                return [
+                    'status' => 'fail',
+                    'duplicate_found' => true,
+                    'type' => 'smart_combo',
+                    'duplicate_pengajuan_id' => $smartDuplicate['existing_pengajuan_id'] ?? null,
+                    'message' => $smartDuplicate['message'] ?? 'Terindikasi duplikasi vendor+tanggal+nominal.',
+                ];
+            }
 
             return [
-                'status' => $duplicate ? 'fail' : 'pass',
-                'duplicate_found' => (bool) $duplicate,
-                'duplicate_pengajuan_id' => $duplicate?->pengajuan_id,
-                'message' => $duplicate ? 'Ditemukan pengajuan serupa (#'.$duplicate->nomor_pengajuan.')' : 'Tidak ada duplikasi terdeteksi',
+                'status' => 'pass',
+                'duplicate_found' => false,
+                'duplicate_pengajuan_id' => null,
+                'message' => 'Tidak ada duplikasi terdeteksi',
             ];
         } catch (\Exception $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
@@ -1445,7 +2122,7 @@ class ValidasiAIService
                 if (in_array($dbJenis, ['nominal', 'tanggal', 'duplikasi'])) {
                     $isBlocking = true;
                 }
-                // Vendor is ONLY blocking if it's a real fail (<75%), not a warning (75-80%)
+                // Vendor is ONLY blocking if it's a real fail (<75%), not a warning (75-79.99%)
                 if ($dbJenis === 'vendor' && ($result['raw_status'] ?? '') === 'fail') {
                     $isBlocking = true;
                 }
@@ -1486,7 +2163,7 @@ class ValidasiAIService
     private function getOverallResult(array $results): array
     {
         // VALIDATION LOGIC (UPDATED):
-        // Vendor 75-80% = WARNING (can submit with warning badge)
+        // Vendor 75-79.99% = WARNING (can submit with warning badge)
         // Vendor >=80% = PASS (normal submit)
         // Vendor <75% = FAIL (blocked)
         // Nominal MUST be 100% PASS
@@ -1546,7 +2223,7 @@ class ValidasiAIService
         }
 
         // Vendor determines overall status (nominal & date already passed)
-        // ALLOW 'warning' status (75-80%) to pass but with warning overall_status
+        // ALLOW 'warning' status (75-79.99%) to pass but with warning overall_status
         $vendorRawStatus = $results['vendor']['raw_status'] ?? ($vendorStatusValue === ValidationStatus::VALID->value ? 'pass' : 'fail');
 
         if ($vendorRawStatus === 'fail') {
@@ -1709,7 +2386,14 @@ class ValidasiAIService
         $anomalies = [];
 
         if ($nominal <= 0) {
-            return ['is_anomaly' => false, 'anomalies' => []];
+            return [
+                'is_anomaly' => false,
+                'anomalies' => [],
+                'reason' => 'Nominal kosong atau tidak valid.',
+                'count' => 0,
+                'risk_score' => 0,
+                'risk_level' => 'low',
+            ];
         }
 
         try {
@@ -1784,10 +2468,20 @@ class ValidasiAIService
                 }
             }
 
-            // 3. ODD HOURS & TRANSPORT POLICY CHECK
+            // 3. WORKING HOURS / ODD HOURS CHECK
             $time = $inputData['waktu_transaksi'] ?? null;
             if ($time) {
                 $hour = (int) explode(':', $time)[0];
+                $workStartHour = (int) config('reimbursement.policy.workday_start_hour', 8);
+                $workEndHour = (int) config('reimbursement.policy.workday_end_hour', 18);
+
+                if ($hour < $workStartHour || $hour >= $workEndHour) {
+                    $anomalies[] = [
+                        'type' => 'outside_working_hours',
+                        'reason' => "Transaksi terjadi di luar jam kerja standar ({$workStartHour}:00-{$workEndHour}:00): {$time}.",
+                    ];
+                }
+
                 if ($hour >= 23 || $hour <= 5) {
                     if ($jenisTransaksi !== 'transport') {
                         $anomalies[] = [
@@ -1894,20 +2588,59 @@ class ValidasiAIService
             }
 
             if (empty($anomalies)) {
-                return ['is_anomaly' => false, 'anomalies' => []];
+                return [
+                    'is_anomaly' => false,
+                    'anomalies' => [],
+                    'reason' => 'Tidak ada anomali perilaku terdeteksi.',
+                    'count' => 0,
+                    'risk_score' => 0,
+                    'risk_level' => 'low',
+                ];
             }
+
+            $riskWeights = [
+                'logic_duplicate' => 45,
+                'split_bill_detected' => 35,
+                'sequential_invoice' => 35,
+                'suspicious_vendor' => 30,
+                'spending_outlier' => 28,
+                'weekly_vendor_cap' => 25,
+                'high_value_limit' => 25,
+                'velocity_daily' => 20,
+                'velocity_weekly' => 20,
+                'outside_working_hours' => 18,
+                'odd_hours_detected' => 15,
+                'high_value_night_transport' => 12,
+                'weekend_transaction' => 10,
+            ];
+
+            $riskScore = 0;
+            foreach ($anomalies as $anomaly) {
+                $riskScore += $riskWeights[$anomaly['type'] ?? ''] ?? 12;
+            }
+            $riskScore = (int) max(0, min(100, $riskScore));
+            $riskLevel = $riskScore >= 70 ? 'high' : ($riskScore >= 40 ? 'medium' : 'low');
 
             return [
                 'is_anomaly' => true,
                 'anomalies' => $anomalies,
                 'reason' => implode(' ', array_column($anomalies, 'reason')),
                 'count' => count($anomalies),
+                'risk_score' => $riskScore,
+                'risk_level' => $riskLevel,
             ];
 
         } catch (\Exception $e) {
             \Log::error('Error in detectBehavioralAnomaly: '.$e->getMessage());
 
-            return ['is_anomaly' => false, 'anomalies' => []];
+            return [
+                'is_anomaly' => false,
+                'anomalies' => [],
+                'reason' => 'Analisis anomali gagal dijalankan.',
+                'count' => 0,
+                'risk_score' => 0,
+                'risk_level' => 'low',
+            ];
         }
     }
 
@@ -2031,3 +2764,4 @@ class ValidasiAIService
         ];
     }
 }
+

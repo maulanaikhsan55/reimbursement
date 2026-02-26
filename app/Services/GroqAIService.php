@@ -42,8 +42,17 @@ class GroqAIService
 
                 \Log::info('GroqAIService: Starting OCR validation', ['jenis_transaksi' => $jenisTransaksi, 'attempt' => $attempt + 1]);
 
+                $ocrText = $this->sanitizeUtf8($ocrText);
+                if ($ocrText === '') {
+                    throw new Exception('Teks OCR kosong setelah normalisasi UTF-8.');
+                }
+
                 // ULTRA SMART: Pre-clean OCR text to remove noise
                 $ocrText = $this->preCleanOcrText($ocrText);
+                $ocrText = $this->sanitizeUtf8($ocrText);
+                if ($ocrText === '') {
+                    throw new Exception('Teks OCR tidak valid setelah pembersihan.');
+                }
 
                 $prompt = $this->buildOCRValidationPrompt($ocrText, $jenisTransaksi);
 
@@ -132,6 +141,31 @@ class GroqAIService
             'success' => false,
             'error' => 'Gagal memproses OCR setelah beberapa kali mencoba akibat batasan limit API.',
         ];
+    }
+
+    private function sanitizeUtf8(string $text): string
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return '';
+        }
+
+        $normalized = $text;
+        if (! mb_check_encoding($normalized, 'UTF-8')) {
+            $converted = @mb_convert_encoding($normalized, 'UTF-8', 'UTF-8');
+            if (is_string($converted) && $converted !== '') {
+                $normalized = $converted;
+            }
+        }
+
+        $iconvText = @iconv('UTF-8', 'UTF-8//IGNORE', $normalized);
+        if (is_string($iconvText) && $iconvText !== '') {
+            $normalized = $iconvText;
+        }
+
+        $normalized = preg_replace('/[^\P{C}\n\r\t]/u', '', $normalized) ?? $normalized;
+
+        return trim($normalized);
     }
 
     private function buildOCRValidationPrompt(string $ocrText, ?string $jenisTransaksi = null): string
@@ -346,25 +380,43 @@ $typeInstructions
    - **ARRAY items**: `{"name": "...", "qty": 1, "price": 0, "category": "...", "is_personal": false}`
    - **TOTAL/PAJAK**: JANGAN masukkan baris "Total", "Pajak", "PPN", atau "Diskon" ke dalam array `items`. Masukkan itu ke `all_detected_totals`.
 
-**6. ANALISIS DETEKSI ANOMALI & FRAUD (SANGAT PENTING - SESUAI JUDUL SKRIPSI):**
-   - Anda adalah mesin pendeteksi fraud berbasis LLM. Analisis struk untuk tanda-tanda ketidakwajaran.
-   - **FRAUD RISK SCORE (0-100):**
-     - **0-20**: Struk sangat standar, rapi, vendor jelas (Indomaret, SPBU, McDonalds).
-     - **30-50**: Struk agak buram, atau barang yang dibeli agak aneh untuk urusan kantor (misal: camilan terlalu banyak).
-     - **60-80**: Terdeteksi barang dilarang (Rokok, Alkohol, Pulsa, Diamond Game), atau struk terlihat seperti diedit secara digital.
-     - **90-100**: Struk palsu, total 0 tapi diajukan, atau manipulasi angka yang terlihat jelas.
-   
-   - **SANITY CHECK NOTES (BAHASA INDONESIA):** Berikan alasan logis mengapa Anda memberikan skor tersebut. Contoh: "Ditemukan item Rokok (Pelanggaran Kebijakan)" atau "Struk terlihat valid dan sesuai dengan kategori Konsumsi."
-   
-   - **KLASIFIKASI KATEGORI:** Pilih: **Transport, Parkir, Konsumsi, Operasional, Asset, Tagihan, Tiket & Akomodasi, Lain-lain**.
-   
-   - **DETEKSI PELANGGARAN KEBIJAKAN (Policy Violations):** List barang dilarang: Rokok, Alkohol, Top-up Game, Pulsa, Kosmetik.
-   
-   - **CONFIDENCE SCORE (0-100):** Berapa persen Anda yakin dengan hasil ekstraksi ini? Jika teks sangat berantakan, berikan < 60. Jika sangat tajam, berikan > 90.
-   
-   - **AUTO-SPLIT ACCOUNTING:** Jika satu struk mengandung item dari kategori berbeda, identifikasi porsi nominal untuk masing-masing kategori.
+**6. ANALISIS DETEKSI ANOMALI & FRAUD REIMBURSEMENT (SANGAT PENTING - BERBASIS LLM):**
+   - Anda adalah mesin pendeteksi fraud/anomali reimburse. Fokus pada red flag invoice yang relevan untuk proses approval atasan/finance.
+   - Jangan auto-approve/auto-reject proses bisnis. Berikan rekomendasi risiko untuk review manual.
 
-   - **BREAKDOWN BIAYA:** Cari dan pisahkan: "subtotal", "tax_amount" (PPN/Pajak), "service_charge" (biaya layanan), dan "discount".
+   - **CHECKLIST WAJIB FRAUD/ANOMALI INVOICE (nilai satu per satu):**
+     1. `amount_structure_consistency`: apakah Total Transaksi konsisten terhadap subtotal, admin fee, pajak, diskon.
+     2. `vendor_identity_consistency`: apakah vendor/merchant terlihat valid, bukan noise/header aplikasi.
+     3. `date_time_plausibility`: apakah tanggal & waktu transaksi masuk akal (misal tengah malam, akhir pekan, jam tidak lazim).
+     4. `duplicate_reference_signal`: apakah ada indikasi nomor referensi/invoice berpotensi duplikat atau pola berulang.
+     5. `split_bill_signal`: apakah ada indikasi pemecahan tagihan (banyak nominal kecil/berurutan untuk konteks sama).
+     6. `policy_violation_items`: apakah item termasuk kategori terlarang/non-reimburse.
+     7. `ocr_tamper_signal`: apakah pola OCR tidak natural (angka loncat, label penting hilang, struktur tidak wajar).
+
+   - Untuk tiap checklist di atas, isi objek:
+     - `code`, `label`, `status` ("pass" | "warning" | "fail"), `severity` ("low" | "medium" | "high"), `evidence`, `reason`.
+
+   - **FRAUD RISK SCORE (0-100):**
+     - 0-20: Normal.
+     - 21-49: Ada warning ringan.
+     - 50-74: Butuh review manual ketat.
+     - 75-100: Risiko tinggi, sarankan investigasi.
+
+   - **SANITY CHECK NOTES (BAHASA INDONESIA):** Jelaskan alasan skor secara ringkas dan faktual.
+   - **KLASIFIKASI KATEGORI:** Pilih: Transport, Parkir, Konsumsi, Operasional, Asset, Tagihan, Tiket & Akomodasi, Lain-lain.
+   - **DETEKSI PELANGGARAN KEBIJAKAN (policy_violations):** list item/indikasi yang melanggar kebijakan.
+   - **CONFIDENCE SCORE (0-100):** jika OCR berantakan, turunkan confidence.
+   - **AUTO-SPLIT ACCOUNTING:** jika multi-kategori, isi `accounting_split`.
+   - **BREAKDOWN BIAYA:** identifikasi subtotal, tax_amount, service_charge, discount ke `all_detected_totals`.
+
+   - **WAJIB HASILKAN `llm_anomaly_analysis` DENGAN STRUKTUR INI:**
+     - `risk_score`, `risk_level`, `approval_recommendation`, `requires_manual_review`
+     - `summary` (1-2 kalimat)
+     - `red_flags` (array string)
+     - `manipulation_signals` (array string)
+     - `anomaly_checks` (array objek checklist detail)
+     - `review_reasons` (array string berisi poin review manual)
+     - `decision_reason` (alasan utama rekomendasi)
    
 **HASIL AKHIR (OUTPUT HANYA DALAM FORMAT JSON):**
 Berikan jawaban HANYA dalam format JSON yang valid.
@@ -385,6 +437,27 @@ Berikan jawaban HANYA dalam format JSON yang valid.
   "suggested_category": "Kategori yang disarankan",
   "fraud_risk_score": 5,
   "sanity_check_notes": "Catatan jika ada kejanggalan",
+  "llm_anomaly_analysis": {
+    "risk_score": 15,
+    "risk_level": "low",
+    "approval_recommendation": "approve",
+    "requires_manual_review": false,
+    "summary": "Transaksi terlihat konsisten dan wajar.",
+    "red_flags": [],
+    "manipulation_signals": [],
+    "anomaly_checks": [
+      {
+        "code": "amount_structure_consistency",
+        "label": "Konsistensi struktur nominal",
+        "status": "pass",
+        "severity": "low",
+        "evidence": "Total transaksi sesuai komponen biaya.",
+        "reason": "Tidak ada selisih nominal yang mencurigakan."
+      }
+    ],
+    "review_reasons": [],
+    "decision_reason": "Tidak ada indikasi manipulasi dokumen maupun pola pengeluaran tidak wajar."
+  },
   "contains_sensitive_data": false,
   "all_detected_totals": [
     {"label": "Grand Total", "amount": 25000, "priority": 1}
@@ -496,21 +569,12 @@ EOT;
             $vendor = $this->cleanEWalletVendorPattern($vendor);
 
             // 4. SMART NOMINAL SELECTION
-            // If all_detected_totals exists, prioritize by priority (1=final/total amount)
+            // If all_detected_totals exists, prioritize robustly (don't let admin fee become final nominal)
             $finalNominal = (int) ($data['nominal'] ?? 0);
             $normalizedTotals = $this->normalizeDetectedTotals($detectedTotals);
-
-            if (! empty($normalizedTotals)) {
-                // Get the first one (lowest priority number = priority 1 = the actual total)
-                $priorityTotal = $normalizedTotals[0]; // Should be sorted by priority
-                if (isset($priorityTotal['amount']) && $priorityTotal['amount'] > 0) {
-                    \Log::info('GroqAIService: Smart nominal selection', [
-                        'original_nominal' => $finalNominal,
-                        'priority_1_amount' => $priorityTotal['amount'],
-                        'priority_1_label' => $priorityTotal['label'] ?? 'Unknown',
-                    ]);
-                    $finalNominal = (int) $priorityTotal['amount'];
-                }
+            $selectedNominal = $this->selectBestNominalFromDetectedTotals($normalizedTotals, $finalNominal);
+            if ($selectedNominal > 0) {
+                $finalNominal = $selectedNominal;
             }
 
             // 5. ULTRA SMART DATE EXTRACTION FALLBACK
@@ -541,10 +605,19 @@ EOT;
                 }
             }
 
-            $items = $data['items'] ?? [];
+            $items = $this->normalizeItems($data['items'] ?? []);
             if (empty($items)) {
-                \Log::warning('GroqAIService: No items extracted from OCR', ['vendor' => $vendor]);
+                $items = $this->inferItemsFromRawText($rawText, $finalNominal, $vendor);
+                \Log::warning('GroqAIService: No items extracted from OCR, using heuristic fallback', [
+                    'vendor' => $vendor,
+                    'inferred_count' => count($items),
+                ]);
             }
+
+            $detailTransaksi = implode(', ', array_filter(array_map(
+                fn ($item) => is_array($item) ? trim((string) ($item['name'] ?? '')) : trim((string) $item),
+                $items
+            )));
 
             return [
                 'success' => true,
@@ -554,8 +627,10 @@ EOT;
                     'nominal' => $finalNominal,
                     'tanggal' => $finalDate,
                     'items' => $items,
+                    'detail_transaksi' => $detailTransaksi,
                     'fraud_risk_score' => $data['fraud_risk_score'] ?? 0,
                     'sanity_check_notes' => $data['sanity_check_notes'] ?? '',
+                    'llm_anomaly_analysis' => $this->normalizeLlmAnomalyAnalysis($data),
                     'policy_violations' => $data['policy_violations'] ?? [],
                     'suggested_category' => $data['suggested_category'] ?? null,
                     'accounting_split' => $data['accounting_split'] ?? [],
@@ -573,6 +648,208 @@ EOT;
                 'error' => 'Gagal memproses response AI: '.$e->getMessage(),
             ];
         }
+    }
+
+    private function normalizeLlmAnomalyAnalysis(array $data): array
+    {
+        $analysis = is_array($data['llm_anomaly_analysis'] ?? null) ? $data['llm_anomaly_analysis'] : [];
+
+        $riskScore = (int) ($analysis['risk_score'] ?? ($data['fraud_risk_score'] ?? 0));
+        $riskScore = max(0, min(100, $riskScore));
+
+        $riskLevel = strtolower(trim((string) ($analysis['risk_level'] ?? '')));
+        if (! in_array($riskLevel, ['low', 'medium', 'high'], true)) {
+            $riskLevel = $riskScore >= 70 ? 'high' : ($riskScore >= 40 ? 'medium' : 'low');
+        }
+
+        $recommendation = strtolower(trim((string) ($analysis['approval_recommendation'] ?? '')));
+        if (! in_array($recommendation, ['approve', 'review', 'reject'], true)) {
+            $recommendation = $riskScore >= 75 ? 'reject' : ($riskScore >= 45 ? 'review' : 'approve');
+        }
+
+        $requiresManualReview = array_key_exists('requires_manual_review', $analysis)
+            ? (bool) $analysis['requires_manual_review']
+            : ($recommendation === 'review');
+
+        $summary = trim((string) ($analysis['summary'] ?? ''));
+        if ($summary === '') {
+            $summary = trim((string) ($data['sanity_check_notes'] ?? ''));
+        }
+        if ($summary === '') {
+            $summary = $recommendation === 'reject'
+                ? 'Risiko tinggi terdeteksi pada transaksi ini.'
+                : ($recommendation === 'review'
+                    ? 'Ada beberapa sinyal risiko yang perlu perhatian.'
+                    : 'Tidak ada anomali signifikan terdeteksi.');
+        }
+
+        $decisionReason = trim((string) ($analysis['decision_reason'] ?? ''));
+        if ($decisionReason === '') {
+            $decisionReason = $summary;
+        }
+
+        $redFlags = array_values(array_filter(array_map(
+            fn ($item) => trim((string) $item),
+            is_array($analysis['red_flags'] ?? null) ? $analysis['red_flags'] : []
+        )));
+
+        $manipulationSignals = array_values(array_filter(array_map(
+            fn ($item) => trim((string) $item),
+            is_array($analysis['manipulation_signals'] ?? null) ? $analysis['manipulation_signals'] : []
+        )));
+
+        $anomalyChecks = [];
+        $rawChecks = is_array($analysis['anomaly_checks'] ?? null) ? $analysis['anomaly_checks'] : [];
+        foreach ($rawChecks as $check) {
+            if (! is_array($check)) {
+                continue;
+            }
+
+            $status = strtolower(trim((string) ($check['status'] ?? 'warning')));
+            if (! in_array($status, ['pass', 'warning', 'fail'], true)) {
+                $status = 'warning';
+            }
+
+            $severity = strtolower(trim((string) ($check['severity'] ?? 'medium')));
+            if (! in_array($severity, ['low', 'medium', 'high'], true)) {
+                $severity = 'medium';
+            }
+
+            $anomalyChecks[] = [
+                'code' => trim((string) ($check['code'] ?? 'general_anomaly')) ?: 'general_anomaly',
+                'label' => trim((string) ($check['label'] ?? 'Temuan anomali')) ?: 'Temuan anomali',
+                'status' => $status,
+                'severity' => $severity,
+                'evidence' => trim((string) ($check['evidence'] ?? '')),
+                'reason' => trim((string) ($check['reason'] ?? '')),
+            ];
+        }
+
+        $reviewReasons = array_values(array_filter(array_map(
+            fn ($item) => trim((string) $item),
+            is_array($analysis['review_reasons'] ?? null) ? $analysis['review_reasons'] : []
+        )));
+
+        return [
+            'risk_score' => $riskScore,
+            'risk_level' => $riskLevel,
+            'approval_recommendation' => $recommendation,
+            'requires_manual_review' => $requiresManualReview,
+            'summary' => $summary,
+            'red_flags' => $redFlags,
+            'manipulation_signals' => $manipulationSignals,
+            'anomaly_checks' => $anomalyChecks,
+            'review_reasons' => $reviewReasons,
+            'decision_reason' => $decisionReason,
+        ];
+    }
+
+    private function normalizeItems($items): array
+    {
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($items as $item) {
+            if (is_string($item)) {
+                $name = trim($item);
+                if ($name === '') {
+                    continue;
+                }
+                $normalized[] = [
+                    'name' => $name,
+                    'qty' => 1,
+                    'price' => 0,
+                    'category' => 'Umum',
+                    'is_personal' => false,
+                ];
+                continue;
+            }
+
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $name = trim((string) ($item['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $normalized[] = [
+                'name' => $name,
+                'qty' => (int) max(1, (int) ($item['qty'] ?? 1)),
+                'price' => (float) max(0, (float) ($item['price'] ?? 0)),
+                'category' => trim((string) ($item['category'] ?? 'Umum')) ?: 'Umum',
+                'is_personal' => (bool) ($item['is_personal'] ?? false),
+            ];
+        }
+
+        return array_slice($normalized, 0, 20);
+    }
+
+    private function inferItemsFromRawText(string $rawText, int $nominal, string $vendor): array
+    {
+        $lines = preg_split('/\r\n|\r|\n/', $rawText) ?: [];
+        $items = [];
+        $stopwords = [
+            'transaksi berhasil', 'total', 'nominal', 'biaya admin', 'admin', 'ppn', 'pajak',
+            'no. ref', 'ref', 'tanggal', 'waktu', 'sumber dana', 'tujuan', 'informasi',
+            'npwp', 'bank', 'keterangan', 'catatan', 'payment', 'pembayaran', 'invoice',
+        ];
+
+        foreach ($lines as $line) {
+            $cleanLine = trim((string) $line);
+            if ($cleanLine === '' || mb_strlen($cleanLine) < 4) {
+                continue;
+            }
+
+            $lineLower = mb_strtolower($cleanLine, 'UTF-8');
+            $hasStopword = false;
+            foreach ($stopwords as $word) {
+                if (str_contains($lineLower, $word)) {
+                    $hasStopword = true;
+                    break;
+                }
+            }
+            if ($hasStopword) {
+                continue;
+            }
+
+            if (! preg_match('/[a-z]/i', $cleanLine)) {
+                continue;
+            }
+
+            $name = preg_replace('/(?:rp|idr)?\s*[0-9][0-9\.,\s]{1,20}/iu', '', $cleanLine) ?? $cleanLine;
+            $name = trim(preg_replace('/\s+/', ' ', $name) ?? $name);
+            if ($name === '' || mb_strlen($name) < 3) {
+                continue;
+            }
+
+            $items[] = [
+                'name' => $name,
+                'qty' => 1,
+                'price' => 0,
+                'category' => 'Umum',
+                'is_personal' => false,
+            ];
+
+            if (count($items) >= 6) {
+                break;
+            }
+        }
+
+        if (empty($items)) {
+            $items[] = [
+                'name' => $vendor !== '' ? 'Pembayaran '.$vendor : 'Transaksi reimbursement',
+                'qty' => 1,
+                'price' => max(0, $nominal),
+                'category' => 'Umum',
+                'is_personal' => false,
+            ];
+        }
+
+        return $items;
     }
 
     public function validateReceiptData(array $ocrData, array $userInput): array
@@ -1016,6 +1293,98 @@ EOT;
         usort($normalized, fn ($a, $b) => $a['priority'] <=> $b['priority']);
 
         return $normalized;
+    }
+
+    /**
+     * Pick the best final nominal from detected totals with label-aware heuristics.
+     * Prevent common OCR/LLM mistakes where admin fee is selected as final amount.
+     */
+    private function selectBestNominalFromDetectedTotals(array $totals, int $fallbackNominal = 0): int
+    {
+        if (empty($totals)) {
+            return max(0, $fallbackNominal);
+        }
+
+        $candidates = [];
+        foreach ($totals as $total) {
+            $amount = (int) ($total['amount'] ?? 0);
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $label = trim((string) ($total['label'] ?? ''));
+            $labelLower = strtolower($label);
+            $priority = (int) ($total['priority'] ?? 999);
+
+            $isFinalLabel = preg_match('/(total transaksi|total pembayaran|total bayar|grand total|jumlah dibayar|amount due|total tagihan|total payment)/i', $labelLower) === 1;
+            $isFeeLabel = preg_match('/(admin|biaya|fee|ppn|tax|pajak|diskon|potongan|cashback|service charge)/i', $labelLower) === 1;
+
+            $candidates[] = [
+                'amount' => $amount,
+                'label' => $label,
+                'priority' => $priority,
+                'is_final_label' => $isFinalLabel,
+                'is_fee_label' => $isFeeLabel,
+            ];
+        }
+
+        if (empty($candidates)) {
+            return max(0, $fallbackNominal);
+        }
+
+        // 1) Prefer explicit final labels, choose the highest amount among them.
+        $finalLabelCandidates = array_values(array_filter($candidates, fn ($item) => $item['is_final_label'] === true));
+        if (! empty($finalLabelCandidates)) {
+            usort($finalLabelCandidates, function ($a, $b) {
+                if ($a['amount'] === $b['amount']) {
+                    return $a['priority'] <=> $b['priority'];
+                }
+
+                return $b['amount'] <=> $a['amount'];
+            });
+
+            $chosen = $finalLabelCandidates[0];
+            \Log::info('GroqAIService: Nominal selected by final label', [
+                'selected_amount' => $chosen['amount'],
+                'selected_label' => $chosen['label'],
+                'fallback_nominal' => $fallbackNominal,
+            ]);
+
+            return (int) $chosen['amount'];
+        }
+
+        // 2) If no explicit final label, avoid pure fee/tax labels and use best ranked candidate.
+        $nonFeeCandidates = array_values(array_filter($candidates, fn ($item) => $item['is_fee_label'] === false));
+        $rankPool = ! empty($nonFeeCandidates) ? $nonFeeCandidates : $candidates;
+        usort($rankPool, function ($a, $b) {
+            if ($a['priority'] === $b['priority']) {
+                return $b['amount'] <=> $a['amount'];
+            }
+
+            return $a['priority'] <=> $b['priority'];
+        });
+
+        $chosen = $rankPool[0];
+        $maxAmount = max(array_map(fn ($item) => (int) $item['amount'], $rankPool));
+
+        // Guardrail: if chosen amount is too tiny compared to detected max, prefer max amount.
+        if ($maxAmount > 0 && $chosen['amount'] < (int) round($maxAmount * 0.25)) {
+            foreach ($rankPool as $candidate) {
+                if ((int) ($candidate['amount'] ?? 0) === $maxAmount) {
+                    $chosen = $candidate;
+                    break;
+                }
+            }
+        }
+
+        \Log::info('GroqAIService: Nominal selected by heuristic ranking', [
+            'selected_amount' => $chosen['amount'],
+            'selected_label' => $chosen['label'],
+            'fallback_nominal' => $fallbackNominal,
+            'max_amount_detected' => $maxAmount,
+        ]);
+
+        return (int) $chosen['amount'];
     }
 
     private function cleanEWalletVendorPattern(string $vendor): string

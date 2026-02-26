@@ -1,4 +1,3 @@
-/* Pengajuan Form Handler Module */
 
 if (typeof Icons === 'undefined') {
     var Icons = {
@@ -13,7 +12,7 @@ if (typeof Icons === 'undefined') {
         file: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:text-bottom;"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>'
     };
 } else {
-    // Add missing icons if already declared
+    
     Icons.block = Icons.block || '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:text-bottom;"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>';
     Icons.eye = Icons.eye || '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:text-bottom;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
 }
@@ -30,7 +29,7 @@ class PengajuanFormManager {
         this.cacheElements();
         this.attachEventListeners();
 
-        // Initial check for nominal (duplication / validation error)
+     
         if (this.nominalInput && this.nominalInput.value) {
             this.handleCurrencyInput();
             this.updateLiveBudget();
@@ -41,7 +40,6 @@ class PengajuanFormManager {
         const summaryEl = document.getElementById('validationSummary');
         if (!summaryEl) return;
 
-        // Reset classes
         summaryEl.className = 'validation-summary-box';
 
         let icon = Icons.info;
@@ -92,15 +90,14 @@ class PengajuanFormManager {
                 if (missingFields.length > 0) {
                     e.preventDefault();
 
-                    // Create professional error message in Indonesian
                     const message = `Mohon lengkapi <b>${missingFields.join(', ')}</b> terlebih dahulu sebelum mengupload bukti pembayaran.`;
 
                     this.showNotification('danger', message);
 
-                    // Highlight empty fields
+                    
                     this.highlightMissingFields(missingFields);
 
-                    // Scroll to top
+                  
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             });
@@ -124,10 +121,6 @@ class PengajuanFormManager {
             }
         }
 
-        // --- VALIDATION FLOW (SECURITY FIRST) ---
-        // User must input manually first, then upload, then AI validates.
-
-        // Click-to-fill functionality for OCR results
         ['vendor', 'nominal', 'date'].forEach(field => {
             const el = document.getElementById(`dash-ocr-${field}`);
             if (el) {
@@ -158,7 +151,7 @@ class PengajuanFormManager {
                         inputToFill.style.transition = 'all 0.3s ease';
                         setTimeout(() => inputToFill.style.backgroundColor = '', 1000);
 
-                        this.showNotification('success', `Berhasil menyalin <b>${field}</b> dari hasil OCR.`);
+                        this.showNotification('success', `Berhasil menyalin <b>${field}</b> dari hasil OCR + AI.`);
                         this.debounceValidation();
                     }
                 });
@@ -184,11 +177,7 @@ class PengajuanFormManager {
 
         // Save initial usage if not saved
         if (!usageInfo.getAttribute('data-initial-usage')) {
-            // Initial usage in component already includes status['current'] if it was there, 
-            // but for 'create' page, current is initially 0 or from duplicate.
-            // Let's assume usageInfo text is the "Used" part.
-            // Actually, in component: usage = usage + current
-            // So if we are on create page, current might be 0 initially.
+           
             const currentVal = parseInt(usageInfo.textContent.replace(/\D/g, '')) || 0;
             const inputVal = parseInt(this.nominalInput.value.replace(/\D/g, '')) || 0;
             usageInfo.setAttribute('data-initial-usage', currentVal - inputVal);
@@ -394,12 +383,12 @@ class PengajuanFormManager {
         if (globalLoader) {
             globalLoader.style.opacity = '1';
             globalLoader.style.pointerEvents = 'auto';
-            if (globalLoaderText) globalLoaderText.textContent = 'AI sedang menganalisis struk Anda... Mohon tunggu sebentar.';
+            if (globalLoaderText) globalLoaderText.textContent = 'Tahap 1/2: Ekstraksi OCR dokumen...';
         }
 
         const summaryEl = document.getElementById('validationSummary');
         if (summaryEl) {
-            summaryEl.innerHTML = `<div class="validation-loading" style="display:flex; align-items:center; gap:0.5rem; color:#667eea;">${Icons.loading}<span> Memproses file dengan AI...</span></div>`;
+            summaryEl.innerHTML = `<div class="validation-loading" style="display:flex; align-items:center; gap:0.5rem; color:#667eea;">${Icons.eye}<span> Tahap 1/2: OCR membaca teks dokumen...</span></div>`;
         }
 
         // Disable button and show processing state
@@ -413,14 +402,14 @@ class PengajuanFormManager {
         if (file.type.startsWith('image/') || file.type === 'application/pdf') {
             try {
                 if (file.type === 'application/pdf') {
-                    if (globalLoaderText) globalLoaderText.textContent = 'Sedang mengkonversi PDF...';
+                    if (globalLoaderText) globalLoaderText.textContent = 'Tahap 1/2: OCR PDF (konversi + ekstraksi teks)...';
                     if (summaryEl) {
-                        summaryEl.innerHTML = `<div class="validation-loading" style="display:flex; align-items:center; gap:0.5rem; color:#667eea;">${Icons.file}<span> Memproses PDF...</span></div>`;
+                        summaryEl.innerHTML = `<div class="validation-loading" style="display:flex; align-items:center; gap:0.5rem; color:#667eea;">${Icons.file}<span> Tahap 1/2: OCR PDF sedang berjalan...</span></div>`;
                     }
                 } else {
-                    if (globalLoaderText) globalLoaderText.textContent = 'AI sedang membaca teks dari gambar...';
+                    if (globalLoaderText) globalLoaderText.textContent = 'Tahap 1/2: OCR gambar (membaca teks)...';
                     if (summaryEl) {
-                        summaryEl.innerHTML = `<div class="validation-loading" style="display:flex; align-items:center; gap:0.5rem; color:#667eea;">${Icons.eye}<span> Membaca teks dari gambar...</span></div>`;
+                        summaryEl.innerHTML = `<div class="validation-loading" style="display:flex; align-items:center; gap:0.5rem; color:#667eea;">${Icons.eye}<span> Tahap 1/2: OCR membaca teks gambar...</span></div>`;
                     }
                 }
 
@@ -442,9 +431,9 @@ class PengajuanFormManager {
             }
         }
 
-        if (globalLoaderText) globalLoaderText.textContent = 'Menganalisis data struk...';
+        if (globalLoaderText) globalLoaderText.textContent = 'Tahap 2/2: Analisis AI (anomali, fraud, dan validasi data)...';
         if (summaryEl) {
-            summaryEl.innerHTML = `<div class="validation-loading" style="display:flex; align-items:center; gap:0.5rem; color:#667eea;">${Icons.ai}<span> Menganalisis data...</span></div>`;
+            summaryEl.innerHTML = `<div class="validation-loading" style="display:flex; align-items:center; gap:0.5rem; color:#667eea;">${Icons.ai}<span> Tahap 2/2: AI menganalisis hasil OCR...</span></div>`;
         }
 
         const formData = new FormData();
@@ -634,6 +623,7 @@ class PengajuanFormManager {
                         this.handleMultiInvoice(data.multi_invoice);
                     }
 
+                    this.showNotification('success', `<b>Validasi dokumen selesai</b><br>Tahap 1 OCR dan Tahap 2 analisis AI berhasil dijalankan.`);
                     this.validateInputs();
                 } else {
                     document.getElementById('validationSummary').innerHTML = `<div style="color: #dc2626; font-weight: 600;">${Icons.block} Validasi AI Gagal: ` + (data.message || 'Silakan periksa file dan coba upload ulang.') + '</div>';
@@ -929,7 +919,7 @@ class PengajuanFormManager {
         const catOcr = document.getElementById('dash-ocr-context');
         if (catOcr) catOcr.innerHTML = waitingHtml;
 
-        document.getElementById('validationSummary').innerHTML = `<div style="color: #6b7280; font-size: 0.9em;">${Icons.info} Lengkapi form untuk melihat hasil validasi.</div>`;
+        document.getElementById('validationSummary').innerHTML = `<div style="color: #6b7280; font-size: 0.9em;">${Icons.info} Lengkapi form untuk melihat hasil validasi OCR + AI.</div>`;
 
         if (this.submitBtn) {
             this.submitBtn.disabled = true;
@@ -1043,7 +1033,7 @@ class PengajuanFormManager {
                 errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">💡 Pastikan nominal yang Anda input sama persis dengan total di struk.</span>`);
                 // Show what OCR detected
                 if (this.ocrData && this.ocrData.nominal) {
-                    errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">📄 AI membaca: <b>Rp ${new Intl.NumberFormat('id-ID').format(this.ocrData.nominal)}</b></span>`);
+                    errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">📄 OCR + AI membaca: <b>Rp ${new Intl.NumberFormat('id-ID').format(this.ocrData.nominal)}</b></span>`);
                 }
                 // Multi-invoice hint
                 if (this.ocrData && this.ocrData.all_detected_totals && this.ocrData.all_detected_totals.length > 1) {
@@ -1060,7 +1050,7 @@ class PengajuanFormManager {
                     errorList.push(`${Icons.cross} <b>Tanggal tidak cocok</b>`);
                     errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">💡 Pastikan tanggal yang Anda input sama persis dengan tanggal di struk.</span>`);
                     if (this.ocrData && this.ocrData.tanggal) {
-                        errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">📄 AI membaca: <b>${this.ocrData.tanggal}</b></span>`);
+                        errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">📄 OCR + AI membaca: <b>${this.ocrData.tanggal}</b></span>`);
                     }
                 }
             }
@@ -1071,7 +1061,7 @@ class PengajuanFormManager {
                 errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">💡 Gunakan nama yang persis seperti di struk (minimal 75% mirip).</span>`);
 
                 if (this.ocrData && this.ocrData.vendor) {
-                    errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">📄 AI membaca: <b>${this.ocrData.vendor}</b></span>`);
+                    errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">📄 OCR + AI membaca: <b>${this.ocrData.vendor}</b></span>`);
                 }
                 errorList.push(`<span style="color: #64748b; font-size: 0.85em; margin-left: 24px;">💡 Contoh: "Tokopedia" bukan "Toko Ped", "Gojek" bukan "Go Jek"</span>`);
             }

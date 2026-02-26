@@ -33,10 +33,16 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         // Validate input
-        $credentials = $request->validate([
+        $validated = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
+            'remember' => ['nullable', 'boolean'],
         ]);
+        $credentials = [
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+        ];
+        $remember = $request->boolean('remember');
 
         // Build throttle key based on email and IP
         $throttleKey = $this->throttleKey.':'.strtolower($request->email).'|'.$request->ip();
@@ -51,11 +57,11 @@ class LoginController extends Controller
             return back()->withErrors([
                 'email' => 'Terlalu banyak percobaan login. Silakan coba lagi dalam '.
                           ceil($seconds / 60).' menit.',
-            ])->onlyInput('email');
+            ])->onlyInput('email', 'remember');
         }
 
         // Attempt authentication
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials, $remember)) {
             // Regenerate session to prevent session fixation
             $request->session()->regenerate();
 
@@ -71,7 +77,7 @@ class LoginController extends Controller
 
                 return back()->withErrors([
                     'email' => 'Akun Anda tidak aktif. Silakan hubungi administrator.',
-                ])->onlyInput('email');
+                ])->onlyInput('email', 'remember');
             }
 
             // Clear rate limiter on successful login
@@ -97,7 +103,7 @@ class LoginController extends Controller
 
         return back()->withErrors([
             'email' => 'Email atau password salah.',
-        ])->onlyInput('email');
+        ])->onlyInput('email', 'remember');
     }
 
     /**

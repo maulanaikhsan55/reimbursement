@@ -15,9 +15,16 @@
         padding: 1.25rem !important;
     }
 
+    .data-table-wrapper {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .data-table {
         table-layout: fixed !important;
         width: 100% !important;
+        min-width: 1180px;
     }
 
     .data-table th {
@@ -127,6 +134,27 @@
         font-size: 0.95rem;
     }
 
+    .sync-readonly-note {
+        margin-top: 0.45rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.4rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid #dbeafe;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .sync-readonly-note svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+    }
+
     @media (max-width: 1200px) {
         .filter-form-finance {
             grid-template-columns: 1fr 1fr;
@@ -196,6 +224,13 @@
                 <div>
                     <h2 class="section-title">Daftar COA</h2>
                     <p class="section-subtitle">Data disinkronkan secara otomatis dari Accurate</p>
+                    <div class="sync-readonly-note">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                            <path d="M7 11V8a5 5 0 0 1 10 0v3"></path>
+                        </svg>
+                        Referensi Accurate (Read-only)
+                    </div>
                 </div>
                 <div class="header-actions">
                     <form action="{{ route('finance.masterdata.coa.sync') }}" method="POST" class="d-inline" id="syncForm">

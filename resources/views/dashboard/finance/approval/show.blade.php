@@ -15,8 +15,15 @@
     <div class="dashboard-content detail-single-content">
         <!-- Main Info Section -->
         <section class="modern-section">
-            <div class="section-header" style="margin-bottom: 1rem; padding-bottom: 0; border: none;">
+            <div class="section-header" style="margin-bottom: 1rem; padding-bottom: 0; border: none; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
                 <h2 class="section-title">Informasi Pengajuan</h2>
+                <a href="{{ route('finance.approval.index') }}" class="btn-modern btn-modern-secondary btn-modern-sm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 0.5rem;">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Kembali
+                </a>
             </div>
 
             <div class="detail-grid">
@@ -79,8 +86,8 @@
                     <div class="detail-label">Bukti Transaksi</div>
                     <div class="detail-value">
                         @if($pengajuan->file_bukti)
-                            <button type="button" class="btn-modern btn-modern-secondary btn-modern-sm" onclick="openProofModal('{{ route('proof.show', $pengajuan) }}', {{ str_ends_with(strtolower($pengajuan->file_bukti), '.pdf') ? 'true' : 'false' }})">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; display: inline; margin-right: 0.5rem;">
+                            <button type="button" class="btn-modern btn-modern-secondary btn-modern-sm btn-proof-compact" onclick="openProofModal('{{ route('proof.show', $pengajuan) }}', {{ str_ends_with(strtolower($pengajuan->file_bukti), '.pdf') ? 'true' : 'false' }})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                     <polyline points="14 2 14 8 20 8"></polyline>
                                 </svg>
@@ -114,7 +121,7 @@
                 <p class="text-muted small mb-0" style="margin-top: 0.25rem;">Detail hasil analisis otomatis dokumen</p>
             </div>
             
-            <x-ai-validation-result :results="$pengajuan->validasiAi" />
+            <x-ai-validation-result :results="$pengajuan->validasiAi" :pengajuan="$pengajuan" />
 
             @if(!$pengajuan->validasiAi->isEmpty())
                 
@@ -238,23 +245,16 @@
                     <textarea name="catatan_finance" id="catatan_finance" rows="2" class="form-textarea" style="min-height: 70px; padding: 0.75rem 1rem; border-radius: 0.75rem; border-color: #e2e8f0;" placeholder="Tambahkan catatan jika diperlukan..."></textarea>
                 </div>
 
-                <div class="form-actions" style="padding-top: 0.75rem; margin-top: 0.75rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                    <a href="{{ route('finance.approval.index') }}" class="btn-modern btn-modern-secondary" style="padding: 0.5rem 1.25rem; border-radius: 0.75rem;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 0.5rem;">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        Kembali
-                    </a>
-                    <div class="action-group" style="display: flex; gap: 0.75rem;">
-                        <button type="button" class="btn-modern btn-modern-danger" style="padding: 0.5rem 1.25rem; border-radius: 0.75rem;" onclick="openRejectModal('{{ route('finance.approval.reject', $pengajuan) }}', 'catatan_finance')">
+                <div class="form-actions detail-actions-inline" style="padding-top: 0.75rem; margin-top: 0.75rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; align-items: center;">
+                    <div class="action-group action-buttons-simple" style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn-modern btn-modern-danger btn-modern-sm" onclick="openRejectModal('{{ route('finance.approval.reject', $pengajuan) }}', 'catatan_finance')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 0.5rem;">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
                             Tolak
                         </button>
-                        <button type="button" class="btn-modern btn-modern-primary" style="padding: 0.5rem 1.5rem; border-radius: 0.75rem;" onclick="validateAndSend()">
+                        <button type="button" class="btn-modern btn-modern-primary btn-modern-sm" onclick="validateAndSend()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 0.5rem;">
                                 <line x1="22" y1="2" x2="11" y2="13"></line>
                                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -287,15 +287,6 @@
                     <div class="detail-label">ID Transaksi Accurate</div>
                     <div class="detail-value text-mono" style="color: #6366f1; font-weight: 600;">{{ $pengajuan->accurate_transaction_id ?? '-' }}</div>
                 </div>
-            </div>
-            <div class="form-actions" style="margin-top: 1.5rem; border-top: 1px solid #f1f5f9; padding-top: 1rem;">
-                <a href="{{ url()->previous() }}" class="btn-modern btn-modern-secondary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 0.5rem;">
-                        <line x1="19" y1="12" x2="5" y2="12"></line>
-                        <polyline points="12 19 5 12 12 5"></polyline>
-                    </svg>
-                    Kembali
-                </a>
             </div>
         </section>
         @endif

@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePengajuanRequest;
 use App\Models\KategoriBiaya;
 use App\Models\Pengajuan;
-use App\Services\LocalReceiptParser;
 use App\Services\NotifikasiService;
 use App\Services\ReportExportService;
 use App\Services\ValidasiAIService;
@@ -27,21 +26,17 @@ class PengajuanController extends Controller
 
     protected $exportService;
 
-    protected $localParser;
-
     protected $createAction;
 
     public function __construct(
         ValidasiAIService $validasiAIService,
         NotifikasiService $notifikasiService,
         ReportExportService $exportService,
-        LocalReceiptParser $localParser,
         CreatePengajuanAction $createAction
     ) {
         $this->validasiAIService = $validasiAIService;
         $this->notifikasiService = $notifikasiService;
         $this->exportService = $exportService;
-        $this->localParser = $localParser;
         $this->createAction = $createAction;
     }
 
@@ -55,8 +50,13 @@ class PengajuanController extends Controller
             'kategori:kategori_id,nama_kategori',
             'departemen:departemen_id,nama_departemen',
             'user:id,name',
-            'validasiAi',
-        ])->paginate(config('app.pagination.pengajuan'));
+            'validasiAi' => function ($validasiQuery) {
+                $validasiQuery
+                    ->select('validasi_id', 'pengajuan_id', 'jenis_validasi', 'status')
+                    ->where('jenis_validasi', 'ocr');
+            },
+        ])->paginate(config('app.pagination.pengajuan'))
+            ->withQueryString();
 
         // Cache stats for 1 minute to improve performance
         $stats = \Cache::remember("pengajuan_stats_{$userId}", 60, function () use ($userId) {
@@ -93,7 +93,12 @@ class PengajuanController extends Controller
             $budgetStatus = Pengajuan::getBudgetStatus($user->departemen_id, $initialNominal);
         }
 
-        return view('dashboard.atasan.pengajuan.create', compact('kategoriBiaya', 'budgetStatus', 'duplicateFrom'));
+        return view('dashboard.shared.pengajuan.create', [
+            'kategoriBiaya' => $kategoriBiaya,
+            'budgetStatus' => $budgetStatus,
+            'duplicateFrom' => $duplicateFrom,
+            'routePrefix' => 'atasan',
+        ]);
     }
 
     public function store(StorePengajuanRequest $request)
@@ -120,7 +125,11 @@ class PengajuanController extends Controller
         $this->authorize('view', $pengajuan);
 
         $pengajuan->load([
-            'validasiAi:validasi_id,pengajuan_id,jenis_validasi,status,confidence_score,hasil_ocr,pesan_validasi,is_blocking',
+            'validasiAi' => function ($validasiQuery) {
+                $validasiQuery
+                    ->select('validasi_id', 'pengajuan_id', 'jenis_validasi', 'status', 'confidence_score', 'hasil_ocr', 'pesan_validasi', 'is_blocking')
+                    ->orderBy('validasi_id');
+            },
             'kategori:kategori_id,nama_kategori',
             'departemen:departemen_id,nama_departemen',
             'user:id,name,email,atasan_id',
@@ -185,26 +194,25 @@ class PengajuanController extends Controller
     public function exportCsv(Request $request)
     {
         $query = $this->applyPersonalPengajuanFilters(Pengajuan::query(), $request);
-        $fileName = 'pengajuan_reimbursement_'.date('Y-m-d_His').'.csv';
-        $headers = $this->getPengajuanCsvHeaders('personal');
 
-        $pengajuanList = $query->with(['user', 'kategori'])->get();
-        $data = $this->mapPengajuanForCsv($pengajuanList, 'personal');
-
-        return $this->exportService->exportToCSV($fileName, $headers, $data);
+        return $this->exportPengajuanCsvFromQuery(
+            exportService: $this->exportService,
+            query: $query->with(['user', 'kategori']),
+            filenameBase: 'pengajuan_reimbursement',
+            mode: 'personal'
+        );
     }
 
     public function exportXlsx(Request $request)
     {
         $query = $this->applyPersonalPengajuanFilters(Pengajuan::query(), $request);
-        $fileName = 'pengajuan_reimbursement_'.date('Y-m-d_His').'.xlsx';
-        $headers = $this->getPengajuanCsvHeaders('personal');
 
-        $pengajuanList = $query->with(['user', 'kategori'])->get();
-        $data = $this->mapPengajuanForCsv($pengajuanList, 'personal');
-
-        return $this->exportService->exportToXlsx($fileName, $headers, $data, [
-            'sheet_name' => 'Pengajuan Pribadi',
-        ]);
+        return $this->exportPengajuanXlsxFromQuery(
+            exportService: $this->exportService,
+            query: $query->with(['user', 'kategori']),
+            filenameBase: 'pengajuan_reimbursement',
+            sheetName: 'Pengajuan Pribadi',
+            mode: 'personal'
+        );
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
@@ -91,6 +92,50 @@ class UserController extends Controller
         return view('dashboard.finance.masterdata.users.create', compact('departemen', 'supervisors'));
     }
 
+    public function checkEmailAvailability(Request $request)
+    {
+        $email = strtolower(trim((string) $request->query('email', '')));
+
+        if ($email === '') {
+            return response()->json([
+                'available' => false,
+                'message' => 'Email wajib diisi.',
+            ], 422);
+        }
+
+        $validator = Validator::make(
+            ['email' => $email],
+            ['email' => 'required|email']
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'available' => false,
+                'message' => $validator->errors()->first('email'),
+            ], 422);
+        }
+
+        $allowedDomains = config('reimbursement.security.allowed_domains', []);
+        if (config('reimbursement.security.force_official_email', true)) {
+            $domain = (string) substr(strrchr($email, '@') ?: '', 1);
+            if (! in_array($domain, $allowedDomains, true)) {
+                return response()->json([
+                    'available' => false,
+                    'message' => 'Domain email tidak diizinkan. Gunakan email resmi perusahaan.',
+                ]);
+            }
+        }
+
+        $exists = User::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->exists();
+
+        return response()->json([
+            'available' => ! $exists,
+            'message' => $exists ? 'Email sudah terdaftar.' : 'Email tersedia.',
+        ]);
+    }
+
     public function store(Request $request)
     {
         $allowedDomains = config('reimbursement.security.allowed_domains', []);
@@ -103,8 +148,8 @@ class UserController extends Controller
                 'unique:users,email',
                 function ($attribute, $value, $fail) use ($allowedDomains) {
                     if (config('reimbursement.security.force_official_email', true)) {
-                        $domain = substr(strrchr($value, '@'), 1);
-                        if (! in_array($domain, $allowedDomains)) {
+                        $domain = strtolower((string) substr(strrchr((string) $value, '@') ?: '', 1));
+                        if (! in_array($domain, $allowedDomains, true)) {
                             $fail('Domain email tidak diizinkan. Gunakan email resmi perusahaan.');
                         }
                     }

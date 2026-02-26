@@ -4,6 +4,10 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (document.querySelector('.guest-page')) {
+        return;
+    }
+
     // Handle all form submissions
     const forms = document.querySelectorAll('form');
     

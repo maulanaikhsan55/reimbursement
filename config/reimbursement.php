@@ -12,8 +12,23 @@ return [
         'ocr_confidence_threshold' => env('AI_OCR_THRESHOLD', 85),
         'duplicate_check_enabled' => env('AI_DUPLICATE_ENABLED', true),
         'vendor_verification_enabled' => env('AI_VENDOR_ENABLED', true),
-        'vendor_fuzzy_threshold' => env('AI_VENDOR_THRESHOLD', 80),
+        'vendor_fuzzy_threshold' => env('AI_VENDOR_THRESHOLD', 75),
         'auto_reject_on_all_fail' => env('AI_AUTO_REJECT_FAIL', false),
+    ],
+
+    /* =====================================================
+     * FEATURE FLAGS (SAFE ROLLOUT)
+     * ===================================================== */
+    'features' => [
+        'realtime_notifications' => env('FEATURE_REALTIME_NOTIFICATIONS', true),
+        'broadcast_notifications' => env('FEATURE_BROADCAST_NOTIFICATIONS', true),
+        'echo_client' => env('FEATURE_ECHO_CLIENT', true),
+    ],
+
+    'notifications' => [
+        // sync: langsung insert notifikasi (rekomendasi local/dev)
+        // queue: pakai job queue (pastikan queue worker berjalan)
+        'delivery' => env('NOTIFICATION_DELIVERY', 'sync'),
     ],
 
     /* =====================================================
@@ -37,6 +52,7 @@ return [
             'image/jpeg',
             'image/png',
             'image/webp',
+            'application/pdf',
         ],
     ],
 
@@ -53,5 +69,8 @@ return [
      * ===================================================== */
     'policy' => [
         'max_receipt_age_days' => env('MAX_RECEIPT_AGE_DAYS', 15),
+        'duplicate_window_days' => env('DUPLICATE_WINDOW_DAYS', 15),
+        'workday_start_hour' => env('WORKDAY_START_HOUR', 8),
+        'workday_end_hour' => env('WORKDAY_END_HOUR', 18),
     ],
 ];

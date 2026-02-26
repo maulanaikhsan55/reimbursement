@@ -354,10 +354,14 @@
         }
     }
 
-    @media (max-width: 768px) {
+@media (max-width: 768px) {
         .budget-audit-filter {
             grid-template-columns: 1fr;
         }
     }
 </style>
+@endpush
+
+@push('scripts')
+<script src="{{ asset('js/finance-master.js') }}"></script>
 @endpush

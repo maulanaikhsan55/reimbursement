@@ -1,7 +1,15 @@
 import './bootstrap';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import CropperModule from 'cropperjs/dist/cropper.esm.js';
+import 'cropperjs/dist/cropper.css';
 import './form-loading-states'; // Smart form loading states
+
+// Normalize the export shape and pin it to an app-specific global so inline Blade scripts
+// do not accidentally pick up a stale/foreign Cropper global with a different API.
+const Cropper = (typeof CropperModule === 'function' ? CropperModule : CropperModule?.default) || CropperModule;
+window.ProfilePhotoCropper = Cropper;
+window.Cropper = Cropper;
 
 let headerScrollBound = false;
 let parallaxScrollBound = false;

@@ -5,12 +5,15 @@ namespace App\Events;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NotifikasiPengajuan implements ShouldBroadcastNow
+class NotifikasiPengajuan implements ShouldBroadcastNow, ShouldDispatchAfterCommit
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public bool $afterCommit = true;
 
     public $userId;
 
@@ -24,10 +27,12 @@ class NotifikasiPengajuan implements ShouldBroadcastNow
 
     public $pengajuanId;
 
+    public $pengajuanOwnerId;
+
     /**
      * Create a new event instance.
      */
-    public function __construct($userId, $title, $message, $type = 'info', $notifikasiId = null, $pengajuanId = null)
+    public function __construct($userId, $title, $message, $type = 'info', $notifikasiId = null, $pengajuanId = null, $pengajuanOwnerId = null)
     {
         $this->userId = $userId;
         $this->title = $title;
@@ -35,6 +40,7 @@ class NotifikasiPengajuan implements ShouldBroadcastNow
         $this->type = $type;
         $this->notifikasiId = $notifikasiId;
         $this->pengajuanId = $pengajuanId;
+        $this->pengajuanOwnerId = $pengajuanOwnerId;
     }
 
     /**
@@ -63,6 +69,7 @@ class NotifikasiPengajuan implements ShouldBroadcastNow
             'type' => $this->type,
             'notifikasi_id' => $this->notifikasiId,
             'pengajuan_id' => $this->pengajuanId,
+            'pengajuan_owner_id' => $this->pengajuanOwnerId,
         ];
     }
 }

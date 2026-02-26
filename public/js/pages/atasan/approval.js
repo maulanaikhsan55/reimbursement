@@ -9,6 +9,13 @@
         const statsContainer = document.querySelector('.stats-grid')?.parentElement;
 
         if (!tableContainer) return;
+        if (filterForm && filterForm.dataset.enhanced === '1') return;
+        if (filterForm) {
+            filterForm.dataset.enhanced = '1';
+        }
+
+        let activeRequestController = null;
+        let latestRequestSeq = 0;
 
         function debounce(func, wait) {
             let timeout;
@@ -22,22 +29,41 @@
             };
         }
 
-        const performUpdate = function(url) {
-            window.history.pushState({}, '', url);
+        const performUpdate = function(url, options = {}) {
+            const { pushHistory = true } = options;
+            if (pushHistory) {
+                window.history.pushState({}, '', url);
+            }
 
             tableContainer.style.opacity = '0.5';
             tableContainer.style.pointerEvents = 'none';
             
             if (statsContainer) statsContainer.style.opacity = '0.5';
 
+            if (activeRequestController) {
+                activeRequestController.abort();
+            }
+
+            const requestSeq = ++latestRequestSeq;
+            activeRequestController = new AbortController();
+
             fetch(url, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
-                }
+                },
+                credentials: 'same-origin',
+                signal: activeRequestController.signal,
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                if (requestSeq !== latestRequestSeq) return;
+
                 if (data.table) {
                     tableContainer.innerHTML = data.table;
                 }
@@ -50,10 +76,17 @@
                 }
             })
             .catch(error => {
+                if (error?.name === 'AbortError') return;
+                if (requestSeq !== latestRequestSeq) return;
+
                 console.error('Error:', error);
                 tableContainer.style.opacity = '1';
                 tableContainer.style.pointerEvents = 'auto';
                 if (statsContainer) statsContainer.style.opacity = '1';
+            })
+            .finally(() => {
+                if (requestSeq !== latestRequestSeq) return;
+                activeRequestController = null;
             });
         };
 
@@ -88,95 +121,44 @@
         // Real-time refresh listener (guard against duplicate bindings)
         window.removeEventListener('refresh-approval-table', window.__atasanApprovalRefreshHandler);
         window.__atasanApprovalRefreshHandler = function() {
-            updateTable();
+            performUpdate(window.location.href, { pushHistory: false });
         };
         window.addEventListener('refresh-approval-table', window.__atasanApprovalRefreshHandler);
 
-        const submitPostExport = function(url, params) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            form.style.display = 'none';
-
-            // CSRF Token
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-            if (csrfToken) {
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = csrfToken;
-                form.appendChild(csrfInput);
-            }
-
-            // Parameters
-            params.forEach((value, key) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = value;
-                form.appendChild(input);
-            });
-
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-        };
-
         window.exportPdf = function(e) {
-            e.preventDefault();
-            const search = document.getElementById('searchInput')?.value || '';
-            const status = document.getElementById('statusInput')?.value || '';
-            const tFrom = document.getElementById('tanggalFrom')?.value || '';
-            const tTo = document.getElementById('tanggalTo')?.value || '';
-            
-            const btn = e.currentTarget;
-            let url = btn.dataset.url;
-            
-            const params = new URLSearchParams();
-            if (search) params.append('search', search);
-            if (status) params.append('status', status);
-            if (tFrom) params.append('tanggal_from', tFrom);
-            if (tTo) params.append('tanggal_to', tTo);
-            
-            submitPostExport(url, params);
+            window.exportWithFilters?.(e, {
+                method: 'POST',
+                fields: {
+                    search: 'searchInput',
+                    status: 'statusInput',
+                    tanggal_from: 'tanggalFrom',
+                    tanggal_to: 'tanggalTo',
+                },
+            });
         };
 
         window.exportCsv = function(e) {
-            e.preventDefault();
-            const search = document.getElementById('searchInput')?.value || '';
-            const status = document.getElementById('statusInput')?.value || '';
-            const tFrom = document.getElementById('tanggalFrom')?.value || '';
-            const tTo = document.getElementById('tanggalTo')?.value || '';
-            
-            const btn = e.currentTarget;
-            let url = btn.dataset.url;
-            
-            const params = new URLSearchParams();
-            if (search) params.append('search', search);
-            if (status) params.append('status', status);
-            if (tFrom) params.append('tanggal_from', tFrom);
-            if (tTo) params.append('tanggal_to', tTo);
-            
-            submitPostExport(url, params);
+            window.exportWithFilters?.(e, {
+                method: 'POST',
+                fields: {
+                    search: 'searchInput',
+                    status: 'statusInput',
+                    tanggal_from: 'tanggalFrom',
+                    tanggal_to: 'tanggalTo',
+                },
+            });
         };
 
         window.exportXlsx = function(e) {
-            e.preventDefault();
-            const search = document.getElementById('searchInput')?.value || '';
-            const status = document.getElementById('statusInput')?.value || '';
-            const tFrom = document.getElementById('tanggalFrom')?.value || '';
-            const tTo = document.getElementById('tanggalTo')?.value || '';
-
-            const btn = e.currentTarget;
-            let url = btn.dataset.url;
-
-            const params = new URLSearchParams();
-            if (search) params.append('search', search);
-            if (status) params.append('status', status);
-            if (tFrom) params.append('tanggal_from', tFrom);
-            if (tTo) params.append('tanggal_to', tTo);
-
-            submitPostExport(url, params);
+            window.exportWithFilters?.(e, {
+                method: 'POST',
+                fields: {
+                    search: 'searchInput',
+                    status: 'statusInput',
+                    tanggal_from: 'tanggalFrom',
+                    tanggal_to: 'tanggalTo',
+                },
+            });
         };
     }
 

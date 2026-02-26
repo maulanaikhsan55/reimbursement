@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Finance\Workflows;
 
 use App\Enums\PengajuanStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Finance\MarkDisbursementRequest;
 use App\Models\Departemen;
 use App\Models\Pengajuan;
-use App\Services\JurnalService;
+use App\Services\AuditTrailService;
+use App\Services\FinanceDisbursementQueryService;
 use App\Services\NotifikasiService;
 use App\Services\ReportExportService;
 use App\Traits\FiltersPengajuan;
@@ -19,34 +21,54 @@ class DisbursementController extends Controller
     use FiltersPengajuan;
 
     public function __construct(
+        protected FinanceDisbursementQueryService $disbursementQueryService,
         protected NotifikasiService $notifikasiService,
-        protected JurnalService $jurnalService,
+        protected AuditTrailService $auditTrailService,
         protected ReportExportService $exportService,
     ) {}
 
     public function index(Request $request)
     {
-        $query = $this->applyFinanceFilters(
-            Pengajuan::query()->with('user', 'departemen'),
-            $request,
-            PengajuanStatus::TERKIRIM_ACCURATE->value
+        $query = $this->disbursementQueryService->pending(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen')
         );
 
         $pengajuans = $query->paginate(config('app.pagination.approval'));
 
-        $totalWaitingDisbursement = Pengajuan::where('status', PengajuanStatus::TERKIRIM_ACCURATE->value)->count();
-        $totalNominalWaitingDisbursement = Pengajuan::where('status', PengajuanStatus::TERKIRIM_ACCURATE->value)->sum('nominal');
-        $totalAlreadyDisbursed = Pengajuan::where('status', PengajuanStatus::DICAIRKAN->value)->count();
+        $summaryCacheKey = 'finance_disbursement_summary';
+        $summary = Cache::flexible($summaryCacheKey, [20, 60], function () use ($summaryCacheKey) {
+            return Cache::lock($summaryCacheKey.'_lock', 5)->block(2, function () {
+                return Pengajuan::selectRaw('
+                    SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as total_waiting_disbursement,
+                    SUM(CASE WHEN status = ? THEN nominal ELSE 0 END) as total_nominal_waiting_disbursement,
+                    SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as total_already_disbursed
+                ', [
+                    PengajuanStatus::TERKIRIM_ACCURATE->value,
+                    PengajuanStatus::TERKIRIM_ACCURATE->value,
+                    PengajuanStatus::DICAIRKAN->value,
+                ])->first();
+            });
+        });
 
-        $departemens = Departemen::orderBy('nama_departemen')->get();
+        $totalWaitingDisbursement = (int) ($summary->total_waiting_disbursement ?? 0);
+        $totalNominalWaitingDisbursement = (float) ($summary->total_nominal_waiting_disbursement ?? 0);
+        $totalAlreadyDisbursed = (int) ($summary->total_already_disbursed ?? 0);
+
+        $departemens = Cache::remember('departemens_list', 3600, function () {
+            return Departemen::orderBy('nama_departemen')->get();
+        });
 
         return view('dashboard.finance.pencairan.index', compact('pengajuans', 'totalWaitingDisbursement', 'totalNominalWaitingDisbursement', 'totalAlreadyDisbursed', 'departemens'));
     }
 
     public function getCount()
     {
-        $count = Cache::remember('finance_disbursement_pending_count', 10, function () {
-            return Pengajuan::where('status', PengajuanStatus::TERKIRIM_ACCURATE->value)->count();
+        $cacheKey = 'finance_disbursement_pending_count';
+        $count = Cache::flexible($cacheKey, [5, 15], function () use ($cacheKey) {
+            return Cache::lock($cacheKey.'_lock', 5)->block(2, function () {
+                return Pengajuan::where('status', PengajuanStatus::TERKIRIM_ACCURATE->value)->count();
+            });
         });
 
         return response()->json(['pending_count' => $count]);
@@ -54,6 +76,8 @@ class DisbursementController extends Controller
 
     public function show(Pengajuan $pengajuan)
     {
+        $this->authorize('reviewByFinance', $pengajuan);
+
         if (! \in_array($pengajuan->status, [
             PengajuanStatus::TERKIRIM_ACCURATE,
             PengajuanStatus::DICAIRKAN,
@@ -69,50 +93,40 @@ class DisbursementController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $query = $this->applyFinanceFilters(
-            Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request,
-            PengajuanStatus::TERKIRIM_ACCURATE->value
+        $query = $this->disbursementQueryService->pending(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen', 'kategori')
         );
 
-        $pengajuan = $query->get();
-
-        $headers = $this->getPengajuanCsvHeaders('finance');
-        $data = $this->mapPengajuanForCsv($pengajuan, 'finance');
-
-        return $this->exportService->exportToCSV(
-            'daftar_pencairan_'.date('Y-m-d').'.csv',
-            $headers,
-            $data
+        return $this->exportPengajuanCsvFromQuery(
+            exportService: $this->exportService,
+            query: $query,
+            filenameBase: 'daftar_pencairan',
+            mode: 'finance'
         );
     }
 
     public function exportXlsx(Request $request)
     {
-        $query = $this->applyFinanceFilters(
-            Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request,
-            PengajuanStatus::TERKIRIM_ACCURATE->value
+        $query = $this->disbursementQueryService->pending(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen', 'kategori')
         );
 
-        $pengajuan = $query->get();
-        $headers = $this->getPengajuanCsvHeaders('finance');
-        $data = $this->mapPengajuanForCsv($pengajuan, 'finance');
-
-        return $this->exportService->exportToXlsx(
-            'daftar_pencairan_'.date('Y-m-d').'.xlsx',
-            $headers,
-            $data,
-            ['sheet_name' => 'Pencairan']
+        return $this->exportPengajuanXlsxFromQuery(
+            exportService: $this->exportService,
+            query: $query,
+            filenameBase: 'daftar_pencairan',
+            sheetName: 'Pencairan',
+            mode: 'finance'
         );
     }
 
     public function exportPdf(Request $request)
     {
-        $query = $this->applyFinanceFilters(
-            Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request,
-            PengajuanStatus::TERKIRIM_ACCURATE->value
+        $query = $this->disbursementQueryService->pending(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen', 'kategori')
         );
 
         $pengajuan = $query->get();
@@ -126,26 +140,39 @@ class DisbursementController extends Controller
         );
     }
 
-    public function mark(Request $request, Pengajuan $pengajuan)
+    public function mark(MarkDisbursementRequest $request, Pengajuan $pengajuan)
     {
+        $this->authorize('markDisbursed', $pengajuan);
+
         Cache::forget('finance_disbursement_pending_count');
+        Cache::forget('finance_disbursement_summary');
 
         if ($pengajuan->status !== PengajuanStatus::TERKIRIM_ACCURATE) {
             return back()->with('error', 'Pengajuan tidak dalam status terkirim accurate');
         }
 
-        $validated = $request->validate([
-            'tanggal_pencairan' => 'required|date',
-        ]);
+        $validated = $request->validated();
 
         try {
-            DB::transaction(function () use ($pengajuan, $validated) {
+            $statusFrom = $pengajuan->status->value;
+            DB::transaction(function () use ($pengajuan, $validated, $statusFrom) {
                 $pengajuan->update([
                     'status' => PengajuanStatus::DICAIRKAN->value,
                     'tanggal_pencairan' => $validated['tanggal_pencairan'],
                 ]);
 
                 $this->notifikasiService->notifyDisbursed($pengajuan);
+                $this->auditTrailService->logPengajuan(
+                    event: 'pengajuan.marked_disbursed',
+                    pengajuan: $pengajuan,
+                    actor: auth()->user(),
+                    description: 'Finance menandai pengajuan sebagai dicairkan.',
+                    context: [
+                        'status_from' => $statusFrom,
+                        'status_to' => $pengajuan->status->value,
+                        'tanggal_pencairan' => $validated['tanggal_pencairan'],
+                    ]
+                );
             });
 
             return back()->with('success', 'Pengajuan berhasil ditandai sebagai dicairkan');
@@ -156,9 +183,9 @@ class DisbursementController extends Controller
 
     public function history(Request $request)
     {
-        $pengajuanQuery = $this->applyHistoryFilters(
-            Pengajuan::query()->with(['user', 'departemen', 'kategori']),
-            $request
+        $pengajuanQuery = $this->disbursementQueryService->history(
+            request: $request,
+            query: Pengajuan::query()->with(['user', 'departemen', 'kategori'])
         );
 
         $pengajuan = $pengajuanQuery->paginate(config('app.pagination.approval'));
@@ -186,60 +213,50 @@ class DisbursementController extends Controller
 
     public function historyExportCsv(Request $request)
     {
-        $pengajuanQuery = $this->applyHistoryFilters(
-            Pengajuan::query()->with(['user', 'departemen', 'kategori']),
-            $request
+        $pengajuanQuery = $this->disbursementQueryService->history(
+            request: $request,
+            query: Pengajuan::query()->with(['user', 'departemen', 'kategori'])
         );
 
-        $pengajuan = $pengajuanQuery->get();
-
-        $headers = $this->getPengajuanCsvHeaders('history');
-        $data = $this->mapPengajuanForCsv($pengajuan, 'history');
-
-        return $this->exportService->exportToCSV(
-            'riwayat_pencairan_'.date('Y-m-d').'.csv',
-            $headers,
-            $data
+        return $this->exportPengajuanCsvFromQuery(
+            exportService: $this->exportService,
+            query: $pengajuanQuery,
+            filenameBase: 'riwayat_pencairan',
+            mode: 'history'
         );
     }
 
     public function historyExportXlsx(Request $request)
     {
-        $pengajuanQuery = $this->applyHistoryFilters(
-            Pengajuan::query()->with(['user', 'departemen', 'kategori']),
-            $request
+        $pengajuanQuery = $this->disbursementQueryService->history(
+            request: $request,
+            query: Pengajuan::query()->with(['user', 'departemen', 'kategori'])
         );
 
-        $pengajuan = $pengajuanQuery->get();
-        $headers = $this->getPengajuanCsvHeaders('history');
-        $data = $this->mapPengajuanForCsv($pengajuan, 'history');
-
-        return $this->exportService->exportToXlsx(
-            'riwayat_pencairan_'.date('Y-m-d').'.xlsx',
-            $headers,
-            $data,
-            ['sheet_name' => 'Riwayat Pencairan']
+        return $this->exportPengajuanXlsxFromQuery(
+            exportService: $this->exportService,
+            query: $pengajuanQuery,
+            filenameBase: 'riwayat_pencairan',
+            sheetName: 'Riwayat Pencairan',
+            mode: 'history'
         );
     }
 
     public function historyExportPdf(Request $request)
     {
-        $pengajuanQuery = $this->applyHistoryFilters(
-            Pengajuan::query()->with(['user', 'departemen', 'kategori']),
-            $request
+        $pengajuanQuery = $this->disbursementQueryService->history(
+            request: $request,
+            query: Pengajuan::query()->with(['user', 'departemen', 'kategori'])
         );
 
         $pengajuan = $pengajuanQuery->get();
         $totalNominal = $pengajuan->sum('nominal');
-        $disbursedDates = $pengajuan->pluck('tanggal_pencairan')->filter();
-
-        $startDate = $request->filled('start_date')
-            ? \Carbon\Carbon::parse($request->input('start_date'))->startOfDay()
-            : ($disbursedDates->min() ? \Carbon\Carbon::parse($disbursedDates->min())->startOfDay() : \Carbon\Carbon::now()->subMonths(1)->startOfDay());
-
-        $endDate = $request->filled('end_date')
-            ? \Carbon\Carbon::parse($request->input('end_date'))->endOfDay()
-            : ($disbursedDates->max() ? \Carbon\Carbon::parse($disbursedDates->max())->endOfDay() : \Carbon\Carbon::now()->endOfDay());
+        $range = $this->resolveExportDateRange(
+            request: $request,
+            dates: $pengajuan->pluck('tanggal_pencairan')
+        );
+        $startDate = $range['startDate'];
+        $endDate = $range['endDate'];
 
         return $this->exportService->exportToPDF(
             'riwayat_pencairan_'.date('Y-m-d').'.pdf',

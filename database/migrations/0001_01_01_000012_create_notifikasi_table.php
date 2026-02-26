@@ -30,6 +30,7 @@ return new class extends Migration
 
             $table->index(['user_id', 'is_read']);
             $table->index('created_at');
+            $table->index(['user_id', 'is_read', 'created_at'], 'notifikasi_user_read_created_idx');
         });
     }
 

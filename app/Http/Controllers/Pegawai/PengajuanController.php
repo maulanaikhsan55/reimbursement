@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePengajuanRequest;
 use App\Models\KategoriBiaya;
 use App\Models\Pengajuan;
-use App\Services\LocalReceiptParser;
 use App\Services\NotifikasiService;
 use App\Services\ReportExportService;
 use App\Services\ValidasiAIService;
@@ -39,8 +38,6 @@ class PengajuanController extends Controller
 
     protected $exportService;
 
-    protected $localParser;
-
     protected $createAction;
 
     /**
@@ -50,13 +47,11 @@ class PengajuanController extends Controller
         ValidasiAIService $validasiAIService,
         NotifikasiService $notifikasiService,
         ReportExportService $exportService,
-        LocalReceiptParser $localParser,
         CreatePengajuanAction $createAction
     ) {
         $this->validasiAIService = $validasiAIService;
         $this->notifikasiService = $notifikasiService;
         $this->exportService = $exportService;
-        $this->localParser = $localParser;
         $this->createAction = $createAction;
     }
 
@@ -83,7 +78,11 @@ class PengajuanController extends Controller
         $pengajuanList = $query->with([
             'kategori:kategori_id,nama_kategori',
             'departemen:departemen_id,nama_departemen',
-            'validasiAi',
+            'validasiAi' => function ($validasiQuery) {
+                $validasiQuery
+                    ->select('validasi_id', 'pengajuan_id', 'jenis_validasi', 'status')
+                    ->where('jenis_validasi', 'ocr');
+            },
         ])
             ->orderBy('created_at', 'desc')
             ->paginate(config('app.pagination.pengajuan'))
@@ -126,7 +125,12 @@ class PengajuanController extends Controller
             $budgetStatus = Pengajuan::getBudgetStatus($user->departemen_id, $initialNominal);
         }
 
-        return view('dashboard.pegawai.pengajuan.create', compact('kategoriBiaya', 'budgetStatus', 'duplicateFrom'));
+        return view('dashboard.shared.pengajuan.create', [
+            'kategoriBiaya' => $kategoriBiaya,
+            'budgetStatus' => $budgetStatus,
+            'duplicateFrom' => $duplicateFrom,
+            'routePrefix' => 'pegawai',
+        ]);
     }
 
     /**
@@ -167,7 +171,11 @@ class PengajuanController extends Controller
 
         // Eager load relationships with selective columns to optimize queries
         $pengajuan->load([
-            'validasiAi:validasi_id,pengajuan_id,jenis_validasi,status,confidence_score,hasil_ocr,pesan_validasi,is_blocking',
+            'validasiAi' => function ($validasiQuery) {
+                $validasiQuery
+                    ->select('validasi_id', 'pengajuan_id', 'jenis_validasi', 'status', 'confidence_score', 'hasil_ocr', 'pesan_validasi', 'is_blocking')
+                    ->orderBy('validasi_id');
+            },
             'kategori:kategori_id,nama_kategori',
             'departemen:departemen_id,nama_departemen',
             'user:id,name,email,atasan_id',
@@ -274,16 +282,15 @@ class PengajuanController extends Controller
     {
         try {
             $query = $this->applyPersonalPengajuanFilters(Pengajuan::query(), $request);
+            $payload = $this->buildPengajuanExportPayload($query->with(['user', 'kategori']), 'personal');
 
-            $fileName = 'pengajuan_reimbursement_'.date('Y-m-d_His').'.csv';
-            $headers = $this->getPengajuanCsvHeaders('personal');
+            \Log::info('User '.Auth::id().' exporting CSV with '.$payload['pengajuans']->count().' records');
 
-            $pengajuanList = $query->with(['user', 'kategori'])->get();
-            $data = $this->mapPengajuanForCsv($pengajuanList, 'personal');
-
-            \Log::info('User '.Auth::id().' exporting CSV with '.count($pengajuanList).' records');
-
-            return $this->exportService->exportToCSV($fileName, $headers, $data);
+            return $this->exportService->exportToCSV(
+                'pengajuan_reimbursement_'.date('Y-m-d').'.csv',
+                $payload['headers'],
+                $payload['rows']
+            );
         } catch (\Exception $e) {
             \Log::error('CSV export error for user '.Auth::id().': '.$e->getMessage());
             abort(500, 'Gagal mengekspor data CSV. Silakan coba lagi.');
@@ -299,18 +306,16 @@ class PengajuanController extends Controller
     {
         try {
             $query = $this->applyPersonalPengajuanFilters(Pengajuan::query(), $request);
+            $payload = $this->buildPengajuanExportPayload($query->with(['user', 'kategori']), 'personal');
 
-            $fileName = 'pengajuan_reimbursement_'.date('Y-m-d_His').'.xlsx';
-            $headers = $this->getPengajuanCsvHeaders('personal');
+            \Log::info('User '.Auth::id().' exporting XLSX with '.$payload['pengajuans']->count().' records');
 
-            $pengajuanList = $query->with(['user', 'kategori'])->get();
-            $data = $this->mapPengajuanForCsv($pengajuanList, 'personal');
-
-            \Log::info('User '.Auth::id().' exporting XLSX with '.count($pengajuanList).' records');
-
-            return $this->exportService->exportToXlsx($fileName, $headers, $data, [
-                'sheet_name' => 'Pengajuan Pribadi',
-            ]);
+            return $this->exportService->exportToXlsx(
+                'pengajuan_reimbursement_'.date('Y-m-d').'.xlsx',
+                $payload['headers'],
+                $payload['rows'],
+                ['sheet_name' => 'Pengajuan Pribadi']
+            );
         } catch (\Exception $e) {
             \Log::error('XLSX export error for user '.Auth::id().': '.$e->getMessage());
             abort(500, 'Gagal mengekspor data XLSX. Silakan coba lagi.');

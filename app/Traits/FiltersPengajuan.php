@@ -4,6 +4,8 @@ namespace App\Traits;
 
 use App\Enums\PengajuanStatus;
 use App\Models\User;
+use App\Services\ReportExportService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -220,5 +222,66 @@ trait FiltersPengajuan
 
             return $row;
         });
+    }
+
+    protected function buildPengajuanExportPayload($query, string $mode = 'personal'): array
+    {
+        $pengajuans = $query->get();
+
+        return [
+            'pengajuans' => $pengajuans,
+            'headers' => $this->getPengajuanCsvHeaders($mode),
+            'rows' => $this->mapPengajuanForCsv($pengajuans, $mode),
+        ];
+    }
+
+    protected function exportPengajuanCsvFromQuery(
+        ReportExportService $exportService,
+        $query,
+        string $filenameBase,
+        string $mode = 'personal'
+    ) {
+        $payload = $this->buildPengajuanExportPayload($query, $mode);
+
+        return $exportService->exportToCSV(
+            $filenameBase.'_'.date('Y-m-d').'.csv',
+            $payload['headers'],
+            $payload['rows']
+        );
+    }
+
+    protected function exportPengajuanXlsxFromQuery(
+        ReportExportService $exportService,
+        $query,
+        string $filenameBase,
+        string $sheetName,
+        string $mode = 'personal'
+    ) {
+        $payload = $this->buildPengajuanExportPayload($query, $mode);
+
+        return $exportService->exportToXlsx(
+            $filenameBase.'_'.date('Y-m-d').'.xlsx',
+            $payload['headers'],
+            $payload['rows'],
+            ['sheet_name' => $sheetName]
+        );
+    }
+
+    protected function resolveExportDateRange(Request $request, $dates): array
+    {
+        $normalizedDates = collect($dates)->filter();
+
+        $startDate = $request->filled('start_date')
+            ? Carbon::parse($request->input('start_date'))->startOfDay()
+            : ($normalizedDates->min() ? Carbon::parse($normalizedDates->min())->startOfDay() : Carbon::now()->subMonths(1)->startOfDay());
+
+        $endDate = $request->filled('end_date')
+            ? Carbon::parse($request->input('end_date'))->endOfDay()
+            : ($normalizedDates->max() ? Carbon::parse($normalizedDates->max())->endOfDay() : Carbon::now()->endOfDay());
+
+        return [
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        ];
     }
 }

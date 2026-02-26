@@ -27,72 +27,134 @@ if (typeof window.handleShiftKeyDown === 'undefined') {
 
 if (typeof window.initFinanceMaster === 'undefined') {
     window.initFinanceMaster = function() {
-    // Generic Live Search for Master Data
-    const filterForm = document.getElementById('filterForm');
-    const tableContainer = document.getElementById('tableContainer');
-
-    if (filterForm && tableContainer) {
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
+    // Generic live filter for all finance filter forms
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
                 clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
+                func(...args);
             };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function buildFormUrl(form) {
+        const action = form.getAttribute('action') || window.location.href;
+        const actionUrl = new URL(action, window.location.origin);
+        const params = new URLSearchParams(new FormData(form));
+
+        actionUrl.search = params.toString();
+
+        return `${actionUrl.pathname}${actionUrl.search}`;
+    }
+
+    function bindLiveFilterForm(form) {
+        if (!form || form.dataset.liveFilterBound === 'true') {
+            return;
         }
 
-        const updateTable = debounce(function() {
-            const formData = new FormData(filterForm);
-            const params = new URLSearchParams(formData);
-            const url = `${filterForm.action}?${params.toString()}`;
+        const method = (form.getAttribute('method') || 'GET').toUpperCase();
+        if (method !== 'GET') {
+            return;
+        }
 
-            window.history.pushState({}, '', url);
+        form.dataset.liveFilterBound = 'true';
 
-            tableContainer.style.opacity = '0.5';
-            tableContainer.style.pointerEvents = 'none';
+        const scope = form.closest('.dashboard-content') || document;
+        const tableContainer = scope.querySelector('#tableContainer');
+        let activeRequestController = null;
+
+        const setLoading = (isLoading) => {
+            if (!tableContainer) return;
+            tableContainer.style.opacity = isLoading ? '0.55' : '1';
+            tableContainer.style.pointerEvents = isLoading ? 'none' : 'auto';
+        };
+
+        const navigate = (url) => {
+            window.location.assign(url);
+        };
+
+        const update = debounce(() => {
+            const url = buildFormUrl(form);
+
+            if (!tableContainer) {
+                navigate(url);
+                return;
+            }
+
+            if (activeRequestController) {
+                activeRequestController.abort();
+            }
+
+            activeRequestController = new AbortController();
+            window.history.replaceState({}, '', url);
+            setLoading(true);
 
             fetch(url, {
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                signal: activeRequestController.signal,
             })
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newTableContainer = doc.getElementById('tableContainer');
-                if (newTableContainer) {
-                    const newTableContent = newTableContainer.innerHTML;
-                    tableContainer.innerHTML = newTableContent;
-                }
-                tableContainer.style.opacity = '1';
-                tableContainer.style.pointerEvents = 'auto';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                tableContainer.style.opacity = '1';
-                tableContainer.style.pointerEvents = 'auto';
-            });
-        }, 500);
+                .then((response) => response.text())
+                .then((html) => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const nextTableContainer = doc.getElementById('tableContainer');
 
-        // Attach listeners to all inputs and selects within the filter form
-        const inputs = filterForm.querySelectorAll('input, select');
-        inputs.forEach(input => {
-            if (input.tagName === 'INPUT' && (input.type === 'text' || input.type === 'search')) {
-                input.addEventListener('input', updateTable);
-            } else {
-                input.addEventListener('change', updateTable);
+                    if (!nextTableContainer) {
+                        navigate(url);
+                        return;
+                    }
+
+                    tableContainer.innerHTML = nextTableContainer.innerHTML;
+                })
+                .catch((error) => {
+                    if (error.name !== 'AbortError') {
+                        console.error('Live filter error:', error);
+                        navigate(url);
+                    }
+                })
+                .finally(() => {
+                    setLoading(false);
+                    activeRequestController = null;
+                });
+        }, 420);
+
+        const controls = form.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), select, textarea');
+
+        controls.forEach((control) => {
+            if (control.dataset.liveFilter === 'off') {
+                return;
             }
+
+            const type = (control.getAttribute('type') || '').toLowerCase();
+            const isTypingControl = control.tagName === 'TEXTAREA'
+                || type === 'text'
+                || type === 'search'
+                || type === 'email'
+                || type === 'number';
+
+            if (isTypingControl) {
+                control.addEventListener('input', update);
+            }
+
+            control.addEventListener('change', update);
         });
 
-        filterForm.addEventListener('submit', function(e) {
+        form.addEventListener('submit', function(e) {
             e.preventDefault();
-            updateTable();
+            update();
         });
     }
+
+    const filterForms = document.querySelectorAll(
+        '.dashboard-content form.filter-form-finance, .dashboard-content form.filter-form-history, .dashboard-content .filter-container form.filter-form'
+    );
+
+    filterForms.forEach(bindLiveFilterForm);
 
     // Sync Button logic
     const syncButton = document.getElementById('syncButton');

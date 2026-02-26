@@ -15,6 +15,7 @@ Route::prefix('profile')->name('profile.')->group(function () {
 
 Route::group([], function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/widgets', [DashboardController::class, 'widgets'])->name('dashboard.widgets');
 
     Route::get('/notifikasi', [NotifikasiController::class, 'getAll'])->name('notifikasi');
     Route::get('/notifikasi/unread', [NotifikasiController::class, 'getUnread'])->name('notifikasi.unread');
@@ -32,5 +33,5 @@ Route::group([], function () {
         ->middleware('throttle:10,1'); // Max 10 requests per minute
     Route::post('/validasi-ai/validate-input', [ValidasiAIController::class, 'validateInput'])
         ->name('validasi-ai.validate-input')
-        ->middleware('throttle:10,1'); // Max 10 requests per minute
+        ->middleware('throttle:60,1'); // Frequent on-change validation on create form
 });

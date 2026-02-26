@@ -131,6 +131,62 @@
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
     }
+
+    .discrepancy-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10010;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15,23,42,0.45);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+
+    .discrepancy-modal-content {
+        width: min(920px, 94vw);
+        max-height: 86vh;
+        background: #fff;
+        border-radius: 1.25rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 24px 55px rgba(15, 23, 42, 0.22);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .discrepancy-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.15rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .discrepancy-modal-title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .discrepancy-modal-close {
+        width: 34px;
+        height: 34px;
+        border: 0;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #475569;
+        cursor: pointer;
+        font-size: 1.25rem;
+        line-height: 1;
+    }
+
+    .discrepancy-modal-body {
+        padding: 1rem 1.15rem;
+        overflow: auto;
+    }
 </style>
 @endpush
 
@@ -210,10 +266,72 @@
 
 <x-proof-modal />
 
+<div id="discrepancyModal" class="discrepancy-modal" aria-hidden="true">
+    <div class="discrepancy-modal-content">
+        <div class="discrepancy-modal-header">
+            <h3 class="discrepancy-modal-title">Transaksi Belum Tersinkron</h3>
+            <button type="button" class="discrepancy-modal-close" onclick="closeDiscrepancyModal()" aria-label="Tutup modal">&times;</button>
+        </div>
+        <div class="discrepancy-modal-body">
+            <div id="discrepancyList"></div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 (function() {
+    window.__discrepancyModalState = window.__discrepancyModalState || { prevOverflow: '' };
+
+    const ensureDiscrepancyModalMounted = () => {
+        const modal = document.getElementById('discrepancyModal');
+        if (!modal) return null;
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+        return modal;
+    };
+
+    const openDiscrepancyModal = () => {
+        const modal = ensureDiscrepancyModalMounted();
+        if (!modal) return;
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        window.__discrepancyModalState.prevOverflow = document.body.style.overflow || '';
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeDiscrepancyModalInternal = () => {
+        const modal = document.getElementById('discrepancyModal');
+        if (!modal) return;
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = window.__discrepancyModalState.prevOverflow || '';
+        window.__discrepancyModalState.prevOverflow = '';
+    };
+
+    if (!window.__discrepancyModalBehaviorBound) {
+        window.__discrepancyModalBehaviorBound = true;
+
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('discrepancyModal');
+            if (!modal) return;
+            if (event.target === modal) {
+                closeDiscrepancyModalInternal();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('discrepancyModal');
+            if (!modal) return;
+            if (event.key === 'Escape' && modal.style.display === 'flex') {
+                closeDiscrepancyModalInternal();
+            }
+        });
+    }
+
     const initReconciliation = () => {
+        ensureDiscrepancyModalMounted();
         window.filterRecon = function() {
             const input = document.getElementById('reconSearch');
             if (!input) return;
@@ -335,7 +453,7 @@
             });
             
             const modal = document.getElementById('discrepancyModal');
-            if (modal) modal.style.display = 'flex';
+            if (modal) openDiscrepancyModal();
         };
 
         window.syncTransaction = function(btn, coaId, accurateId, transType) {
@@ -376,8 +494,7 @@
         };
 
         window.closeDiscrepancyModal = function() {
-            const modal = document.getElementById('discrepancyModal');
-            if (modal) modal.style.display = 'none';
+            closeDiscrepancyModalInternal();
         };
     };
 

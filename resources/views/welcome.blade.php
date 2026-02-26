@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#243b61">
     <title>Reimbursement Platform - Smart Expense Management</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32.png') }}">
+    <link rel="alternate icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
     
     <!-- Performance Optimization: Preconnect & DNS-Prefetch -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,31 +36,86 @@
             100% { transform: rotate(360deg); }
         }
 
-        .clip-loader {
-            background: transparent !important;
-            width: 32px;
-            height: 32px;
-            border-radius: 100%;
-            border: 3px solid;
-            border-color: #425d87;
-            border-bottom-color: transparent;
+        .btn.is-loading {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            pointer-events: none;
+            cursor: wait;
+            opacity: 0.88;
+            filter: saturate(0.95);
+        }
+
+        .btn-inline-loader {
+            width: 1em;
+            height: 1em;
+            border-radius: 999px;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
             display: inline-block;
-            animation: clip-loader-spin 0.75s 0s infinite linear;
-            animation-fill-mode: both;
+            flex: 0 0 auto;
+            animation: clip-loader-spin 0.65s linear infinite;
+        }
+
+        .btn-loading-text {
+            white-space: nowrap;
+        }
+
+        .route-loading-status {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        @keyframes topbar-route-loading {
+            0% {
+                width: 22%;
+                transform: translateX(-120%);
+            }
+            50% {
+                width: 42%;
+            }
+            100% {
+                width: 22%;
+                transform: translateX(460%);
+            }
+        }
+
+        #scrollProgress.is-route-loading {
+            width: 22% !important;
+            animation: topbar-route-loading 1s ease-in-out infinite;
+            will-change: transform, width;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            body.ready {
+                transition: none;
+            }
+
+            .btn-inline-loader {
+                animation-duration: 1.25s;
+            }
+
+            #scrollProgress.is-route-loading {
+                animation: none;
+                width: 34% !important;
+                transform: none !important;
+            }
         }
     </style>
 </head>
 <body class="landing-page">
-    <!-- Global Loader -->
-    <div id="global-loader" style="position: fixed; inset: 0; z-index: 9999; background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; transition: opacity 0.3s ease-out;">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-            <div class="clip-loader"></div>
-            <span class="text-xs text-gray-500 font-medium tracking-wide" style="font-family: 'Poppins', sans-serif;">loading...</span>
-        </div>
-    </div>
     <div class="scroll-progress-bar" aria-hidden="true">
         <span id="scrollProgress"></span>
     </div>
+    <div id="routeLoadingStatus" class="route-loading-status" aria-live="polite" aria-atomic="true"></div>
 
     @include('components.landing-header')
 
@@ -75,19 +135,15 @@
                     <div class="hero-buttons">
                         @auth
                             @if(auth()->user()->isFinance())
-                                <a href="{{ route('finance.dashboard') }}" class="btn btn-primary" data-external>Finance Dashboard</a>
+                                <a href="{{ route('finance.dashboard') }}" class="btn btn-primary" data-external data-route-loading>Finance Dashboard</a>
                             @elseif(auth()->user()->isAtasan())
-                                <a href="{{ route('atasan.dashboard') }}" class="btn btn-primary" data-external>Manager Dashboard</a>
+                                <a href="{{ route('atasan.dashboard') }}" class="btn btn-primary" data-external data-route-loading>Manager Dashboard</a>
                             @elseif(auth()->user()->isPegawai())
-                                <a href="{{ route('pegawai.dashboard') }}" class="btn btn-primary" data-external>Employee Dashboard</a>
+                                <a href="{{ route('pegawai.dashboard') }}" class="btn btn-primary" data-external data-route-loading>Employee Dashboard</a>
                             @endif
                         @else
-                            <a href="{{ route('login') }}" class="btn btn-primary" data-external>Start Smart Now</a>
+                            <a href="{{ route('login') }}" class="btn btn-primary" data-external data-route-loading>Start Smart Now</a>
                         @endauth
-                    </div>
-                    <div class="hero-proof-row" aria-label="Key proof points">
-                        <span class="hero-proof-chip"><x-icon name="check-circle" /> &lt; 2 mins submit</span>
-                        <span class="hero-proof-chip"><x-icon name="check-circle" /> 99.9% OCR accuracy</span>
                     </div>
                 </div>
             </div>
@@ -128,85 +184,35 @@
     <section class="data-proof-section" id="proof">
         <div class="container">
             <div class="proof-head" data-aos="fade-up" data-aos-duration="700">
-                <p class="proof-eyebrow">Performance Snapshot</p>
-                <h2>Built for Speed, Accuracy, and Financial Control</h2>
+                <p class="proof-eyebrow">Operational Highlights</p>
+                <h2>Built for Clean Submissions and Controlled Approvals</h2>
+                <p class="proof-summary">A clearer operating model for reimbursement: better inputs, safer validation, and cleaner finance handoff.</p>
             </div>
 
             <div class="proof-grid">
                 <article class="proof-item" data-aos="fade-up" data-aos-delay="0">
-                    <p class="proof-label">Submission Time</p>
-                    <h3 class="proof-value">&lt; 2 mins</h3>
-                    <p class="proof-note">From upload to validated request.</p>
+                    <p class="proof-label">Input Experience</p>
+                    <h3 class="proof-value">AI-Assisted</h3>
+                    <p class="proof-note">Receipt OCR helps capture core fields before users submit.</p>
                 </article>
 
                 <article class="proof-item" data-aos="fade-up" data-aos-delay="80">
-                    <p class="proof-label">OCR Accuracy</p>
-                    <h3 class="proof-value">99.9%</h3>
-                    <p class="proof-note">Reliable extraction for receipt data.</p>
+                    <p class="proof-label">Validation Layer</p>
+                    <h3 class="proof-value">Duplicate Check</h3>
+                    <p class="proof-note">Flags overlapping claims before they move deeper in workflow.</p>
                 </article>
 
                 <article class="proof-item" data-aos="fade-up" data-aos-delay="160">
-                    <p class="proof-label">Duplicate Prevention</p>
-                    <h3 class="proof-value">100%</h3>
-                    <p class="proof-note">Automatic checks before approvals.</p>
+                    <p class="proof-label">Approval Routing</p>
+                    <h3 class="proof-value">Role-Based</h3>
+                    <p class="proof-note">Focused actions for employees, managers, and finance teams.</p>
                 </article>
 
                 <article class="proof-item" data-aos="fade-up" data-aos-delay="240">
-                    <p class="proof-label">Process Speed</p>
-                    <h3 class="proof-value">+90%</h3>
-                    <p class="proof-note">Faster cycle from request to close.</p>
+                    <p class="proof-label">Finance Handoff</p>
+                    <h3 class="proof-value">Structured Sync</h3>
+                    <p class="proof-note">Approved claims stay organized for reconciliation and reporting.</p>
                 </article>
-            </div>
-        </div>
-    </section>
-
-    <!-- STATISTICS SECTION -->
-    <section class="statistics-section" id="statistics">
-        <div class="container">
-            <div class="stats-head" data-aos="fade-up" data-aos-duration="700">
-                <p class="stats-eyebrow">Scale and Reliability</p>
-                <h2>Trusted by Finance Teams That Move Fast</h2>
-            </div>
-            <div class="stats-grid">
-                <div class="stat-item" data-aos="fade-up" data-aos-delay="0">
-                    <div class="stat-icon">
-                        <x-icon name="check-circle" />
-                    </div>
-                    <div class="stat-counter" data-target="350">0<span class="counter-suffix">+</span></div>
-                    <div class="stat-label">Active Teams</div>
-                </div>
-                <div class="stat-item" data-aos="fade-up" data-aos-delay="100">
-                    <div class="stat-icon">
-                        <x-icon name="zap" />
-                    </div>
-                    <div class="stat-counter" data-target="24">0<span class="counter-suffix">h</span></div>
-                    <div class="stat-label">Avg Approval SLA</div>
-                </div>
-                <div class="stat-item" data-aos="fade-up" data-aos-delay="200">
-                    <div class="stat-icon">
-                        <x-icon name="users" />
-                    </div>
-                    <div class="stat-counter" data-target="5000">0<span class="counter-suffix">+</span></div>
-                    <div class="stat-label">Monthly Claims</div>
-                </div>
-                <div class="stat-item" data-aos="fade-up" data-aos-delay="300">
-                    <div class="stat-icon">
-                        <x-icon name="shield" />
-                    </div>
-                    <div class="stat-counter" data-target="98">0<span class="counter-suffix">%</span></div>
-                    <div class="stat-label">Finance Satisfaction</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ABOUT SECTION -->
-    <section class="about" id="about">
-        <div class="container">
-            <div data-aos="fade-up">
-                <span class="platform-badge">The Platform</span>
-                <h2>Ultra-Smart Workflow</h2>
-                <p class="about-text">Replace repetitive manual checks with one clean workflow. Validate receipts instantly, keep approvals controlled, and produce cleaner finance data.</p>
             </div>
         </div>
     </section>
@@ -382,7 +388,11 @@
     <!-- FAQ SECTION -->
     <section class="faq-section" id="faq">
         <div class="container">
-            <h2 data-aos="fade-up" data-aos-duration="800">Smart FAQ</h2>
+            <div class="section-header" data-aos="fade-up" data-aos-duration="800">
+                <p class="proof-eyebrow">FAQ</p>
+                <h2>Smart FAQ</h2>
+                <p>Clear answers for how validation, approvals, and routing work across the platform.</p>
+            </div>
             <div class="faq-grid">
                 <div class="faq-item active" data-aos="fade-up" data-aos-duration="800" data-aos-delay="50">
                     <div class="faq-header">
@@ -425,31 +435,31 @@
 
             <div class="cta-highlights" data-aos="fade-up" data-aos-duration="800" data-aos-delay="120">
                 <div class="cta-chip">
-                    <x-icon name="check-circle" /> AI OCR & duplicate check
+                    <x-icon name="check-circle" /> Role-based approval controls
                 </div>
                 <div class="cta-chip">
-                    <x-icon name="check-circle" /> Real-time approval
+                    <x-icon name="check-circle" /> Traceable validation flow
                 </div>
                 <div class="cta-chip">
-                    <x-icon name="check-circle" /> Accurate sync
+                    <x-icon name="check-circle" /> Finance-ready structured records
                 </div>
             </div>
 
             <div class="cta-buttons">
                 @auth
                     @if(auth()->user()->isFinance())
-                        <a href="{{ route('finance.dashboard') }}" class="btn btn-primary btn-lg" data-external data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">Go to Dashboard</a>
+                        <a href="{{ route('finance.dashboard') }}" class="btn btn-primary btn-lg" data-external data-route-loading data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">Go to Dashboard</a>
                     @elseif(auth()->user()->isAtasan())
-                        <a href="{{ route('atasan.dashboard') }}" class="btn btn-primary btn-lg" data-external data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">Go to Dashboard</a>
+                        <a href="{{ route('atasan.dashboard') }}" class="btn btn-primary btn-lg" data-external data-route-loading data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">Go to Dashboard</a>
                     @elseif(auth()->user()->isPegawai())
-                        <a href="{{ route('pegawai.dashboard') }}" class="btn btn-primary btn-lg" data-external data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">Go to Dashboard</a>
+                        <a href="{{ route('pegawai.dashboard') }}" class="btn btn-primary btn-lg" data-external data-route-loading data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">Go to Dashboard</a>
                     @endif
                 @else
-                    <a href="{{ route('login') }}" class="btn btn-primary btn-lg" data-external data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">Get Started Now</a>
+                    <a href="{{ route('login') }}" class="btn btn-primary btn-lg" data-external data-route-loading data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">Get Started Now</a>
                 @endauth
                 <a href="#features" class="btn btn-secondary btn-lg">Explore Features</a>
             </div>
-            <p class="cta-proof">Trusted by 350+ active teams with 98% finance satisfaction.</p>
+            <p class="cta-proof">Designed for organizations that need speed without losing control.</p>
         </div>
     </section>
 
@@ -469,61 +479,6 @@
                 return window.innerWidth < 768;
             }
         });
-
-        // Counter Animation Function
-        function animateCounters() {
-            const counters = document.querySelectorAll('.stat-counter[data-target]');
-            
-            counters.forEach(counter => {
-                const target = parseFloat(counter.dataset.target);
-                const duration = 2000; // 2 seconds animation
-                const startTime = performance.now();
-                const isDecimal = target % 1 !== 0;
-                
-                function updateCounter(currentTime) {
-                    const elapsed = currentTime - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-                    
-                    // Easing function for smooth animation (ease-out)
-                    const easeOut = 1 - Math.pow(1 - progress, 3);
-                    const currentValue = target * easeOut;
-                    
-                    if (isDecimal) {
-                        counter.firstChild.textContent = currentValue.toFixed(1);
-                    } else {
-                        counter.firstChild.textContent = Math.floor(currentValue).toLocaleString();
-                    }
-                    
-                    if (progress < 1) {
-                        requestAnimationFrame(updateCounter);
-                    } else {
-                        // Ensure final value is exact
-                        if (isDecimal) {
-                            counter.firstChild.textContent = target.toFixed(1);
-                        } else {
-                            counter.firstChild.textContent = Math.floor(target).toLocaleString();
-                        }
-                    }
-                }
-                
-                requestAnimationFrame(updateCounter);
-            });
-        }
-
-        // Intersection Observer for counter animation
-        const statsObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    animateCounters();
-                    statsObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.5 });
-
-        const statsSection = document.querySelector('.statistics-section');
-        if (statsSection) {
-            statsObserver.observe(statsSection);
-        }
 
         // Lightweight OCR amount pulse to simulate AI verification feedback
         (function(){
@@ -622,31 +577,81 @@
 
 
         document.addEventListener('DOMContentLoaded', function() {
-            const loader = document.getElementById('global-loader');
             const scrollProgress = document.getElementById('scrollProgress');
+            const routeLoadingStatus = document.getElementById('routeLoadingStatus');
+            const ROUTE_LOADING_TIMEOUT_MS = 10000;
+            let routeLoading = false;
+            let activeLoadingButton = null;
+            let routeLoadingResetTimer = null;
             
-            // Function to hide loader
-            const hideLoader = () => {
-                loader.style.opacity = '0';
-                loader.style.pointerEvents = 'none';
-                document.body.classList.add('ready');
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 300);
+            const stopButtonLoading = () => {
+                if (!activeLoadingButton) return;
+                activeLoadingButton.classList.remove('is-loading');
+                activeLoadingButton.removeAttribute('aria-busy');
+                activeLoadingButton.removeAttribute('aria-disabled');
+                activeLoadingButton.innerHTML = activeLoadingButton.dataset.originalHtml || activeLoadingButton.innerHTML;
+                if (Object.prototype.hasOwnProperty.call(activeLoadingButton.dataset, 'loadingMinWidth')) {
+                    activeLoadingButton.style.minWidth = activeLoadingButton.dataset.loadingMinWidth || '';
+                    delete activeLoadingButton.dataset.loadingMinWidth;
+                }
+                delete activeLoadingButton.dataset.originalHtml;
+                activeLoadingButton = null;
             };
 
-            // Function to show loader immediately
-            const showLoader = (e) => {
+            const startButtonLoading = (buttonEl) => {
+                if (!buttonEl || buttonEl.classList.contains('is-loading')) return;
+                stopButtonLoading();
+                buttonEl.dataset.loadingMinWidth = buttonEl.style.minWidth || '';
+                buttonEl.style.minWidth = `${Math.ceil(buttonEl.getBoundingClientRect().width)}px`;
+                buttonEl.dataset.originalHtml = buttonEl.innerHTML;
+                buttonEl.classList.add('is-loading');
+                buttonEl.setAttribute('aria-busy', 'true');
+                buttonEl.setAttribute('aria-disabled', 'true');
+                const loadingLabel = buttonEl.dataset.loadingLabel || 'Loading...';
+                buttonEl.innerHTML = `<span class="btn-inline-loader" aria-hidden="true"></span><span class="btn-loading-text">${loadingLabel}</span>`;
+                activeLoadingButton = buttonEl;
+            };
+
+            const stopRouteLoading = () => {
+                routeLoading = false;
+                if (routeLoadingResetTimer) {
+                    clearTimeout(routeLoadingResetTimer);
+                    routeLoadingResetTimer = null;
+                }
+                if (scrollProgress) {
+                    scrollProgress.classList.remove('is-route-loading');
+                    scrollProgress.style.transform = '';
+                }
+                if (routeLoadingStatus) routeLoadingStatus.textContent = '';
+                stopButtonLoading();
+            };
+
+            const startRouteLoading = (e, link) => {
                 if (e && (e.ctrlKey || e.metaKey || e.button === 1)) return;
-                
-                loader.style.display = 'flex';
-                requestAnimationFrame(() => {
-                    loader.style.opacity = '1';
-                    loader.style.pointerEvents = 'auto';
-                });
+                if (routeLoading) return;
+                routeLoading = true;
+                if (routeLoadingResetTimer) clearTimeout(routeLoadingResetTimer);
+                if (scrollProgress) {
+                    scrollProgress.classList.add('is-route-loading');
+                }
+
+                const button = link?.closest('.btn');
+                if (button) startButtonLoading(button);
+                if (routeLoadingStatus) routeLoadingStatus.textContent = 'Loading next page';
+
+                // Fallback: reset UI if navigation is blocked/slow and page does not unload
+                routeLoadingResetTimer = setTimeout(() => {
+                    stopRouteLoading();
+                }, ROUTE_LOADING_TIMEOUT_MS);
             };
 
-            // Hide initially
+            // Function to reveal page and clear temporary loading state
+            const hideLoader = () => {
+                stopRouteLoading();
+                document.body.classList.add('ready');
+            };
+
+            // Reveal page initially (no full-screen loader)
             setTimeout(hideLoader, 100); 
 
             // Ensure role wrapper follows active panel height
@@ -664,6 +669,7 @@
             // Scroll progress indicator
             const updateScrollProgress = () => {
                 if (!scrollProgress) return;
+                if (routeLoading) return;
                 const doc = document.documentElement;
                 const maxScroll = doc.scrollHeight - window.innerHeight;
                 const progress = maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0;
@@ -720,7 +726,7 @@
 
             // Framer-like subtle reveal motion (staggered)
             const revealTargets = document.querySelectorAll(
-                '.proof-head, .proof-item, .stats-head, .stat-item, .about .container > div, .section-header, .bento-item, .roles-container, .process-card, .faq-section h2, .faq-item, .cta-section, .footer-top-band, .footer-content, .footer-bottom'
+                '.proof-head, .proof-item, .section-header, .bento-item, .roles-container, .process-card, .faq-section h2, .faq-item, .cta-section, .footer-top-band, .footer-content, .footer-bottom'
             );
             const revealStep = isMobileViewport ? 30 : 55;
             revealTargets.forEach((el, index) => {
@@ -763,6 +769,7 @@
             document.addEventListener('click', function(e) {
                 const link = e.target.closest('a');
                 if (link) {
+                    if (!link.hasAttribute('data-route-loading')) return;
                     const href = link.getAttribute('href');
                     const target = link.getAttribute('target');
                     
@@ -777,7 +784,7 @@
                         try {
                             const url = new URL(href, window.location.origin);
                             if (url.origin === window.location.origin) {
-                                showLoader(e);
+                                startRouteLoading(e, link);
                             }
                         } catch (err) {}
                     }

@@ -344,6 +344,28 @@ body {
     height: 18px;
 }
 
+.auth-remember {
+    margin: 2px 0 14px;
+}
+
+.auth-remember-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #516483;
+    cursor: pointer;
+    user-select: none;
+}
+
+.auth-remember-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--auth-primary);
+    cursor: pointer;
+}
+
 .auth-btn {
     width: 100%;
     min-height: 46px;
@@ -369,6 +391,47 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 16px 28px rgba(66, 93, 135, 0.34);
     filter: saturate(1.04);
+}
+
+.auth-btn:disabled {
+    cursor: wait;
+}
+
+.auth-btn-spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    display: inline-block;
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.auth-btn.is-loading {
+    pointer-events: none;
+    filter: saturate(0.95);
+}
+
+.auth-btn.is-loading:hover {
+    transform: none;
+    box-shadow: 0 12px 24px rgba(66, 93, 135, 0.28);
+}
+
+.auth-btn.is-loading .auth-btn-spinner {
+    opacity: 1;
+    transform: scale(1);
+    animation: auth-btn-spin 0.7s linear infinite;
+}
+
+.auth-btn.is-loading .auth-btn-label {
+    letter-spacing: 0.02em;
+}
+
+@keyframes auth-btn-spin {
+    0% { transform: scale(1) rotate(0deg); }
+    100% { transform: scale(1) rotate(360deg); }
 }
 
 .auth-footer {
@@ -677,5 +740,9 @@ body {
     .auth-btn,
     .auth-link {
         transition: none !important;
+    }
+
+    .auth-btn.is-loading .auth-btn-spinner {
+        animation-duration: 1.2s;
     }
 }

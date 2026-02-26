@@ -116,6 +116,7 @@ return new class extends Migration
             $table->index(['user_id', 'status']);
             $table->index(['departemen_id', 'status']);
             $table->index(['status', 'tanggal_pengajuan']);
+            $table->index(['status', 'created_at'], 'pengajuan_status_created_idx');
             $table->index(['coa_id', 'status']);
             $table->index(['departemen_id', 'tanggal_transaksi']);
             $table->index(['nama_vendor', 'tanggal_transaksi']);

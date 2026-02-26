@@ -36,7 +36,9 @@ class KasBankController extends Controller
             $query->where('is_active', $request->status === 'aktif');
         }
 
-        $kasBanks = $query->orderBy('created_at', 'desc')->paginate(config('app.pagination.master_data'));
+        $kasBanks = $query->orderBy('created_at', 'desc')
+            ->paginate(config('app.pagination.master_data'))
+            ->withQueryString();
 
         $stats = [
             'total' => KasBank::count(),

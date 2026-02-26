@@ -195,8 +195,8 @@
                         <p class="section-subtitle">Total: {{ $pengajuans->total() }} pengajuan</p>
                     </div>
                     <div class="header-actions">
-                        <div class="export-actions">
-                            <a href="#" onclick="exportCsv(event)" data-url="{{ route('finance.approval.history-export-csv') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke CSV">
+                        <div class="export-actions" data-export-fields="search:searchInput,departemen_id:departemenInput,start_date:startDateInput,end_date:endDateInput">
+                            <a href="#" onclick="exportWithFilters(event)" data-url="{{ route('finance.approval.history-export-csv') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke CSV">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -206,7 +206,7 @@
                                 </svg>
                                 CSV
                             </a>
-                            <a href="#" onclick="exportXlsx(event)" data-url="{{ route('finance.approval.history-export-xlsx') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
+                            <a href="#" onclick="exportWithFilters(event)" data-url="{{ route('finance.approval.history-export-xlsx') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke XLSX">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -217,7 +217,7 @@
                                 XLSX
                             </a>
 
-                            <a href="#" onclick="exportPdf(event)" data-url="{{ route('finance.approval.history-export-pdf') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
+                            <a href="#" onclick="exportWithFilters(event)" data-url="{{ route('finance.approval.history-export-pdf') }}" class="btn-modern btn-modern-secondary btn-modern-sm no-loader" title="Export ke PDF">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -367,38 +367,5 @@
 
 @push('scripts')
 <script src="{{ asset('js/finance-master.js') }}"></script>
-<script>
-    function getExportParams(btn) {
-        const search = document.getElementById('searchInput').value;
-        const departemen = document.getElementById('departemenInput').value;
-        const startDate = document.getElementById('startDateInput').value;
-        const endDate = document.getElementById('endDateInput').value;
-
-        let url = btn.dataset.url;
-        const params = new URLSearchParams();
-
-        if (search) params.append('search', search);
-        if (departemen) params.append('departemen_id', departemen);
-        if (startDate) params.append('start_date', startDate);
-        if (endDate) params.append('end_date', endDate);
-
-        return url + (url.includes('?') ? '&' : '?') + params.toString();
-    }
-
-    function exportCsv(e) {
-        e.preventDefault();
-        window.location.href = getExportParams(e.currentTarget);
-    }
-
-    function exportPdf(e) {
-        e.preventDefault();
-        window.location.href = getExportParams(e.currentTarget);
-    }
-
-    function exportXlsx(e) {
-        e.preventDefault();
-        window.location.href = getExportParams(e.currentTarget);
-    }
-</script>
 @endpush
 @endsection

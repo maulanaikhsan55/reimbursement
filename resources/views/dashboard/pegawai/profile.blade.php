@@ -36,8 +36,9 @@
                     </div>
                 </div>
 
-                <form action="{{ route('pegawai.profile.update') }}" method="POST">
+                <form action="{{ route('pegawai.profile.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
+                    <x-profile.summary-card :user="$user" />
 
                     <div class="form-grid">
                         <div class="form-group">
@@ -51,12 +52,11 @@
 
                         <div class="form-group">
                             <label for="email">Email</label>
-                            <input type="email" id="email" name="email" class="form-control" 
+                            <input type="email" id="email" name="email" class="form-control profile-input-readonly" 
                                    value="{{ $user->email }}" readonly 
-                                   style="background-color: #f8fafc; cursor: not-allowed;"
                                    title="Email tidak dapat diubah untuk keamanan identitas" autocomplete="email">
-                            <small class="form-help-text" style="color: #64748b; font-size: 0.75rem;">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-bottom: 2px;">
+                            <small class="form-help-text profile-help-text">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                                 </svg>
@@ -110,9 +110,11 @@
                         </div>
                     </div>
 
+                    <x-profile.account-meta :user="$user" />
+
                     <div class="form-actions">
                         <button type="button" class="btn-modern btn-modern-primary" onclick="openConfirmModal(() => this.closest('form').submit(), 'Simpan Perubahan', 'Apakah Anda yakin ingin menyimpan perubahan profil ini?')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="margin-right: 8px;">
+                            <svg class="btn-icon-leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                                 <polyline points="17 21 17 13 7 13 7 21"></polyline>
                                 <polyline points="7 3 7 8 15 8"></polyline>
@@ -204,7 +206,7 @@
 
                     <div class="form-actions">
                         <button type="button" class="btn-modern btn-modern-primary" onclick="openConfirmModal(() => this.closest('form').submit(), 'Ubah Password', 'Apakah Anda yakin ingin mengubah password akun Anda?')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="margin-right: 8px;">
+                            <svg class="btn-icon-leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
@@ -562,19 +564,30 @@
 
 @push('scripts')
 <script>
+    const initialPegawaiProfileTab = @json(
+        $errors->hasAny(['current_password', 'password', 'password_confirmation']) ? 'keamanan' : 'informasi'
+    );
+
+    function setPegawaiProfileTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+        });
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.toggle('active', content.id === tabId);
+        });
+    }
+
     function initPegawaiProfileTabs() {
         document.querySelectorAll('.tab-btn').forEach(button => {
             if (button.dataset.bound === '1') return;
             button.dataset.bound = '1';
             button.addEventListener('click', () => {
                 const tabId = button.getAttribute('data-tab');
-                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                button.classList.add('active');
-                const target = document.getElementById(tabId);
-                if (target) target.classList.add('active');
+                setPegawaiProfileTab(tabId);
             });
         });
+
+        setPegawaiProfileTab(initialPegawaiProfileTab);
     }
 
     function togglePasswordVisibility(inputId) {
@@ -597,4 +610,3 @@
 </script>
 @endpush
 @endsection
-

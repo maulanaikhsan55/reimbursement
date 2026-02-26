@@ -260,40 +260,6 @@
 </div>
 
 @push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const refreshTable = function() {
-            if (window.__atasanPengajuanRefreshBusy) return;
-            const form = document.getElementById('filterForm');
-            if (!form) return;
-
-            window.__atasanPengajuanRefreshBusy = true;
-            const url = new URL(form.action);
-            const params = new URLSearchParams(new FormData(form));
-            
-            fetch(`${url.pathname}?${params.toString()}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                credentials: 'same-origin',
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('tableContainer').innerHTML = data.table;
-                document.getElementById('statsContainer').innerHTML = data.stats;
-            })
-            .catch(error => console.error('Error refreshing table:', error))
-            .finally(() => {
-                window.__atasanPengajuanRefreshBusy = false;
-            });
-        };
-
-        // Listener for real-time refresh
-        window.removeEventListener('refresh-pengajuan-table', window.__atasanPengajuanRefreshHandler);
-        window.__atasanPengajuanRefreshHandler = refreshTable;
-        window.addEventListener('refresh-pengajuan-table', window.__atasanPengajuanRefreshHandler);
-    });
-</script>
 <script src="{{ asset('js/pages/pegawai/pengajuan.js') }}"></script>
 @endpush
 

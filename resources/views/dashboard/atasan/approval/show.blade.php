@@ -13,13 +13,41 @@
     />
 
     <div class="dashboard-content detail-single-content">
+        @php
+            $validationResults = $pengajuan->validasiAi ?? collect();
+            $invalidAiCount = $validationResults->filter(fn ($v) => (string) ($v->status->value ?? '') === 'invalid')->count();
+            $warningAiCount = $validationResults->filter(fn ($v) => (string) ($v->status->value ?? '') === 'warning')->count();
+            $avgConfidence = (int) round((float) $validationResults->avg('confidence_score'));
+            $budgetIndicator = $budgetData ?? $budgetStatus ?? null;
+            $riskFlags = [];
+
+            if ($invalidAiCount > 0) {
+                $riskFlags[] = ['tone' => 'danger', 'text' => "Anomali AI {$invalidAiCount}"];
+            }
+            if ($warningAiCount > 0) {
+                $riskFlags[] = ['tone' => 'warning', 'text' => "Perlu Tinjau {$warningAiCount}"];
+            }
+            if ($avgConfidence > 0 && $avgConfidence < 75) {
+                $riskFlags[] = ['tone' => 'warning', 'text' => "Confidence {$avgConfidence}%"];
+            }
+            if (($budgetIndicator['is_over'] ?? false) === true) {
+                $riskFlags[] = ['tone' => 'danger', 'text' => 'Over Budget'];
+            }
+        @endphp
         <!-- Employee Card -->
             <section class="modern-section" style="padding: 1.5rem;">
+                @php
+                    $employeeMeta = collect([
+                        $pengajuan->departemen->nama_departemen ?? null,
+                        isset($pengajuan->user->role) ? ucfirst((string) $pengajuan->user->role) : null,
+                        $pengajuan->user->email ?? null,
+                    ])->filter(fn ($value) => filled($value))->implode(' - ');
+                @endphp
                 <div class="employee-card-inline">
                     <div class="employee-avatar">{{ strtoupper(substr($pengajuan->user->name, 0, 1)) }}</div>
                     <div class="employee-info">
                         <h4>{{ $pengajuan->user->name }}</h4>
-                        <p>{{ $pengajuan->departemen->nama_departemen ?? '-' }} • {{ ucfirst($pengajuan->user->role) }} • {{ $pengajuan->user->email }}</p>
+                        <p>{{ $employeeMeta !== '' ? $employeeMeta : '-' }}</p>
                     </div>
                 </div>
             </section>
@@ -35,6 +63,31 @@
                         </svg>
                         Kembali
                     </a>
+                </div>
+
+                <div class="detail-quick-strip">
+                    <div class="quick-kpi">
+                        <span class="quick-label">Status Saat Ini</span>
+                        <div class="quick-value">
+                            <x-status-badge :status="$pengajuan->status" :transactionId="$pengajuan->accurate_transaction_id" />
+                        </div>
+                    </div>
+                    <div class="quick-kpi">
+                        <span class="quick-label">Nominal</span>
+                        <div class="quick-value">{{ format_rupiah($pengajuan->nominal) }}</div>
+                    </div>
+                    <div class="quick-kpi quick-kpi-risk">
+                        <span class="quick-label">Fraud / Anomali</span>
+                        <div class="risk-flags">
+                            @if(count($riskFlags) === 0)
+                                <span class="risk-flag success">Normal</span>
+                            @else
+                                @foreach($riskFlags as $flag)
+                                    <span class="risk-flag {{ $flag['tone'] }}">{{ $flag['text'] }}</span>
+                                @endforeach
+                            @endif
+                        </div>
+                    </div>
                 </div>
 
                 <div class="timeline">
@@ -70,27 +123,27 @@
 
                     @if($pengajuan->status->value == 'menunggu_finance' || $pengajuan->tanggal_disetujui_finance || $pengajuan->status->value == 'ditolak_finance' || $pengajuan->status->value == 'terkirim_accurate' || $pengajuan->status->value == 'dicairkan')
                         <div class="timeline-item {{ $pengajuan->tanggal_disetujui_finance || $pengajuan->status->value == 'ditolak_finance' || $pengajuan->status->value == 'terkirim_accurate' || $pengajuan->status->value == 'dicairkan' ? 'active' : '' }}">
-                            <div class="timeline-dot {{ $pengajuan->status->value == 'ditolak_finance' ? 'bg-danger' : '' }}"></div>
-                            <div class="timeline-content">
-                                <h6 class="mb-1">Review Finance</h6>
-                                <p class="text-muted small mb-0">
-                                    @if($pengajuan->status->value == 'menunggu_finance') 
-                                        Menunggu proses finance...
-                                    @elseif($pengajuan->status->value == 'ditolak_finance') 
-                                        <span class="text-danger">Ditolak Finance</span>
-                                        @if($pengajuan->catatan_finance)
-                                            <p class="text-danger small fst-italic mt-1">"{{ $pengajuan->catatan_finance }}"</p>
-                                        @endif
-                                    @else 
-                                        Disetujui Finance
+                        <div class="timeline-dot {{ $pengajuan->status->value == 'ditolak_finance' ? 'bg-danger' : '' }}"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Review Finance</h6>
+                            <div class="text-muted small mb-0">
+                                @if($pengajuan->status->value == 'menunggu_finance') 
+                                    Menunggu proses finance...
+                                @elseif($pengajuan->status->value == 'ditolak_finance') 
+                                    <span class="text-danger">Ditolak Finance</span>
+                                    @if($pengajuan->catatan_finance)
+                                            <div class="text-danger small fst-italic mt-1">"{{ $pengajuan->catatan_finance }}"</div>
+                                    @endif
+                                @else 
+                                    Disetujui Finance
                                         @if($pengajuan->tanggal_disetujui_finance)
                                             - {{ $pengajuan->tanggal_disetujui_finance->format('d M Y') }}
                                         @endif
-                                    @endif
-                                </p>
+                                @endif
                             </div>
                         </div>
-                    @endif
+                    </div>
+                @endif
                 </div>
             </section>
 
@@ -127,9 +180,27 @@
                         <div class="detail-label">No. Pengajuan</div>
                         <div class="detail-value text-mono">{{ $pengajuan->nomor_pengajuan }}</div>
                     </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Tanggal Diajukan</div>
-                        <div class="detail-value">{{ $pengajuan->created_at->format('d M Y') }}</div>
+                    <div class="detail-item full-width detail-item-pair">
+                        <div class="detail-pair-cell">
+                            <div class="detail-label">Tanggal Diajukan</div>
+                            <div class="detail-value">{{ $pengajuan->created_at->format('d M Y') }}</div>
+                        </div>
+                        <div class="detail-pair-cell detail-item-proof">
+                            <div class="detail-label">Bukti Transaksi</div>
+                            <div class="detail-value detail-proof-value">
+                                @if($pengajuan->file_bukti)
+                                    <button type="button" class="btn-modern btn-modern-secondary btn-modern-sm btn-proof-compact" onclick="openProofModal('{{ route('proof.show', $pengajuan) }}', {{ str_ends_with(strtolower($pengajuan->file_bukti), '.pdf') ? 'true' : 'false' }})">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                        </svg>
+                                        Lihat Bukti
+                                    </button>
+                                @else
+                                    <span class="text-muted btn-proof-empty">-</span>
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
                     <div class="detail-item full-width">
@@ -144,21 +215,6 @@
                     </div>
                     @endif
 
-                    <!-- File Bukti -->
-                    <div class="detail-item full-width">
-                        <div class="detail-label">Bukti Transaksi</div>
-                        @if($pengajuan->file_bukti)
-                            <button type="button" class="btn-modern btn-modern-secondary btn-modern-sm" onclick="openProofModal('{{ route('proof.show', $pengajuan) }}', {{ str_ends_with(strtolower($pengajuan->file_bukti), '.pdf') ? 'true' : 'false' }})">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 8px;">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                    <polyline points="14 2 14 8 20 8"></polyline>
-                                </svg>
-                                Lihat Bukti
-                            </button>
-                        @else
-                            <span class="text-muted">-</span>
-                        @endif
-                    </div>
                 </div>
             </section>
 
@@ -176,7 +232,7 @@
                         Hasil Validasi AI
                     </h2>
                 </div>
-                <x-ai-validation-result :results="$pengajuan->validasiAi" />
+                <x-ai-validation-result :results="$pengajuan->validasiAi" :pengajuan="$pengajuan" />
 
                 @if(!$pengajuan->validasiAi->isEmpty())
                     <!-- Status Summary -->
@@ -218,36 +274,35 @@
             <!-- Approval Actions Card (Only if status is menunggu_atasan) -->
             @if($pengajuan->status->value == 'menunggu_atasan')
             <section class="modern-section" style="border-color: #3b82f6; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);">
-                <div class="section-header" style="margin-bottom: 1.5rem; padding-bottom: 0; border: none;">
+                <div class="section-header section-header-with-actions" style="margin-bottom: 0; padding-bottom: 0; border: none;">
                     <h2 class="section-title" style="color: #1e40af;">Keputusan Persetujuan</h2>
-                </div>
 
-                <div class="action-buttons-simple">
-                    <!-- Reject Button -->
-                    <button 
-                        type="button" 
-                        class="btn-modern btn-modern-danger" 
-                        onclick="openRejectModal('{{ route('atasan.approval.reject', $pengajuan->pengajuan_id) }}', 'catatan_atasan')"
-                        style="flex: 1; justify-content: center;"
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 8px;">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                        </svg>
-                        Tolak
-                    </button>
-
-                    <!-- Approve Form -->
-                    <form action="{{ route('atasan.approval.approve', $pengajuan->pengajuan_id) }}" method="POST" style="flex: 1;">
-                        @csrf
-                        <button type="button" class="btn-modern btn-modern-primary" style="width: 100%; justify-content: center;" onclick="openConfirmModal(() => this.closest('form').submit(), 'Setujui Pengajuan', 'Apakah Anda yakin ingin menyetujui pengajuan ini?')">
+                    <div class="section-header-actions action-buttons-simple">
+                        <!-- Reject Button -->
+                        <button 
+                            type="button" 
+                            class="btn-modern btn-modern-danger btn-modern-sm" 
+                            onclick="openRejectModal('{{ route('atasan.approval.reject', $pengajuan->pengajuan_id) }}', 'catatan_atasan')"
+                        >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 8px;">
-                                <polyline points="20 6 9 17 4 12"></polyline>
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
                             </svg>
-                            Setujui
+                            Tolak
                         </button>
-                    </form>
+
+                        <!-- Approve Form -->
+                        <form action="{{ route('atasan.approval.approve', $pengajuan->pengajuan_id) }}" method="POST">
+                            @csrf
+                            <button type="button" class="btn-modern btn-modern-primary btn-modern-sm" onclick="openConfirmModal(() => this.closest('form').submit(), 'Setujui Pengajuan', 'Apakah Anda yakin ingin menyetujui pengajuan ini?')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 8px;">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Setujui
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </section>
             @endif

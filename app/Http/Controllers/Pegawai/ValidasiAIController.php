@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Pegawai;
 
 use App\Http\Controllers\Controller;
-use App\Services\LocalReceiptParser;
 use App\Services\TesseractService;
 use App\Services\ValidasiAIService;
 use Illuminate\Http\Request;
@@ -17,19 +16,15 @@ class ValidasiAIController extends Controller
 
     protected $validasiService;
 
-    protected $localParser;
-
     /**
      * Constructor - Inject required services
      */
     public function __construct(
         TesseractService $tesseractService,
-        ValidasiAIService $validasiService,
-        LocalReceiptParser $localParser
+        ValidasiAIService $validasiService
     ) {
         $this->tesseractService = $tesseractService;
         $this->validasiService = $validasiService;
-        $this->localParser = $localParser;
     }
 
     /**
@@ -54,7 +49,7 @@ class ValidasiAIController extends Controller
             ]);
 
             $file = $request->file('file_bukti');
-            $ocrText = $request->input('ocr_text');
+            $ocrText = (string) $request->input('ocr_text', '');
             $jenisTransaksi = $request->input('jenis_transaksi');
 
             Log::info('ValidasiAI: Processing file', [
@@ -85,23 +80,9 @@ class ValidasiAIController extends Controller
             if (! $ocrResult['success']) {
                 Log::warning('OCR processing failed', ['error' => $ocrResult['error'] ?? 'Unknown']);
 
-                if (! empty($ocrText)) {
-                    Log::info('ValidasiAI: Attempting fallback extraction from OCR text');
-                    $fallbackData = $this->localParser->parse($ocrText, $jenisTransaksi);
-
-                    return response()->json([
-                        'success' => true,
-                        'is_duplicate' => false,
-                        'ocr_data' => $fallbackData,
-                        'message' => 'Validasi AI tidak tersedia, menampilkan hasil ekstraksi sederhana.',
-                        'fallback' => true,
-                        'file_quality' => $qualityCheck,
-                    ]);
-                }
-
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validasi AI gagal. Anda tetap dapat melanjutkan pengajuan dengan data manual.',
+                    'message' => 'Validasi AI OCR gagal. Silakan upload ulang dokumen yang lebih jelas.',
                     'ocr_data' => null,
                     'file_quality' => $qualityCheck,
                 ], 200);

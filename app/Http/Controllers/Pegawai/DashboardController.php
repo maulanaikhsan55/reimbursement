@@ -7,6 +7,7 @@ use App\Models\Departemen;
 use App\Models\Pengajuan;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -16,20 +17,89 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user()->load('departemen');
-        $userId = $user->id;
-        $cacheKey = 'pegawai_dashboard_'.$userId;
+        $data = $this->resolveDashboardData((int) $user->id, request()->boolean('refresh'));
 
-        // Force refresh cache jika ada parameter ?refresh=1
-        if (request()->has('refresh')) {
+        return view('dashboard.pegawai.dashboard', array_merge($data, ['user' => $user]));
+    }
+
+    public function widgets(): JsonResponse
+    {
+        $user = Auth::user()->load('departemen');
+        $payload = $this->resolveWidgetPayload($user, request()->boolean('refresh'));
+
+        return response()->json($payload);
+    }
+
+    private function resolveWidgetPayload(User $user, bool $forceRefresh = false): array
+    {
+        $userId = (int) $user->id;
+        $cacheKey = 'pegawai_dashboard_sections_'.$userId;
+
+        if ($forceRefresh) {
             Cache::forget($cacheKey);
         }
 
-        // Cache dashboard data untuk 5 menit
-        $data = Cache::remember($cacheKey, 300, function () use ($userId) {
-            return $this->getDashboardData($userId);
-        });
+        return Cache::remember($cacheKey, 30, function () use ($user, $forceRefresh) {
+            $data = $this->resolveDashboardData((int) $user->id, $forceRefresh);
+            $view = view('dashboard.pegawai.dashboard', array_merge($data, ['user' => $user]));
 
-        return view('dashboard.pegawai.dashboard', array_merge($data, ['user' => $user]));
+            $content = method_exists($view, 'renderSections')
+                ? ($view->renderSections()['content'] ?? '')
+                : $view->render();
+
+            return [
+                'sections' => $this->extractSectionsFromHtml($content, [
+                    'welcome-card',
+                    'smarter-dashboard-alerts',
+                    'recent-section',
+                ]),
+                'generated_at' => $data['generatedAt'] ?? now()->toIso8601String(),
+            ];
+        });
+    }
+
+    private function resolveDashboardData(int $userId, bool $forceRefresh = false): array
+    {
+        $cacheKey = 'pegawai_dashboard_'.$userId;
+        $cacheLockKey = $cacheKey.'_lock';
+
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
+        }
+
+        return Cache::flexible($cacheKey, [60, 300], function () use ($userId, $cacheLockKey) {
+            return Cache::lock($cacheLockKey, 15)->block(5, function () use ($userId) {
+                return $this->getDashboardData($userId);
+            });
+        });
+    }
+
+    private function extractSectionsFromHtml(string $html, array $classNames): array
+    {
+        if ($html === '') {
+            return [];
+        }
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $previousState = libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousState);
+
+        $xpath = new \DOMXPath($dom);
+        $sections = [];
+
+        foreach ($classNames as $className) {
+            $nodes = $xpath->query(
+                "//*[contains(concat(' ', normalize-space(@class), ' '), ' {$className} ')]"
+            );
+
+            if ($nodes && $nodes->length > 0) {
+                $sections['.'.$className] = trim($dom->saveHTML($nodes->item(0)));
+            }
+        }
+
+        return $sections;
     }
 
     /**
@@ -158,6 +228,7 @@ class DashboardController extends Controller
                 'ditolak_finance' => $stats->count_ditolak_finance ?? 0,
             ],
             'monthlyTrend' => $monthlyTrend,
+            'generatedAt' => now()->toIso8601String(),
         ];
     }
 }

@@ -49,8 +49,15 @@
     <div class="dashboard-content detail-single-content">
         <!-- Main Info Section -->
         <section class="modern-section">
-            <div class="section-header" style="margin-bottom: 1.25rem; padding-bottom: 0; border: none;">
+            <div class="section-header" style="margin-bottom: 1.25rem; padding-bottom: 0; border: none; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
                 <h2 class="section-title">Informasi Pengajuan</h2>
+                <a href="{{ $pengajuan->status->value === 'terkirim_accurate' ? route('finance.disbursement.index') : route('finance.disbursement.history') }}" class="btn-modern btn-modern-secondary btn-modern-sm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 0.5rem;">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    {{ $pengajuan->status->value === 'terkirim_accurate' ? 'Kembali' : 'Kembali ke Riwayat' }}
+                </a>
             </div>
 
             <div class="detail-grid">
@@ -98,8 +105,8 @@
                     <div class="detail-label">Bukti Transaksi</div>
                     <div class="detail-value">
                         @if($pengajuan->file_bukti)
-                            <button type="button" class="btn-modern btn-modern-secondary btn-modern-sm" onclick="openProofModal('{{ route('proof.show', $pengajuan) }}', {{ str_ends_with(strtolower($pengajuan->file_bukti), '.pdf') ? 'true' : 'false' }})">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; display: inline; margin-right: 0.5rem;">
+                            <button type="button" class="btn-modern btn-modern-secondary btn-modern-sm btn-proof-compact" onclick="openProofModal('{{ route('proof.show', $pengajuan) }}', {{ str_ends_with(strtolower($pengajuan->file_bukti), '.pdf') ? 'true' : 'false' }})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                     <polyline points="14 2 14 8 20 8"></polyline>
                                 </svg>
@@ -160,7 +167,7 @@
                 <p class="text-muted small mb-0" style="margin-top: 0.5rem;">Detail hasil analisis otomatis dokumen</p>
             </div>
             
-            <x-ai-validation-result :results="$pengajuan->validasiAi" />
+            <x-ai-validation-result :results="$pengajuan->validasiAi" :pengajuan="$pengajuan" />
 
             @if(!$pengajuan->validasiAi->isEmpty())
                 <!-- Status Summary -->
@@ -201,11 +208,11 @@
 
         <!-- Action Section -->
         <section class="modern-section">
-            @if ($pengajuan->status->value === 'terkirim_accurate')
-                <div class="section-header" style="margin-bottom: 1.25rem; padding-bottom: 0; border: none;">
-                    <h2 class="section-title">Konfirmasi Pencairan</h2>
-                </div>
+            <div class="section-header" style="margin-bottom: 1.25rem; padding-bottom: 0; border: none;">
+                <h2 class="section-title">{{ $pengajuan->status->value === 'terkirim_accurate' ? 'Konfirmasi Pencairan' : 'Status Pencairan' }}</h2>
+            </div>
 
+            @if ($pengajuan->status->value === 'terkirim_accurate')
                 <form method="POST" action="{{ route('finance.disbursement.mark', $pengajuan->pengajuan_id) }}" class="accurate-form">
                     @csrf
                     <div class="form-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem; max-width: 400px;">
@@ -218,14 +225,7 @@
                         </div>
                     </div>
 
-                    <div class="form-actions" style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
-                        <a href="{{ route('finance.disbursement.index') }}" class="btn-modern btn-modern-secondary">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 0.5rem;">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            Kembali
-                        </a>
+                    <div class="form-actions" style="display: flex; justify-content: flex-end; align-items: center; margin-top: 2rem;">
                         <button type="button" class="btn-modern btn-modern-primary" style="padding: 0.75rem 2rem;" onclick="openConfirmModal(() => this.closest('form').submit(), 'Konfirmasi Pencairan', 'Pastikan dana sudah ditransfer ke rekening pegawai. Lanjutkan?')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 0.5rem;">
                                 <polyline points="20 6 9 17 4 12"></polyline>
@@ -244,15 +244,6 @@
                     </div>
                     <div class="success-title" style="font-size: 1.5rem; font-weight: 800; color: #166534; margin-bottom: 0.5rem;">Dana Sudah Dicairkan</div>
                     <p style="color: #15803d; font-weight: 500; margin-bottom: 0;">Dicairkan pada {{ $pengajuan->tanggal_pencairan?->format('d F Y') }}</p>
-                </div>
-                <div class="form-actions" style="display: flex; justify-content: flex-start;">
-                    <a href="{{ route('finance.disbursement.history') }}" class="btn-modern btn-modern-secondary">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 0.5rem;">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        Kembali ke Riwayat
-                    </a>
                 </div>
             @endif
         </section>

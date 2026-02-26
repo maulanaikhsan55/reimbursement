@@ -52,8 +52,15 @@
 
     .data-table {
         width: 100% !important;
+        min-width: 860px;
         border-collapse: separate;
         border-spacing: 0;
+    }
+
+    .ledger-table-wrap {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
     .data-table th {
@@ -266,7 +273,7 @@
                                 </div>
                             </div>
                             
-                            <div style="overflow-x: auto;">
+                            <div class="ledger-table-wrap">
                                 <table class="data-table">
                                     <thead>
                                         <tr>

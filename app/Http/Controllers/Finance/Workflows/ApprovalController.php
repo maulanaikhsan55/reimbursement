@@ -3,21 +3,19 @@
 namespace App\Http\Controllers\Finance\Workflows;
 
 use App\Enums\PengajuanStatus;
-use App\Events\NotifikasiPengajuan;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Finance\RejectByFinanceRequest;
+use App\Http\Requests\Finance\SendToAccurateRequest;
 use App\Models\COA;
 use App\Models\Departemen;
 use App\Models\KasBank;
-use App\Models\Notifikasi;
 use App\Models\Pengajuan;
-use App\Services\AccurateService;
-use App\Services\JurnalService;
-use App\Services\NotifikasiService;
+use App\Services\FinanceApprovalQueryService;
+use App\Services\FinanceApprovalWorkflowService;
 use App\Services\ReportExportService;
 use App\Traits\FiltersPengajuan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ApprovalController extends Controller
@@ -25,22 +23,21 @@ class ApprovalController extends Controller
     use FiltersPengajuan;
 
     public function __construct(
-        protected AccurateService $accurateService,
-        protected NotifikasiService $notifikasiService,
-        protected JurnalService $jurnalService,
+        protected FinanceApprovalQueryService $approvalQueryService,
+        protected FinanceApprovalWorkflowService $workflowService,
         protected ReportExportService $exportService,
     ) {}
 
     public function index(Request $request)
     {
-        $query = $this->applyPendingApprovalFilters(
-            Pengajuan::query()->with([
+        $query = $this->approvalQueryService->pending(
+            request: $request,
+            query: Pengajuan::query()->with([
                 'user:id,name',
                 'departemen:departemen_id,nama_departemen',
                 'kategori:kategori_id,nama_kategori',
                 'validasiAi',
-            ]),
-            $request
+            ])
         );
 
         $pengajuans = $query->paginate(config('app.pagination.approval'));
@@ -64,8 +61,11 @@ class ApprovalController extends Controller
 
     public function getCount()
     {
-        $count = Cache::remember('finance_approval_pending_count', 10, function () {
-            return Pengajuan::where('status', PengajuanStatus::MENUNGGU_FINANCE->value)->count();
+        $cacheKey = 'finance_approval_pending_count';
+        $count = Cache::flexible($cacheKey, [5, 15], function () use ($cacheKey) {
+            return Cache::lock($cacheKey.'_lock', 5)->block(2, function () {
+                return Pengajuan::where('status', PengajuanStatus::MENUNGGU_FINANCE->value)->count();
+            });
         });
 
         return response()->json(['pending_count' => $count]);
@@ -73,6 +73,8 @@ class ApprovalController extends Controller
 
     public function show(Pengajuan $pengajuan)
     {
+        $this->authorize('reviewByFinance', $pengajuan);
+
         if (! in_array($pengajuan->status, [
             PengajuanStatus::MENUNGGU_FINANCE,
             PengajuanStatus::TERKIRIM_ACCURATE,
@@ -183,261 +185,66 @@ class ApprovalController extends Controller
         }
     }
 
-    public function send(Request $request, Pengajuan $pengajuan)
+    public function send(SendToAccurateRequest $request, Pengajuan $pengajuan)
     {
-        Cache::forget('finance_approval_pending_count');
+        $this->authorize('sendToAccurate', $pengajuan);
+        $result = $this->workflowService->sendToAccurate($pengajuan, $request->validated(), $request->user());
 
-        if ($pengajuan->status !== PengajuanStatus::MENUNGGU_FINANCE) {
-            return back()->with('error', 'Pengajuan tidak dalam status menunggu finance');
-        }
-
-        $validated = $request->validate([
-            'coa_id' => 'required|exists:coa,coa_id',
-            'kas_bank_id' => 'required|exists:kas_bank,kas_bank_id',
-            'catatan_finance' => 'nullable|string|max:500',
-        ]);
-
-        $coa = COA::findOrFail($validated['coa_id']);
-        $kasBank = KasBank::findOrFail($validated['kas_bank_id']);
-
-        // Final server-side balance check
-        if ($kasBank->accurate_id) {
-            $balanceResult = $this->accurateService->getAccountBalance($kasBank->accurate_id);
-            if ($balanceResult['success'] && $balanceResult['balance'] < $pengajuan->nominal) {
-                return back()->with('error', 'Gagal: Saldo '.$kasBank->nama_kas_bank.' di Accurate tidak mencukupi (Sisa: Rp '.number_format($balanceResult['balance'], 0, ',', '.').')');
-            }
-        }
-
-        // Check if this pengajuan can be auto-approved
-        $canAutoApprove = $this->isEligibleForAutoApproval($pengajuan);
-
-        $pengajuan->update([
-            'coa_id' => $validated['coa_id'],
-            'kas_bank_id' => $validated['kas_bank_id'],
-            'catatan_finance' => $validated['catatan_finance'] ?? null,
-        ]);
-
-        $response = $this->accurateService->sendTransaction(
-            $pengajuan,
-            $coa->kode_coa,
-            $kasBank->kode_kas_bank
-        );
-
-        if ($response['success']) {
-            DB::transaction(function () use ($pengajuan, $response) {
-                $pengajuan->update([
-                    'status' => PengajuanStatus::TERKIRIM_ACCURATE,
-                    'accurate_transaction_id' => $response['transaction_id'],
-                    'disetujui_finance_oleh' => auth()->user()->id,
-                    'tanggal_disetujui_finance' => now(),
-                ]);
-
-                // Create local journal immediately after successful Accurate sync
-                $jurnalResult = $this->jurnalService->createJurnalFromPengajuan($pengajuan, $response['transaction_id']);
-                if (! $jurnalResult['success']) {
-                    throw new \Exception('Berhasil ke Accurate tapi gagal buat jurnal lokal: '.$jurnalResult['error']);
-                }
-
-                $this->notifikasiService->notifySentToAccurate($pengajuan);
-            });
-
-            $successMsg = "Pengajuan #{$pengajuan->nomor_pengajuan} berhasil dikirim ke Accurate dengan ID: {$response['transaction_id']}";
-
-            // Persistent notification for current Finance user
-            Notifikasi::create([
-                'user_id' => auth()->id(),
-                'tipe' => 'success',
-                'judul' => 'Kirim Accurate Berhasil',
-                'pesan' => $successMsg,
-                'is_read' => false,
-            ]);
-
-            // Add real-time notification for current Finance user
-            try {
-                event(new NotifikasiPengajuan(
-                    auth()->id(),
-                    'Kirim Accurate Berhasil',
-                    $successMsg,
-                    'success'
-                ));
-            } catch (\Exception $e) {
-                \Log::warning('Gagal mengirim broadcast approval berhasil: '.$e->getMessage());
-            }
-
-            return back()->with('success', "Pengajuan berhasil dikirim ke Accurate Online dengan nomor jurnal #{$response['transaction_id']} dan jurnal lokal telah dibuat");
-        } else {
-            $this->notifikasiService->notifyFailedToAccurate($pengajuan, $response['error_message'] ?? $response['message']);
-
-            return back()->with('error', $response['message']);
-        }
+        return back()->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
-    public function retry(Pengajuan $pengajuan)
+    public function retry(Request $request, Pengajuan $pengajuan)
     {
-        Cache::forget('finance_approval_pending_count');
+        $this->authorize('sendToAccurate', $pengajuan);
+        $result = $this->workflowService->retrySendToAccurate($pengajuan, $request->user());
 
-        if ($pengajuan->status !== PengajuanStatus::MENUNGGU_FINANCE) {
-            return back()->with('error', 'Pengajuan tidak dapat di-retry');
-        }
-
-        if (! $pengajuan->coa_id || ! $pengajuan->kas_bank_id) {
-            return back()->with('error', 'COA dan Kas/Bank harus dipilih sebelum retry');
-        }
-
-        $coa = COA::find($pengajuan->coa_id);
-        $kasBank = KasBank::find($pengajuan->kas_bank_id);
-
-        // 1. EXTRA RESILIENCY: Check if already exists in Accurate BEFORE sending
-        // This is a safety net in case AccurateService.sendTransaction's check isn't enough
-        $check = $this->accurateService->checkTransactionExists($pengajuan->nomor_pengajuan);
-        if ($check['success'] && $check['exists']) {
-            $transactionId = $check['data']['number'] ?? $check['data']['id'];
-
-            DB::transaction(function () use ($pengajuan, $transactionId) {
-                $pengajuan->update([
-                    'status' => PengajuanStatus::TERKIRIM_ACCURATE,
-                    'accurate_transaction_id' => $transactionId,
-                    'disetujui_finance_oleh' => auth()->user()->id,
-                    'tanggal_disetujui_finance' => now(),
-                ]);
-
-                $this->jurnalService->createJurnalFromPengajuan($pengajuan, $transactionId);
-                $this->notifikasiService->notifySentToAccurate($pengajuan);
-            });
-
-            return back()->with('success', "Transaksi ternyata sudah ada di Accurate (#{$transactionId}). Status telah disinkronkan.");
-        }
-
-        // Final server-side balance check
-        if ($kasBank->accurate_id) {
-            $balanceResult = $this->accurateService->getAccountBalance($kasBank->accurate_id);
-            if ($balanceResult['success'] && $balanceResult['balance'] < $pengajuan->nominal) {
-                return back()->with('error', 'Gagal: Saldo '.$kasBank->nama_kas_bank.' di Accurate tidak mencukupi (Sisa: Rp '.number_format($balanceResult['balance'], 0, ',', '.').')');
-            }
-        }
-
-        $response = $this->accurateService->sendTransaction(
-            $pengajuan,
-            $coa->kode_coa,
-            $kasBank->kode_kas_bank
-        );
-
-        if ($response['success']) {
-            DB::transaction(function () use ($pengajuan, $response) {
-                $pengajuan->update([
-                    'status' => PengajuanStatus::TERKIRIM_ACCURATE,
-                    'accurate_transaction_id' => $response['transaction_id'],
-                    'disetujui_finance_oleh' => auth()->user()->id,
-                    'tanggal_disetujui_finance' => now(),
-                ]);
-
-                // Create local journal immediately after successful Accurate sync
-                $jurnalResult = $this->jurnalService->createJurnalFromPengajuan($pengajuan, $response['transaction_id']);
-                if (! $jurnalResult['success']) {
-                    throw new \Exception('Berhasil ke Accurate tapi gagal buat jurnal lokal: '.$jurnalResult['error']);
-                }
-
-                $this->notifikasiService->notifySentToAccurate($pengajuan);
-            });
-
-            $successMsg = "Pengajuan #{$pengajuan->nomor_pengajuan} berhasil dikirim ke Accurate dengan ID: {$response['transaction_id']} (Retry)";
-
-            // Persistent notification for current Finance user
-            Notifikasi::create([
-                'user_id' => auth()->id(),
-                'tipe' => 'success',
-                'judul' => 'Kirim Accurate Berhasil',
-                'pesan' => $successMsg,
-                'is_read' => false,
-            ]);
-
-            // Add real-time notification for current Finance user
-            try {
-                event(new NotifikasiPengajuan(
-                    auth()->id(),
-                    'Kirim Accurate Berhasil',
-                    $successMsg,
-                    'success'
-                ));
-            } catch (\Exception $e) {
-                \Log::warning('Gagal mengirim broadcast approval berhasil: '.$e->getMessage());
-            }
-
-            return back()->with('success', "Retry berhasil. Pengajuan terkirim ke Accurate Online dengan nomor jurnal #{$response['transaction_id']} dan jurnal lokal telah dibuat");
-        } else {
-            $this->notifikasiService->notifyFailedToAccurate($pengajuan, $response['message']);
-
-            return back()->with('error', $response['message']);
-        }
+        return back()->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
-    public function reject(Request $request, Pengajuan $pengajuan)
+    public function reject(RejectByFinanceRequest $request, Pengajuan $pengajuan)
     {
-        Cache::forget('finance_approval_pending_count');
+        $this->authorize('rejectByFinance', $pengajuan);
+        $result = $this->workflowService->rejectByFinance($pengajuan, $request->validated('catatan_finance'), $request->user());
 
-        if ($pengajuan->status !== PengajuanStatus::MENUNGGU_FINANCE) {
-            return back()->with('error', 'Pengajuan tidak dalam status menunggu finance');
-        }
-
-        $validated = $request->validate([
-            'catatan_finance' => 'required|string|max:500',
-        ]);
-
-        $pengajuan->update([
-            'status' => PengajuanStatus::DITOLAK_FINANCE,
-            'disetujui_finance_oleh' => auth()->user()->id,
-            'tanggal_disetujui_finance' => now(),
-            'catatan_finance' => $validated['catatan_finance'],
-        ]);
-
-        $this->notifikasiService->notifyRejectedByFinance($pengajuan);
-
-        return redirect()->route('finance.approval.index')->with('success', 'Pengajuan berhasil ditolak');
+        return redirect()->route('finance.approval.index')->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
     public function exportCsv(Request $request)
     {
-        $query = $this->applyPendingApprovalFilters(
-            Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request
+        $query = $this->approvalQueryService->pending(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen', 'kategori')
         );
 
-        $pengajuans = $query->get();
-
-        $headers = $this->getPengajuanCsvHeaders('finance');
-        $data = $this->mapPengajuanForCsv($pengajuans, 'finance');
-
-        return $this->exportService->exportToCSV(
-            'verifikasi_pengajuan_'.date('Y-m-d').'.csv',
-            $headers,
-            $data
+        return $this->exportPengajuanCsvFromQuery(
+            exportService: $this->exportService,
+            query: $query,
+            filenameBase: 'verifikasi_pengajuan',
+            mode: 'finance'
         );
     }
 
     public function exportXlsx(Request $request)
     {
-        $query = $this->applyPendingApprovalFilters(
-            Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request
+        $query = $this->approvalQueryService->pending(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen', 'kategori')
         );
 
-        $pengajuans = $query->get();
-        $headers = $this->getPengajuanCsvHeaders('finance');
-        $data = $this->mapPengajuanForCsv($pengajuans, 'finance');
-
-        return $this->exportService->exportToXlsx(
-            'verifikasi_pengajuan_'.date('Y-m-d').'.xlsx',
-            $headers,
-            $data,
-            ['sheet_name' => 'Verifikasi Finance']
+        return $this->exportPengajuanXlsxFromQuery(
+            exportService: $this->exportService,
+            query: $query,
+            filenameBase: 'verifikasi_pengajuan',
+            sheetName: 'Verifikasi Finance',
+            mode: 'finance'
         );
     }
 
     public function exportPdf(Request $request)
     {
-        $query = $this->applyPendingApprovalFilters(
-            Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request
+        $query = $this->approvalQueryService->pending(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen', 'kategori')
         );
 
         $pengajuans = $query->get();
@@ -453,14 +260,14 @@ class ApprovalController extends Controller
 
     public function history(Request $request)
     {
-        $query = $this->applyApprovalHistoryFilters(
-            Pengajuan::query()->with([
+        $query = $this->approvalQueryService->history(
+            request: $request,
+            query: Pengajuan::query()->with([
                 'user:id,name',
                 'departemen:departemen_id,nama_departemen',
                 'kategori:kategori_id,nama_kategori',
                 'validasiAi',
-            ]),
-            $request
+            ])
         );
 
         $pengajuans = $query->paginate(config('app.pagination.approval'));
@@ -490,60 +297,50 @@ class ApprovalController extends Controller
 
     public function historyExportCsv(Request $request)
     {
-        $query = $this->applyApprovalHistoryFilters(
-            Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request
+        $query = $this->approvalQueryService->history(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen', 'kategori')
         );
 
-        $pengajuans = $query->get();
-
-        $headers = $this->getPengajuanCsvHeaders('finance');
-        $data = $this->mapPengajuanForCsv($pengajuans, 'finance');
-
-        return $this->exportService->exportToCSV(
-            'riwayat_approval_finance_'.date('Y-m-d').'.csv',
-            $headers,
-            $data
+        return $this->exportPengajuanCsvFromQuery(
+            exportService: $this->exportService,
+            query: $query,
+            filenameBase: 'riwayat_approval_finance',
+            mode: 'finance'
         );
     }
 
     public function historyExportXlsx(Request $request)
     {
-        $query = $this->applyApprovalHistoryFilters(
-            Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request
+        $query = $this->approvalQueryService->history(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen', 'kategori')
         );
 
-        $pengajuans = $query->get();
-        $headers = $this->getPengajuanCsvHeaders('finance');
-        $data = $this->mapPengajuanForCsv($pengajuans, 'finance');
-
-        return $this->exportService->exportToXlsx(
-            'riwayat_approval_finance_'.date('Y-m-d').'.xlsx',
-            $headers,
-            $data,
-            ['sheet_name' => 'Riwayat Approval']
+        return $this->exportPengajuanXlsxFromQuery(
+            exportService: $this->exportService,
+            query: $query,
+            filenameBase: 'riwayat_approval_finance',
+            sheetName: 'Riwayat Approval',
+            mode: 'finance'
         );
     }
 
     public function historyExportPdf(Request $request)
     {
-        $query = $this->applyApprovalHistoryFilters(
-            Pengajuan::query()->with('user', 'departemen', 'kategori'),
-            $request
+        $query = $this->approvalQueryService->history(
+            request: $request,
+            query: Pengajuan::query()->with('user', 'departemen', 'kategori')
         );
 
         $pengajuans = $query->get();
         $totalNominal = $pengajuans->sum('nominal');
-        $processedDates = $pengajuans->map(fn ($item) => $item->tanggal_disetujui_finance ?? $item->created_at)->filter();
-
-        $startDate = $request->filled('start_date')
-            ? \Carbon\Carbon::parse($request->input('start_date'))->startOfDay()
-            : ($processedDates->min() ? \Carbon\Carbon::parse($processedDates->min())->startOfDay() : \Carbon\Carbon::now()->subMonths(1)->startOfDay());
-
-        $endDate = $request->filled('end_date')
-            ? \Carbon\Carbon::parse($request->input('end_date'))->endOfDay()
-            : ($processedDates->max() ? \Carbon\Carbon::parse($processedDates->max())->endOfDay() : \Carbon\Carbon::now()->endOfDay());
+        $range = $this->resolveExportDateRange(
+            request: $request,
+            dates: $pengajuans->map(fn ($item) => $item->tanggal_disetujui_finance ?? $item->created_at)
+        );
+        $startDate = $range['startDate'];
+        $endDate = $range['endDate'];
 
         return $this->exportService->exportToPDF(
             'riwayat_approval_finance_'.date('Y-m-d').'.pdf',
@@ -551,139 +348,5 @@ class ApprovalController extends Controller
             compact('pengajuans', 'startDate', 'endDate', 'totalNominal'),
             ['orientation' => 'landscape']
         );
-    }
-
-    private function applyPendingApprovalFilters($query, Request $request)
-    {
-        $query->where('pengajuan.status', PengajuanStatus::MENUNGGU_FINANCE->value);
-
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->leftJoin('users', 'pengajuan.user_id', '=', 'users.id')
-                ->select('pengajuan.*')
-                ->where(function ($q) use ($search) {
-                    $q->where('pengajuan.nomor_pengajuan', 'like', "%{$search}%")
-                        ->orWhere('pengajuan.nama_vendor', 'like', "%{$search}%")
-                        ->orWhere('users.name', 'like', "%{$search}%");
-                });
-        }
-
-        if ($request->filled('departemen_id')) {
-            $query->where('pengajuan.departemen_id', $request->input('departemen_id'));
-        }
-
-        $startDateParam = $request->filled('start_date') ? 'start_date' : 'tanggal_from';
-        $endDateParam = $request->filled('end_date') ? 'end_date' : 'tanggal_to';
-
-        if ($request->filled($startDateParam)) {
-            $query->whereDate('pengajuan.tanggal_pengajuan', '>=', $request->input($startDateParam));
-        }
-
-        if ($request->filled($endDateParam)) {
-            $query->whereDate('pengajuan.tanggal_pengajuan', '<=', $request->input($endDateParam));
-        }
-
-        return $query->orderBy('pengajuan.tanggal_pengajuan', 'desc');
-    }
-
-    private function applyApprovalHistoryFilters($query, Request $request)
-    {
-        $query->whereIn('pengajuan.status', [
-            PengajuanStatus::TERKIRIM_ACCURATE->value,
-            PengajuanStatus::DICAIRKAN->value,
-            PengajuanStatus::SELESAI->value,
-            PengajuanStatus::DITOLAK_FINANCE->value,
-        ]);
-
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->join('users', 'pengajuan.user_id', '=', 'users.id')
-                ->select('pengajuan.*')
-                ->where(function ($q) use ($search) {
-                    $q->where('pengajuan.nomor_pengajuan', 'like', "%{$search}%")
-                        ->orWhere('pengajuan.nama_vendor', 'like', "%{$search}%")
-                        ->orWhere('users.name', 'like', "%{$search}%");
-                });
-        }
-
-        if ($request->filled('departemen_id')) {
-            $query->where('pengajuan.departemen_id', $request->input('departemen_id'));
-        }
-
-        $startDateParam = $request->filled('start_date') ? 'start_date' : 'tanggal_from';
-        $endDateParam = $request->filled('end_date') ? 'end_date' : 'tanggal_to';
-
-        if ($request->filled($startDateParam)) {
-            $query->whereDate(DB::raw('COALESCE(pengajuan.tanggal_disetujui_finance, pengajuan.created_at)'), '>=', $request->input($startDateParam));
-        }
-
-        if ($request->filled($endDateParam)) {
-            $query->whereDate(DB::raw('COALESCE(pengajuan.tanggal_disetujui_finance, pengajuan.created_at)'), '<=', $request->input($endDateParam));
-        }
-
-        return $query->orderByRaw('COALESCE(pengajuan.tanggal_disetujui_finance, pengajuan.created_at) DESC');
-    }
-
-    /**
-     * Check if pengajuan is eligible for auto-approval
-     *
-     * Criteria:
-     * - AI validation passed (not warning/fail)
-     * - Nominal & date & vendor matches 100% with OCR (no manual adjustment)
-     * - No budget exceeded issue
-     * - COA is properly mapped from category
-     * - Kas/Bank is properly selected
-     */
-    private function isEligibleForAutoApproval(Pengajuan $pengajuan): bool
-    {
-        try {
-            // 1. Check AI validation status
-            if ($pengajuan->status_validasi !== \App\Enums\ValidationStatus::VALID) {
-                return false; // Only auto-approve if AI validation is 'valid'
-            }
-
-            // 2. Check if nominal and date matches are perfect (100%)
-            // We look at confidence_score for nominal and tanggal validation records
-            $nominalValidasi = $pengajuan->validasiAi->where('jenis_validasi', 'nominal')->first();
-            $tanggalValidasi = $pengajuan->validasiAi->where('jenis_validasi', 'tanggal')->first();
-
-            $nominalScore = $nominalValidasi ? $nominalValidasi->confidence_score : 0;
-            $tanggalScore = $tanggalValidasi ? $tanggalValidasi->confidence_score : 0;
-
-            if ($nominalScore < 100 || $tanggalScore < 100) {
-                return false; // Require 100% match for auto-approval
-            }
-
-            // 3. Check budget status
-            if ($pengajuan->departemen) {
-                $budgetLimit = (float) ($pengajuan->departemen->budget_limit ?? 0);
-                if ($budgetLimit > 0) {
-                    $startOfMonth = $pengajuan->tanggal_transaksi->copy()->startOfMonth();
-                    $endOfMonth = $pengajuan->tanggal_transaksi->copy()->endOfMonth();
-
-                    $currentMonthUsage = Pengajuan::where('departemen_id', $pengajuan->departemen_id)
-                        ->whereBetween('tanggal_transaksi', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
-                        ->whereNotIn('status', [PengajuanStatus::DITOLAK_ATASAN->value, PengajuanStatus::DITOLAK_FINANCE->value])
-                        ->sum('nominal');
-
-                    if ($currentMonthUsage > $budgetLimit) {
-                        return false; // Budget exceeded
-                    }
-                }
-            }
-
-            // 4. Check if COA is properly set (from category default or history)
-            if (! $pengajuan->coa_id) {
-                return false; // COA must be set
-            }
-
-            // All criteria met - eligible for auto-approval
-            return true;
-
-        } catch (\Exception $e) {
-            Log::warning('Auto-approval eligibility check failed: '.$e->getMessage());
-
-            return false; // Fail safely - don't auto-approve on error
-        }
     }
 }
